@@ -1,7 +1,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-namespace GameBoy_Engine {
+namespace gbengine {
   typedef enum {
     kProgramStart = 0x1000
 };
