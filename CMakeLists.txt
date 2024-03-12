@@ -29,4 +29,4 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET Gameboy_Engine PROPERTY CXX_STANDARD 20)
 endif()
 
-file(COPY resource DESTINATION ${DST_DIR}/)
+file(COPY resources DESTINATION ${DST_DIR}/)
