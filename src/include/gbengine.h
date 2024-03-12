@@ -21,16 +21,20 @@ typedef struct SDL {
 } SDL;
 
 typedef struct Vulkan {
-  VkApplicationInfo             info;
-  VkInstanceCreateInfo          instance_info;
-  VkInstance*                   inst;
-  VkPhysicalDevice*             physical_devices;
-  VkQueueFamilyProperties*      queue_props;
-  VkDevice                      device;
-  VkDeviceQueueCreateInfo       queue;
-  VkDeviceCreateInfo            device;
-  VkSurfaceKHR                  surface;
-  VkQueue                       queue;
+  const char* const*       instance_validation_layers;
+  uint32_t                 sdl_extenstion_count;
+  const char**             kSDLExtensions;
+  VkApplicationInfo        info;
+  VkInstanceCreateInfo     instance_info;
+  VkInstance*              inst;
+  VkPhysicalDevice*        physical_devices;
+  VkQueueFamilyProperties* queue_props;
+  VkDevice                 device;
+  VkDeviceQueueCreateInfo  queue;
+  VkDeviceCreateInfo       device;
+  VkSurfaceKHR             surface;
+  VkQueue                  queue;
+  VkResult                 result;
 };
 
 enum ResolutionValues {
@@ -53,13 +57,16 @@ typedef struct Config {
 };
 
 class GameBoyEngine {
+ private:
+  uint32_t InitSDL();
+  uint32_t InitVulkan();
+  uint32_t InitSwapChain();
+  uint32_t initCommands();
+
  public:
   Info info;
   Config config;
   SDL sdl;
   Vulkan vulkan;
-
-  uint32_t InitSDL();
-  uint32_t InitVulkan();
   GameBoyEngine(uint32_t mode_flags);
 };
