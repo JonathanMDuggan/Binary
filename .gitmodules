@@ -1,7 +1,7 @@
 [submodule "dep/yaml-cpp"]
-	path = dependencies/yaml-cpp
+	path = dep/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp
 [submodule "dep/imgui"]
-	path = dependencies/imgui
+	path = dep/imgui
 	url = https://github.com/ocornut/imgui
 	branch = docking
