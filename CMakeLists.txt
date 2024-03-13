@@ -23,7 +23,7 @@ target_include_directories(Gameboy_Engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(Gameboy_Engine SDL2::SDL2 SDL2::SDL2main)
 target_link_libraries(Gameboy_Engine SDL2_image::SDL2_image)
 target_link_libraries(Gameboy_Engine SDL2_mixer::SDL2_mixer)
-target_link_libraries(Gameboy_Engine Vulkan::Headers)
+target_link_libraries(Gameboy_Engine Vulkan::Vulkan)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET Gameboy_Engine PROPERTY CXX_STANDARD 20)

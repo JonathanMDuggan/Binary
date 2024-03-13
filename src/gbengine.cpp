@@ -2,16 +2,16 @@
 #include "include/gbengine.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
-namespace gbengine {
-uint32_t GameBoyEngine::InitSDL() {
+#include <vulkan/vulkan.h>
+uint32_t gbengine::GameBoyEngine::InitSDL() {
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO);
-  sdl.window = SDL_CreateWindow(info.name, SDL_WINDOWPOS_CENTERED,
+  sdl.window = SDL_CreateWindow(app_info.name, SDL_WINDOWPOS_CENTERED,
                                 SDL_WINDOWPOS_CENTERED, config.resolution.width,
                                 config.resolution.height,
                                 SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN);
   return EXIT_SUCCESS;
 }
-uint32_t GameBoyEngine::InitVulkan() {
+uint32_t gbengine::GameBoyEngine::InitVulkan() {
 
   std::vector<const char*> kExtensionNames;
   std::vector<const char*> kLayerNames{};
@@ -21,12 +21,12 @@ uint32_t GameBoyEngine::InitVulkan() {
   SDL_Vulkan_GetInstanceExtensions(sdl.window, sdl.pCount,
                                    kExtensionNames.data());
 
-  vulkan.info = {
+  vulkan.app_info = {
     .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
     .pNext              = NULL,
-    .pApplicationName   = info.name,
+    .pApplicationName   = app_info.name,
     .applicationVersion = VK_MAKE_VERSION(0, 0, 0),
-    .pEngineName        = info.name,
+    .pEngineName        = app_info.name,
     .engineVersion      = VK_MAKE_VERSION(0, 0, 0),
     .apiVersion         = VK_API_VERSION_1_3,
   };
@@ -37,7 +37,7 @@ uint32_t GameBoyEngine::InitVulkan() {
   vulkan.instance_info = {
     .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
     .pNext                   = NULL,
-    .pApplicationInfo        = &vulkan.info,
+    .pApplicationInfo        = &vulkan.app_info,
     .enabledLayerCount       = static_cast<uint32_t>(kLayerNames.size()),
     .ppEnabledLayerNames     = kLayerNames.data(),
     .enabledExtensionCount   = static_cast<uint32_t>(kExtensionNames.size()),
@@ -49,9 +49,11 @@ uint32_t GameBoyEngine::InitVulkan() {
     std::cout << "Failed to create instance\n"; 
   }
   SDL_Vulkan_CreateSurface(sdl.window, *vulkan.inst, &vulkan.surface);
+  return EXIT_SUCCESS;
 }
 
-GameBoyEngine::GameBoyEngine(uint32_t mode_flags) {
+ gbengine::GameBoyEngine::GameBoyEngine(uint32_t mode_flags) {
+  app_info.name = GB_ENGINE_NAME;
   if (InitSDL()) {
     std::cout << "Failed to create SDL window\n";
     return;
@@ -60,4 +62,4 @@ GameBoyEngine::GameBoyEngine(uint32_t mode_flags) {
     std::cout << "Failed to initialize Vulkan\n";
   }
 }
-}
+
