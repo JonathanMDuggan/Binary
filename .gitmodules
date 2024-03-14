@@ -8,3 +8,12 @@
 [submodule "dep/vk-bootstrap"]
 	path = dep/vk-bootstrap
 	url = https://github.com/charles-lunarg/vk-bootstrap
+[submodule "dep/VulkanMemoryAllocator"]
+	path = dep/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+[submodule "dep/fmt"]
+	path = dep/fmt
+	url = https://github.com/fmtlib/fmt
+[submodule "dep/Vulkan-Hpp"]
+	path = dep/Vulkan-Hpp
+	url = https://github.com/KhronosGroup/Vulkan-Hpp
