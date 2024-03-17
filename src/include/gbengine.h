@@ -34,6 +34,10 @@ enum VulkanConst {
 
 // TODO: You should get infomation from a configure file
 namespace gbengine {
+const std::vector<const char*> kValidationLayers = {
+    "VK_LAYER_KHRONOS_validation"
+};
+
 class GameBoyEngine {
   typedef struct SDL {
     SDL_Window* window{};
@@ -49,14 +53,14 @@ class GameBoyEngine {
     VkSemaphore swapchain_semaphore{}, render_semaphore{};
     VkFence render_fence{};
   }FrameData;
-
+ 
   typedef struct Vulkan {
     const char* const*       instance_validation_layers{};
     uint32_t                 sdl_extenstion_count{};
     const char**             kSDLExtensions{};
     VkApplicationInfo        app_info{};
     VkInstanceCreateInfo     instance_info{};
-    VkInstance               inst{};
+    VkInstance               instance{};
     VkPhysicalDevice         gpu{};
     VkQueueFamilyProperties* queue_props{};
     VkDevice                 device{};
@@ -97,21 +101,20 @@ class GameBoyEngine {
 
  private:
   void InitSDL();
-  void InitVulkanInstanceAndDevice();
-  void InitVulkanSwapChain();
-  void InitVulkanCommands();
-  void InitVulkanSyncStructures();
+  void InitVulkan();
+  void InitVulkanApplication();
+  void InitVulkanInfo();
+  void InitVulkanInstance();
+  void InitVulkanPhysicalDevice();
+  void InitVulkanValidationLayers();
 
-  void DestoryVulkan();
-  void DestorySDL();
-  
-  void VulkanDraw();
  public:
   Info app_info{};
   Config config{};
   SDL sdl{};
-  Vulkan vulkan{};
-  GameBoyEngine(uint32_t mode_flags);
+  Vulkan vk{};
+  GameBoyEngine();
+  void SDLPoolEvents(bool * running);
   ~GameBoyEngine();
 };
 }  // namespace gbengine

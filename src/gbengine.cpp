@@ -23,167 +23,125 @@ void gbengine::GameBoyEngine::InitSDL() {
                                 config.resolution.height,
                                 SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN);
 }
-// A Vulkan instance is vulkan itself, while the device is the hardware on your
-// computer
-void gbengine::GameBoyEngine::InitVulkanInstanceAndDevice() {
-  vkb::Device vkb_device;
-  vkb::InstanceBuilder builder;
-  vkb::Instance vkb_inst;
-  vkb::PhysicalDevice physical_device;
-  std::vector<const char*> kExtensionNames;
-  std::vector<const char*> kLayerNames{};
 
+void gbengine::GameBoyEngine::InitVulkan() { 
+  InitVulkanInstance(); 
+}
 
-  auto inst_ret = builder.set_app_name("GameBoy Engine")
-    .request_validation_layers(true)
-    .require_api_version(1, 1, 0)
-    .use_default_debug_messenger()
-    .build();
+void gbengine::GameBoyEngine::InitVulkanApplication() {
 
-  // The first thing we do when init vulkan is creating a instance 
-  vkb_inst               = inst_ret.value();
-  vulkan.inst            = vkb_inst.instance;
-  vulkan.debug_messenger = vkb_inst.debug_messenger;
+}
 
-  SDL_bool error = SDL_Vulkan_CreateSurface(sdl.window, 
-                                            vulkan.inst, 
-                                            &vulkan.surface);
-  if (error) {
-    std::cout << 
-      "[gbEngine] SDL and Vulkan could not communicate to create a surface\n";
+void gbengine::GameBoyEngine::InitVulkanInstance() {
+  
+  uint32_t sdl_extension_count = 0;
+  if (!SDL_Vulkan_GetInstanceExtensions(sdl.window, &sdl_extension_count,
+                                        nullptr)) {
+    fmt::print(
+        "Failed to get the number of Vulkan instance extensions from SDL\n");
+    return;
   }
 
-  // Vulkan needs a physical device to interface with (your graphics card)
-  // the code below does some magic where it finds the best physical device
-  // for the renederer
-  vkb::PhysicalDeviceSelector selector{vkb_inst};
-  physical_device = selector
-    .set_minimum_version(1, 1)
-    .set_surface(vulkan.surface)
-    .select()
-    .value();
-
-  vkb::DeviceBuilder device_builder{physical_device};
-  vkb_device    = device_builder.build().value();
-  vulkan.device = vkb_device.device;
-  vulkan.gpu    = physical_device.physical_device;
-   
-  // Vulkan gets the list of graphic hardware on your computer, and decides
-  // what hardware is appropriate for the application.
-  vulkan.queue = vkb_device.get_queue(vkb::QueueType::graphics).value();
-  vulkan.graphics_queue_family = vkb_device
-    .get_queue_index(vkb::QueueType::graphics)
-    .value();
-}
-
-// Vulkan Swapchain allows the application to keep the images rendered on the
-// screen
-void gbengine::GameBoyEngine::InitVulkanSwapChain() {
-  vkb::SwapchainBuilder swapchain_builder{vulkan.gpu, vulkan.device,
-                                          vulkan.surface};
-
-  vkb::Swapchain vkb_swapchain = swapchain_builder
-    .use_default_format_selection()
-    .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
-    .set_desired_extent(config.resolution.width, config.resolution.height)
-    .build()
-    .value();
-
-  vulkan.swapchain              = vkb_swapchain.swapchain;
-  vulkan.swapchain_images       = vkb_swapchain.get_images().value();
-  vulkan.swapchain_image_views  = vkb_swapchain.get_image_views().value();
-  vulkan.swapchain_image_format = vkb_swapchain.image_format;
-}
-
-
-void gbengine::GameBoyEngine::InitVulkanCommands() {
-  VkCommandPoolCreateInfo command_pool_info = {};
-  command_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  command_pool_info.pNext = nullptr;
-  command_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-  command_pool_info.queueFamilyIndex = vulkan.graphics_queue_family;
-
-  for (size_t i = 0; i < kFrameOverLap; i++) {
-    VK_CHECK(vkCreateCommandPool(vulkan.device, &command_pool_info, nullptr,
-                                 &vulkan.frame_data[i].command_pool));
-    VkCommandBufferAllocateInfo cmd_alloc_info{};
-    cmd_alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    cmd_alloc_info.pNext = nullptr;
-    cmd_alloc_info.commandPool = vulkan.frame_data[i].command_pool;
-    cmd_alloc_info.commandBufferCount = 1;
-    cmd_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-
-    VK_CHECK(vkAllocateCommandBuffers(vulkan.device, &cmd_alloc_info,
-                                  &vulkan.frame_data[i].main_command_buffer));
+  std::vector<const char*> sdl_extensions(sdl_extension_count);
+  if (!SDL_Vulkan_GetInstanceExtensions(sdl.window, &sdl_extension_count,
+                                        sdl_extensions.data())) {
+    fmt::print("Failed to get the Vulkan instance extensions from SDL\n");
+    return;
   }
-}
 
-void gbengine::GameBoyEngine::InitVulkanSyncStructures() {
-  VkFenceCreateInfo fence_info = {
-    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-    .pNext = nullptr,
-    .flags = VK_FENCE_CREATE_SIGNALED_BIT,
-  };
-  VkSemaphoreCreateInfo semaphore_info = {
-    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-    .pNext = nullptr,
-    .flags = 0,
+  vk.app_info = {
+    .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+    .pApplicationName = app_info.name,
+    .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+    .pEngineName = app_info.name,
+    .engineVersion = VK_MAKE_VERSION(1, 0, 0),
+    .apiVersion = VK_API_VERSION_1_0,
   };
 
-  for (int i = 0; i < kFrameOverLap; i++) {
-    VK_CHECK(vkCreateFence(vulkan.device, &fence_info, nullptr,
-                           &vulkan.frame_data[i].render_fence));
+  std::vector<const char*> required_extensions(sdl_extensions.begin(),
+                                               sdl_extensions.end());
+  required_extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 
-    VK_CHECK(vkCreateSemaphore(vulkan.device, &semaphore_info, nullptr,
-                               &vulkan.frame_data[i].swapchain_semaphore));
+  vk.instance_info = {
+    .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+    .flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
+    .pApplicationInfo = &vk.app_info,
+    .enabledLayerCount = 0,
+    .enabledExtensionCount = static_cast<uint32_t>(required_extensions.size()),
+    .ppEnabledExtensionNames = required_extensions.data(),
+  };
 
-    VK_CHECK(vkCreateSemaphore(vulkan.device, &semaphore_info, nullptr,
-                               &vulkan.frame_data[i].render_semaphore));
+  vk.result = vkCreateInstance(&vk.instance_info, nullptr, &vk.instance);
+  if (vk.result != VK_SUCCESS) {
+    fmt::print("Failed to create Vulkan instance\n");
+    return;
+  }
+
+  uint32_t extension_count = 0;
+  vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
+  std::vector<VkExtensionProperties> extensions(extension_count);
+  vkEnumerateInstanceExtensionProperties(nullptr, &extension_count,
+                                         extensions.data());
+
+  fmt::print("Available extensions:\n");
+  for (const auto& extension : extensions) {
+    fmt::print("  {}\n", extension.extensionName);
+  }
+
+}
+
+void gbengine::GameBoyEngine::InitVulkanValidationLayers() {
+  uint32_t layer_count;
+  bool layer_found = false;
+  vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
+  std::vector<VkLayerProperties> available_layers(layer_count);
+  vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
+
+  for (const char* kLayerNames : kValidationLayers) {
+    for (const auto& layer_properties: available_layers) {
+      if (std::strcmp(kLayerNames, layer_properties.layerName) == 0) {
+        layer_found = true;
+        break;
+      }
+    }
+    if (!layer_found) {
+      
+    }
   }
 }
 
-// Deallocates vulkan from memory when not need, called when application closes
-void gbengine::GameBoyEngine::DestoryVulkan() {
+ void gbengine::GameBoyEngine::SDLPoolEvents(bool* running) {
+  SDL_Event event;
+   while (SDL_PollEvent(&event)) {
+     switch (event.type) {
+       case SDL_KEYDOWN:
+         std::cout << "Key was pressed down\n";
+         break;
+       case SDL_QUIT:
+         *running = false;
+         return;
+       default:
+         break;
+     }
+   }
+ }
 
-  vkDeviceWaitIdle(vulkan.device);
-  for (size_t i = 0; i < kFrameOverLap; i++) {
-    vkDestroyCommandPool(vulkan.device, vulkan.frame_data[i].command_pool,
-                         nullptr);
-  }
+ gbengine::GameBoyEngine::~GameBoyEngine(){
+   // If i don't do this, memory corrupts.
+   if (vk.instance) {
+     vkDestroyInstance(vk.instance, nullptr);
+     vk.instance = VK_NULL_HANDLE;
+   }
+   SDL_DestroyWindow(sdl.window);
+   SDL_Quit();
+ }
 
-  vkDestroyInstance(vulkan.inst, nullptr);
-  vkDestroySwapchainKHR(vulkan.device, vulkan.swapchain, nullptr);
-
-  for (size_t i = 0; i < vulkan.swapchain_image_views.size(); i++) {
-    vkDestroyImageView(vulkan.device, vulkan.swapchain_image_views[i], nullptr);
-  }
-
-  vkDestroyDevice(vulkan.device, nullptr);
-  vkDestroySurfaceKHR(vulkan.inst, vulkan.surface, nullptr);
-  vkb::destroy_debug_utils_messenger(vulkan.inst, vulkan.debug_messenger);
-  vkDestroyInstance(vulkan.inst, nullptr);
-}
-void gbengine::GameBoyEngine::DestorySDL() {
-  SDL_DestroyWindow(sdl.window); }
-
-void gbengine::GameBoyEngine::VulkanDraw(){
-
-}
-
-gbengine::GameBoyEngine::~GameBoyEngine() {
-  DestoryVulkan();
-  DestorySDL();
-}
-
- gbengine::GameBoyEngine::GameBoyEngine(uint32_t mode_flags) {
+gbengine::GameBoyEngine::GameBoyEngine() {
    app_info.name            = GB_ENGINE_NAME;
    config.resolution.height = kStandardDefinitionHeight;
    config.resolution.width  = kStandardDefinitionWidth;
-
    InitSDL();
-   InitVulkanInstanceAndDevice();
-   InitVulkanSwapChain();
-   InitVulkanCommands();
-
- }
+   InitVulkan();
+   return;
+}
 
