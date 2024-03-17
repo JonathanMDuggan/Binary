@@ -1,5 +1,6 @@
 
 cmake_minimum_required(VERSION 3.12)
+
 set(CMAKE_CXX_STANDARD 20)
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/include")
@@ -7,26 +8,31 @@ set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/include")
 file(GLOB_RECURSE SRC_FILES ${SRC_DIR}/*.cpp)
 file(GLOB_RECURSE HEADER_FILES ${INCLUDE_DIR}/*.h)
 
-add_executable(Gameboy_Engine 
-  ${SRC_FILES}
-  ${HEADER_FILES}
-)
-# SDL2 Libs 
+add_executable(Gameboy_Engine ${SRC_FILES} ${HEADER_FILES})
+
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
 find_package(SDL2_mixer REQUIRED)
-
-#Vulkan API
 find_package(Vulkan REQUIRED)
 
+add_subdirectory(dep/VulkanMemoryAllocator)
+add_subdirectory(dep/fmt)
+add_subdirectory(dep/vk-bootstrap)
+
 target_include_directories(Gameboy_Engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(Gameboy_Engine SDL2::SDL2 SDL2::SDL2main)
-target_link_libraries(Gameboy_Engine SDL2_image::SDL2_image)
-target_link_libraries(Gameboy_Engine SDL2_mixer::SDL2_mixer)
-target_link_libraries(Gameboy_Engine Vulkan::Vulkan)
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET Gameboy_Engine PROPERTY CXX_STANDARD 20)
-endif()
-
+target_link_libraries(Gameboy_Engine PRIVATE 
+  SDL2::SDL2 SDL2::SDL2main 
+  SDL2_image::SDL2_image 
+  SDL2_mixer::SDL2_mixer 
+  Vulkan::Vulkan Vulkan::Headers 
+  vk-bootstrap::vk-bootstrap 
+  GPUOpen::VulkanMemoryAllocator 
+  fmt::fmt
+)
+set_property(TARGET Gameboy_Engine PROPERTY CXX_STANDARD 20)
 file(COPY resources DESTINATION ${DST_DIR}/)
+message("\n[Gameboy_Engine]\n")
+message("\t\tThe Vulkan INCLUDE_DIR: ${Vulkan_INCLUDE_DIR}")
+message("\t\tThe Vulkan LIBRARY:     ${Vulkan_LIBRARY}")
+message("\n[Gameboy_Engine]\n")

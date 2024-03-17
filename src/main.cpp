@@ -2,7 +2,8 @@
 #include <iostream>
 #include <vulkan/vulkan.h>
 #include <SDL.h>
-int main(int argc, char** argv) { 
+#include <glm/glm.hpp>
+int main() { 
   std::cout << "Hello\n"; 
   return EXIT_SUCCESS;
 }
