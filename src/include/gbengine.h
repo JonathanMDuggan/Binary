@@ -38,6 +38,12 @@ const std::vector<const char*> kValidationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
+#ifdef NDEBUG
+const bool ValidationLayersEnabled = false;
+#else
+const bool ValidationLayersEnabled = true;
+#endif
+
 class GameBoyEngine {
   typedef struct SDL {
     SDL_Window* window{};
@@ -107,7 +113,17 @@ class GameBoyEngine {
   void InitVulkanInstance();
   void InitVulkanPhysicalDevice();
   void InitVulkanValidationLayers();
+  void SetupDebugMessenger(); 
+  void FillDebugMessengerCreateInfo(
+      VkDebugUtilsMessengerCreateInfoEXT& debug_info);
+  bool VulkanValidationLayerSupported();
 
+  VkResult CreateDebugUtilsMessengerEXT(
+      VkInstance instance,
+      const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+      const VkAllocationCallbacks* pAllocator,
+      VkDebugUtilsMessengerEXT* pDebugMessenger);
+  std::vector<const char*> GetExtensions();
  public:
   Info app_info{};
   Config config{};
