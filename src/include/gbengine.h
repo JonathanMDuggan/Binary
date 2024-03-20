@@ -65,10 +65,10 @@ class GameBoyEngine {
     uint32_t                 sdl_extenstion_count{};
     const char**             kSDLExtensions{};
     VkApplicationInfo        app_info{};
-    VkInstanceCreateInfo     instance_info{};
-    VkInstance               instance{};
+    VkInstance               instance;
     VkPhysicalDevice         gpu{};
     VkQueueFamilyProperties* queue_props{};
+    VkDebugUtilsMessengerEXT debug_messenger{};
     VkDevice                 device{};
     VkDeviceCreateInfo       device_info{};
     VkSurfaceKHR             surface{};
@@ -77,7 +77,6 @@ class GameBoyEngine {
     VkCommandPool            command_pool{};
     VkCommandBuffer          main_command_buffer{};
     VkResult                 result{};
-    VkDebugUtilsMessengerEXT debug_messenger{};
     VkSwapchainKHR           swapchain{}; 
     std::vector<VkImage>     swapchain_images{};
     std::vector<VkImageView> swapchain_image_views{};
@@ -121,6 +120,11 @@ class GameBoyEngine {
   VkResult CreateDebugUtilsMessengerEXT(
       VkInstance instance,
       const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+      const VkAllocationCallbacks* pAllocator,
+      VkDebugUtilsMessengerEXT* pDebugMessenger);
+
+  void DestroyDebugUtilsMessengerEXT(
+      VkInstance instance, const VkDebugUtilsMessengerEXT debugMessenger,
       const VkAllocationCallbacks* pAllocator,
       VkDebugUtilsMessengerEXT* pDebugMessenger);
   std::vector<const char*> GetExtensions();

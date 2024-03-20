@@ -5,7 +5,8 @@
 // Version: 0.0.
 // 
 // NOTE: This file is heavliy commented becasue I don't know what im writing
-//       I'm following a guide online called https://vkguide.dev/.
+//       I'm following a guide online called https://vkguide.dev/. Vulkan is
+//       Complex, I need explanation. 
 
 #pragma once 
 #define VMA_VULKAN_VERSION 1002000
@@ -14,6 +15,15 @@
 #include <SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 #include "VkBootstrap.h"
+static VKAPI_ATTR VkBool32 VKAPI_CALL
+debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+              VkDebugUtilsMessageTypeFlagsEXT messageType,
+              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+              void* pUserData) {
+  std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+
+  return VK_FALSE;
+}
 
 void gbengine::GameBoyEngine::SetupDebugMessenger() { 
   if (!ValidationLayersEnabled) {
@@ -22,7 +32,8 @@ void gbengine::GameBoyEngine::SetupDebugMessenger() {
   VkDebugUtilsMessengerCreateInfoEXT debug_info;
   FillDebugMessengerCreateInfo(debug_info);
 
-  if (CreateDebugUtilsMessengerEXT(vk.instance) {
+  if (CreateDebugUtilsMessengerEXT(vk.instance, &debug_info ,nullptr, &vk.debug_messenger) != VK_SUCCESS){
+    fmt::print("failed to set up debug messenger!");
   }
 }
 VkResult gbengine::GameBoyEngine::CreateDebugUtilsMessengerEXT(
@@ -33,12 +44,22 @@ VkResult gbengine::GameBoyEngine::CreateDebugUtilsMessengerEXT(
       (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, 
         "vkDestoryDebugUtilsMessengerEXT");
   if (func != nullptr) {
-    func(instance, )
+    func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+  } else {
+    return VK_ERROR_EXTENSION_NOT_PRESENT;
   }
-  
+}
+void gbengine::GameBoyEngine::DestroyDebugUtilsMessengerEXT(
+    VkInstance instance, const VkDebugUtilsMessengerEXT debugMessenger,
+      const VkAllocationCallbacks* pAllocator,
+      VkDebugUtilsMessengerEXT* pDebugMessenger) {
+  auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+      instance, "vkDestoryDebugUtilsMessengerEXT");
+  if (func != nullptr) {
+    func(instance, debugMessenger, pAllocator);
+  }
 
 }
-
 
 
 void gbengine::GameBoyEngine::FillDebugMessengerCreateInfo(
@@ -59,14 +80,7 @@ void gbengine::GameBoyEngine::FillDebugMessengerCreateInfo(
   };
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-              VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-              VkDebugUtilsMessageTypeFlagsEXT messageType,
-              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-              void* pUserData) {
-  std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-  return VK_FALSE;
-}
+
 
 void gbengine::GameBoyEngine::InitSDL() {
   // We're using SDL for the window creation and inputs
@@ -78,9 +92,6 @@ void gbengine::GameBoyEngine::InitSDL() {
 }
 
 void gbengine::GameBoyEngine::InitVulkan() { 
-  if (ValidationLayersEnabled && !VulkanValidationLayerSupported()) {
-    fmt::print("Validation layers requested, but not available!");
-  }
   InitVulkanInstance(); 
 }
 
@@ -89,19 +100,11 @@ void gbengine::GameBoyEngine::InitVulkanApplication() {
 }
 
 void gbengine::GameBoyEngine::InitVulkanInstance() {
-  VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-
-  if (ValidationLayersEnabled) {
-    vk.instance_info.enabledLayerCount =
-        static_cast<uint32_t>(kValidationLayers.size());
-    vk.instance_info.ppEnabledLayerNames = kValidationLayers.data();
-    
-  } else {
-    vk.instance_info.enabledLayerCount = 0;
-    vk.instance_info.pNext = nullptr;
+  VkInstanceCreateInfo instance_info{};
+  if (ValidationLayersEnabled && !VulkanValidationLayerSupported()) {
+    fmt::print("Validation layers requested, but not available!");
   }
 
-  auto sdl_extensions = GetExtensions();
   vk.app_info = {
     .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
     .pApplicationName = app_info.name,
@@ -111,17 +114,28 @@ void gbengine::GameBoyEngine::InitVulkanInstance() {
     .apiVersion = VK_API_VERSION_1_0,
   };
   //required_extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-  vk.instance_info = {
-    .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-    .flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR,
-    .pApplicationInfo = &vk.app_info,
-    .enabledLayerCount = 0,
-    .enabledExtensionCount = static_cast<uint32_t>(sdl_extensions.size()),
-    .ppEnabledExtensionNames = sdl_extensions.data(),
-  };
+  instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+  instance_info.pApplicationInfo = &vk.app_info;
 
-  vk.result = vkCreateInstance(&vk.instance_info, nullptr, &vk.instance);
-  if (vk.result != VK_SUCCESS) {
+  std::vector<const char*> sdl_extensions = GetExtensions();
+  instance_info.enabledExtensionCount = static_cast<uint32_t>(sdl_extensions.size());
+  instance_info.ppEnabledExtensionNames = sdl_extensions.data();
+
+
+  VkDebugUtilsMessengerCreateInfoEXT debug_info{};
+
+  if (ValidationLayersEnabled) {
+    instance_info.enabledLayerCount = static_cast<uint32_t>(kValidationLayers.size());
+    instance_info.ppEnabledExtensionNames = kValidationLayers.data();
+    
+    FillDebugMessengerCreateInfo(debug_info);
+    instance_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_info;
+  } else {
+    instance_info.enabledLayerCount = 0;
+    instance_info.pNext = nullptr;
+  }
+
+  if (vkCreateInstance(&instance_info, nullptr, &vk.instance) != VK_SUCCESS) {
     fmt::print("Failed to create Vulkan instance\n");
     return;
   }
@@ -165,19 +179,23 @@ std::vector<const char*> gbengine::GameBoyEngine::GetExtensions() {
                                         nullptr)) {
     fmt::print(
         "Failed to get the number of Vulkan instance extensions from SDL\n");
+    return {};
   }
 
-  std::vector<const char*> sdl_extensions(sdl_extension_count);
-  if (!SDL_Vulkan_GetInstanceExtensions(sdl.window, &sdl_extension_count,
-                                        sdl_extensions.data())) {
-    fmt::print("Failed to get the Vulkan instance extensions from SDL\n");
+  std::vector<const char*> extensions(sdl_extension_count);
+  if (sdl_extension_count > 0) {
+    if (!SDL_Vulkan_GetInstanceExtensions(sdl.window, &sdl_extension_count,
+                                          extensions.data())) {
+      fmt::print("Failed to get the Vulkan instance extensions from SDL\n");
+      return {};
+    }
   }
-  std::vector<const char*> required_extensions(sdl_extensions.begin(),
-                                               sdl_extensions.end());
+
   if (ValidationLayersEnabled) {
-    required_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
   }
-  return required_extensions;
+
+  return extensions;
 }
 
 void gbengine::GameBoyEngine::InitVulkanValidationLayers() {
@@ -210,7 +228,7 @@ void gbengine::GameBoyEngine::InitVulkanValidationLayers() {
    SDL_Quit();
  }
 
-gbengine::GameBoyEngine::GameBoyEngine() {
+ gbengine::GameBoyEngine::GameBoyEngine() {
    app_info.name            = GB_ENGINE_NAME;
    config.resolution.height = kStandardDefinitionHeight;
    config.resolution.width  = kStandardDefinitionWidth;
