@@ -1,4 +1,14 @@
-[submodule "dep/--force"]
-	path = dep/--force
+[submodule "dep/spdlog"]
+	path = dep/spdlog
 	url = https://github.com/gabime/spdlog
 	branch = v1.x
+[submodule "dep/yaml-cpp"]
+	path = dep/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp
+[submodule "dep/imgui"]
+	path = dep/imgui
+	url = https://github.com/ocornut/imgui
+	branch = docking
+[submodule "dep/VulkanMemoryAllocator"]
+	path = dep/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
