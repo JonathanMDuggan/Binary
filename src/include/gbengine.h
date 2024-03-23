@@ -4,6 +4,9 @@
 #include <iostream>
 #include <optional>
 #include <vector>
+#include <map>
+#include <optional>
+
 
 #include <SDL.h>
 #include <SDL_vulkan.h>
@@ -15,7 +18,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 
-#include <fmt/core.h>
+#include "spdlog/spdlog.h"
 
 #define GB_ENGINE_NAME "GameBoy Engine"
 #define GB_VERSION 0
@@ -32,9 +35,15 @@ enum VulkanConst {
   kFrameOverLap = 2
 };
 
+typedef struct QueueFamilyIndices {
+  std::optional<uint32_t> graphics_family;
+  bool IsComplete() { return graphics_family.has_value();
+  }
+} QueueFamilyIndices;
+
 // TODO: You should get infomation from a configure file
 namespace gbengine {
-const std::vector<const char*> kValidationLayers = {
+const std::vector<const char*> validation_layers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
@@ -53,13 +62,14 @@ class GameBoyEngine {
     const char** pNames{};
   } SDL;
 
+
   typedef struct FrameData {
     VkCommandPool command_pool{};
     VkCommandBuffer main_command_buffer{};
     VkSemaphore swapchain_semaphore{}, render_semaphore{};
     VkFence render_fence{};
   }FrameData;
- 
+  
   typedef struct Vulkan {
     const char* const*       instance_validation_layers{};
     uint32_t                 sdl_extenstion_count{};
@@ -70,6 +80,7 @@ class GameBoyEngine {
     VkQueueFamilyProperties* queue_props{};
     VkDebugUtilsMessengerEXT debug_messenger{};
     VkDevice                 device{};
+    VkPhysicalDevice         physical_device{};
     VkDeviceCreateInfo       device_info{};
     VkSurfaceKHR             surface{};
     VkQueue                  queue{};
@@ -112,8 +123,12 @@ class GameBoyEngine {
   void InitVulkanInstance();
   void InitVulkanPhysicalDevice();
   void InitVulkanValidationLayers();
+  void PickPhsycialDevice();
+  bool IsDeviceSuitable(VkPhysicalDevice physical_device);
   void SetupDebugMessenger(); 
-  void FillDebugMessengerCreateInfo(
+
+  int RateDeviceSuitabillity(VkPhysicalDevice device);
+  void PopulateDebugMessengerCreateInfo(
       VkDebugUtilsMessengerCreateInfoEXT& debug_info);
   bool VulkanValidationLayerSupported();
 
@@ -127,6 +142,10 @@ class GameBoyEngine {
       VkInstance instance, const VkDebugUtilsMessengerEXT debugMessenger,
       const VkAllocationCallbacks* pAllocator,
       VkDebugUtilsMessengerEXT* pDebugMessenger);
+
+  QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+
+  void CreateLogicalDevice();
   std::vector<const char*> GetExtensions();
  public:
   Info app_info{};
