@@ -6,7 +6,9 @@
 #include <vector>
 #include <map>
 #include <optional>
-
+#include <set>
+#include <algorithm>
+#include <limits>
 
 #include <SDL.h>
 #include <SDL_vulkan.h>
@@ -22,14 +24,6 @@
 
 #define GB_ENGINE_NAME "GameBoy Engine"
 #define GB_VERSION 0
-#define VK_CHECK(x)                                               \
-  do {                                                            \
-    VkResult err = x;                                             \
-    if (err) {                                                    \
-      std::cout << "Detected Vulkan error: " << err << std::endl; \
-      abort();                                                    \
-    }                                                             \
-  } while (0)
 
 enum VulkanConst { 
   kFrameOverLap = 2
@@ -37,16 +31,23 @@ enum VulkanConst {
 
 typedef struct QueueFamilyIndices {
   std::optional<uint32_t> graphics_family;
-  bool IsComplete() { return graphics_family.has_value();
+  std::optional<uint32_t> present_family;
+  bool IsComplete() {
+    return graphics_family.has_value() && present_family.has_value();
   }
 } QueueFamilyIndices;
 
 // TODO: You should get infomation from a configure file
 namespace gbengine {
-const std::vector<const char*> validation_layers = {
-    "VK_LAYER_KHRONOS_validation"
-};
 
+  extern std::string VkResultToString(VkResult result);
+  
+
+  const std::vector<const char*> validation_layers = {
+      "VK_LAYER_KHRONOS_validation",
+  };
+const std::vector<const char*> device_extensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 #ifdef NDEBUG
 const bool ValidationLayersEnabled = false;
 #else
@@ -62,6 +63,11 @@ class GameBoyEngine {
     const char** pNames{};
   } SDL;
 
+  typedef struct SwapChainSupportDetails {
+    VkSurfaceCapabilitiesKHR capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> present_modes;
+  } SwapChainSupportDetails;
 
   typedef struct FrameData {
     VkCommandPool command_pool{};
@@ -69,7 +75,16 @@ class GameBoyEngine {
     VkSemaphore swapchain_semaphore{}, render_semaphore{};
     VkFence render_fence{};
   }FrameData;
-  
+
+  typedef struct SwapChain {
+    VkSwapchainKHR KHR{};
+    std::vector<VkImage> images{};
+    std::vector<VkImageView> image_views{};
+    VkFormat image_format{};
+    VkExtent2D extent{};
+    SwapChainSupportDetails support_details = {};
+  }SwapChain;
+
   typedef struct Vulkan {
     const char* const*       instance_validation_layers{};
     uint32_t                 sdl_extenstion_count{};
@@ -88,10 +103,7 @@ class GameBoyEngine {
     VkCommandPool            command_pool{};
     VkCommandBuffer          main_command_buffer{};
     VkResult                 result{};
-    VkSwapchainKHR           swapchain{}; 
-    std::vector<VkImage>     swapchain_images{};
-    std::vector<VkImageView> swapchain_image_views{};
-    VkFormat                 swapchain_image_format{};
+    SwapChain                swap_chain{};
     uint32_t                 graphics_queue_family{};
     FrameData                frame_data[kFrameOverLap] = {};
   }Vulkan;
@@ -117,15 +129,20 @@ class GameBoyEngine {
 
  private:
   void InitSDL();
-  void InitVulkan();
   void InitVulkanApplication();
+  void InitVulkan();
   void InitVulkanInfo();
-  void InitVulkanInstance();
   void InitVulkanPhysicalDevice();
   void InitVulkanValidationLayers();
-  void PickPhsycialDevice();
   bool IsDeviceSuitable(VkPhysicalDevice physical_device);
-  void SetupDebugMessenger(); 
+
+  void InitVulkanInstance();
+  void SetupDebugMessenger();
+  void CreateSurface();
+  void PickPhsycialDevice();
+  void CreateLogicalDevice();
+  void CreateSwapChain();
+  void CreateImageViews();
 
   int RateDeviceSuitabillity(VkPhysicalDevice device);
   void PopulateDebugMessengerCreateInfo(
@@ -139,13 +156,22 @@ class GameBoyEngine {
       VkDebugUtilsMessengerEXT* pDebugMessenger);
 
   void DestroyDebugUtilsMessengerEXT(
-      VkInstance instance, const VkDebugUtilsMessengerEXT debugMessenger,
-      const VkAllocationCallbacks* pAllocator,
-      VkDebugUtilsMessengerEXT* pDebugMessenger);
+      VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+      const VkAllocationCallbacks* pAllocator);
 
   QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
 
-  void CreateLogicalDevice();
+ 
+  bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
+
+  SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
+  VkSurfaceFormatKHR ChooseSwapSurfaceFormat(
+      const std::vector<VkSurfaceFormatKHR>& available_formats);
+  VkPresentModeKHR ChooseSwapPresentMode(
+      const std::vector<VkPresentModeKHR>& available_present_modes);
+
+
+  VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
   std::vector<const char*> GetExtensions();
  public:
   Info app_info{};

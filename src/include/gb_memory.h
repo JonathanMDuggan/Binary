@@ -7,8 +7,8 @@ class Memory {
   ~Memory();
 
  private:
-  std::array<uint8_t> VRAM[0x4000];
-  std::array<uint8_t> RAM[0x8000];
+  std::array<uint8_t, 0x4000> VRAM;
+  std::array<uint8_t, 0x8000> RAM;
 };
 
 Memory::Memory() {}
