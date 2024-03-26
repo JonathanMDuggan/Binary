@@ -143,6 +143,7 @@ class GameBoyEngine {
   void CreateLogicalDevice();
   void CreateSwapChain();
   void CreateImageViews();
+  void CreateGraphicsPipeline();
 
   int RateDeviceSuitabillity(VkPhysicalDevice device);
   void PopulateDebugMessengerCreateInfo(

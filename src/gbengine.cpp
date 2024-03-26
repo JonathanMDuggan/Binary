@@ -455,15 +455,12 @@ VkExtent2D gbengine::GameBoyEngine::ChooseSwapExtent(
 
  void gbengine::GameBoyEngine::CreateSwapChain() {
   uint32_t image_count = 0;
-  SwapChainSupportDetails swap_chain_support =
-      QuerySwapChainSupport(vk.physical_device);
-  VkSurfaceFormatKHR surface_format =
-      ChooseSwapSurfaceFormat(swap_chain_support.formats);
-  VkPresentModeKHR present_mode =
-      ChooseSwapPresentMode(swap_chain_support.present_modes);
-  VkExtent2D extent = ChooseSwapExtent(swap_chain_support.capabilities);
+  SwapChainSupportDetails swap_chain_support = QuerySwapChainSupport(vk.physical_device);
+  VkSurfaceFormatKHR surface_format          = ChooseSwapSurfaceFormat(swap_chain_support.formats);
+  VkPresentModeKHR present_mode              = ChooseSwapPresentMode(swap_chain_support.present_modes);
+  VkExtent2D extent                          = ChooseSwapExtent(swap_chain_support.capabilities);
+  QueueFamilyIndices indices                 = FindQueueFamilies(vk.physical_device);
   VkSwapchainCreateInfoKHR swap_chain_info{};
-  QueueFamilyIndices indices = FindQueueFamilies(vk.physical_device);
   const uint32_t queue_family_indices[2] = {indices.graphics_family.value(),
                                             indices.present_family.value()};
 
@@ -492,8 +489,7 @@ VkExtent2D gbengine::GameBoyEngine::ChooseSwapExtent(
     // swap_chain_info.pQueueFamilyIndices   = nullptr;
   }
 
-  swap_chain_info.preTransform =
-      swap_chain_support.capabilities.currentTransform;
+  swap_chain_info.preTransform = swap_chain_support.capabilities.currentTransform;
   swap_chain_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   swap_chain_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
   swap_chain_info.clipped = VK_TRUE;
@@ -545,7 +541,12 @@ VkExtent2D gbengine::GameBoyEngine::ChooseSwapExtent(
    }
  }
 
-// SDL Stuff
+// Vulkan Graphics Pipeline
+ void gbengine::GameBoyEngine::CreateGraphicsPipeline() { 
+   spdlog::info("Creating Graphics Pipeline");
+   
+ }
+ // SDL Stuff
 
 void gbengine::GameBoyEngine::InitSDL() {
   // We're using SDL for the window creation and inputs
