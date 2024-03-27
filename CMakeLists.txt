@@ -1,5 +1,6 @@
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.19)
+project(Gameboy_Engine)
 set(CMAKE_CXX_STANDARD 20)
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/include")
@@ -21,10 +22,8 @@ file(GLOB_RECURSE FRAG_SHADERS ${SHADERS_DIR}/*.frag)
 # Build and create shaders for the funny program
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/shaders")
 foreach(VERT_FILE ${VERT_SHADERS})
-  set(VERT_NAME ${VERT_FILE} NAME_WE)
-  message( "${GLSL_COMPILER} ${VERT_FILE} -o ${CMAKE_CURRENT_BINARY_DIR}/shaders/")
   execute_process(
-    COMMAND ${GLSL_COMPILER} ${VERT_FILE} -o ${CMAKE_CURRENT_BINARY_DIR}/shaders/${VERT_NAME}.spv
+    COMMAND ${GLSL_COMPILER} ${VERT_FILE} -o ${CMAKE_CURRENT_BINARY_DIR}/shaders/vert.spv
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     RESULT_VARIABLE CMD_RESULT
   )
@@ -35,9 +34,8 @@ if(CMD_RESULT)
 endif()
 
 foreach(FRAG_FILE ${FRAG_SHADERS})
-  set(FRAG_NAME ${FRAG_FILE} NAME_WE)
   execute_process(
-    COMMAND ${GLSL_COMPILER} ${FRAG_FILE} -o ${CMAKE_CURRENT_BINARY_DIR}/shaders/${FRAG_NAME}.spv
+    COMMAND ${GLSL_COMPILER} ${FRAG_FILE} -o ${CMAKE_CURRENT_BINARY_DIR}/shaders/frag.spv
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     RESULT_VARIABLE CMD_RESULT
   )

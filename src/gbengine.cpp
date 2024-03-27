@@ -374,6 +374,8 @@ std::vector<const char*> gbengine::GameBoyEngine::GetExtensions() {
   return extensions;
 }
 
+
+
 void gbengine::GameBoyEngine::InitVulkanValidationLayers() {
 
 }
@@ -454,45 +456,45 @@ VkExtent2D gbengine::GameBoyEngine::ChooseSwapExtent(
 // Started breaking the 80 col rule due to lack of readability
 
  void gbengine::GameBoyEngine::CreateSwapChain() {
-  uint32_t image_count = 0;
-  SwapChainSupportDetails swap_chain_support = QuerySwapChainSupport(vk.physical_device);
-  VkSurfaceFormatKHR surface_format          = ChooseSwapSurfaceFormat(swap_chain_support.formats);
-  VkPresentModeKHR present_mode              = ChooseSwapPresentMode(swap_chain_support.present_modes);
-  VkExtent2D extent                          = ChooseSwapExtent(swap_chain_support.capabilities);
-  QueueFamilyIndices indices                 = FindQueueFamilies(vk.physical_device);
-  VkSwapchainCreateInfoKHR swap_chain_info{};
-  const uint32_t queue_family_indices[2] = {indices.graphics_family.value(),
-                                            indices.present_family.value()};
+   uint32_t image_count = 0;
+   SwapChainSupportDetails swap_chain_support = QuerySwapChainSupport(vk.physical_device);
+   VkSurfaceFormatKHR surface_format          = ChooseSwapSurfaceFormat(swap_chain_support.formats);
+   VkPresentModeKHR present_mode              = ChooseSwapPresentMode(swap_chain_support.present_modes);
+   VkExtent2D extent                          = ChooseSwapExtent(swap_chain_support.capabilities);
+   QueueFamilyIndices indices                 = FindQueueFamilies(vk.physical_device);
+   VkSwapchainCreateInfoKHR swap_chain_info{};
+   const uint32_t queue_family_indices[2] = {indices.graphics_family.value(),
+                                             indices.present_family.value()};
+   
+   image_count = swap_chain_support.capabilities.minImageCount;
+   if (swap_chain_support.capabilities.maxImageCount > 0 &&
+       image_count > swap_chain_support.capabilities.maxImageCount) {
+     image_count = swap_chain_support.capabilities.maxImageCount;
+   }
 
-  image_count = swap_chain_support.capabilities.minImageCount;
-  if (swap_chain_support.capabilities.maxImageCount > 0 &&
-      image_count > swap_chain_support.capabilities.maxImageCount) {
-    image_count = swap_chain_support.capabilities.maxImageCount;
-  }
-
-  swap_chain_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-  swap_chain_info.surface = vk.surface;
-  swap_chain_info.minImageCount = swap_chain_support.capabilities.minImageCount;
-  swap_chain_info.imageFormat = surface_format.format;
-  swap_chain_info.imageColorSpace = surface_format.colorSpace;
-  swap_chain_info.imageExtent = extent;
+  swap_chain_info.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+  swap_chain_info.surface          = vk.surface;
+  swap_chain_info.minImageCount    = swap_chain_support.capabilities.minImageCount;
+  swap_chain_info.imageFormat      = surface_format.format;
+  swap_chain_info.imageColorSpace  = surface_format.colorSpace;
+  swap_chain_info.imageExtent      = extent;
   swap_chain_info.imageArrayLayers = 1;
-  swap_chain_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+  swap_chain_info.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-  if (indices.graphics_family != indices.present_family) {
-    swap_chain_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+  if (indices.graphics_family            != indices.present_family) {
+    swap_chain_info.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
     swap_chain_info.queueFamilyIndexCount = 2;
-    swap_chain_info.pQueueFamilyIndices = queue_family_indices;
+    swap_chain_info.pQueueFamilyIndices   = queue_family_indices;
   } else {
     swap_chain_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     // swap_chain_info.queueFamilyIndexCount = 0;
     // swap_chain_info.pQueueFamilyIndices   = nullptr;
   }
 
-  swap_chain_info.preTransform = swap_chain_support.capabilities.currentTransform;
+  swap_chain_info.preTransform   = swap_chain_support.capabilities.currentTransform;
   swap_chain_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-  swap_chain_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
-  swap_chain_info.clipped = VK_TRUE;
+  swap_chain_info.presentMode    = VK_PRESENT_MODE_FIFO_KHR;
+  swap_chain_info.clipped        = VK_TRUE;
   // swap_chain_info.oldSwapchain   = VK_NULL_HANDLE;
 
   VkResult result = vkCreateSwapchainKHR(vk.device, &swap_chain_info, nullptr,
@@ -542,10 +544,256 @@ VkExtent2D gbengine::GameBoyEngine::ChooseSwapExtent(
  }
 
 // Vulkan Graphics Pipeline
+
+ VkShaderModule gbengine::GameBoyEngine::CreateShaderModule(
+     const std::vector<char>& code) {
+   VkShaderModuleCreateInfo shader_module_info;
+   VkShaderModule shader_module;
+
+   shader_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_IDENTIFIER_EXT;
+   shader_module_info.codeSize = code.size();
+   shader_module_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
+   VkResult result = vkCreateShaderModule(vk.device, &shader_module_info,
+                                          nullptr, &shader_module);
+   if (result != VK_SUCCESS) {
+     spdlog::critical("Failed to create shader module! {}", VkResultToString(result));
+     throw std::runtime_error("");
+   }
+
+   return shader_module;
+ }  
+
+ // Vulkan Graphics Pipeline
+
  void gbengine::GameBoyEngine::CreateGraphicsPipeline() { 
-   spdlog::info("Creating Graphics Pipeline");
+   VkPipelineShaderStageCreateInfo vert_shader_stage_info{}; 
+   VkPipelineShaderStageCreateInfo frag_shader_stage_info{};
+   VkPipelineShaderStageCreateInfo shader_stages[2];
+   std::vector<VkDynamicState>     dynamic_states = {VK_DYNAMIC_STATE_VIEWPORT, 
+                                                     VK_DYNAMIC_STATE_SCISSOR};
+   VkPipelineDynamicStateCreateInfo       dynamic_state{};
+   VkPipelineVertexInputStateCreateInfo   vertex_input_info{};
+   VkPipelineInputAssemblyStateCreateInfo input_assembly{};
+   VkViewport                             viewport{};
+   VkRect2D                               scissor{};
+   VkPipelineViewportStateCreateInfo      viewport_state{};
+   VkPipelineRasterizationStateCreateInfo rasterizer{};
+   VkPipelineMultisampleStateCreateInfo   multisampling{};
+   VkPipelineColorBlendAttachmentState    color_blend_attachment{};
+   VkPipelineColorBlendStateCreateInfo    color_blending{};
+   VkPipelineLayoutCreateInfo             pipeline_layout_info{};
+   VkGraphicsPipelineCreateInfo           pipeline_info{};
+   std::vector<char> vert_shader_code = ReadFile("shaders/vert.spv");
+   std::vector<char> frag_shader_code = ReadFile("shader/frag.spv");
+   VkShaderModule vert_shader_module  = CreateShaderModule(vert_shader_code);
+   VkShaderModule frag_shader_module  = CreateShaderModule(frag_shader_code);
+
+   vert_shader_stage_info.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+   vert_shader_stage_info.stage  = VK_SHADER_STAGE_VERTEX_BIT;  
+   vert_shader_stage_info.module = vert_shader_module;
+   vert_shader_stage_info.pName  = "main";
+
+   frag_shader_stage_info.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+   frag_shader_stage_info.stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
+   frag_shader_stage_info.module = frag_shader_module; 
+   frag_shader_stage_info.pName  = "main";
+
+   shader_stages[0] = vert_shader_stage_info;
+   shader_stages[1] = frag_shader_stage_info;
+
+   vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+   vertex_input_info.vertexBindingDescriptionCount   = 0;
+   vertex_input_info.pVertexBindingDescriptions      = nullptr;
+   vertex_input_info.vertexAttributeDescriptionCount = 0;
+   vertex_input_info.pVertexAttributeDescriptions    = nullptr;
+
+   input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+   input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+   input_assembly.primitiveRestartEnable = VK_FALSE;
+
+   viewport.x = 0.0f;
+   viewport.y = 0.0f;
+   viewport.width  = static_cast<float>(vk.swap_chain.extent.width);
+   viewport.height = static_cast<float>(vk.swap_chain.extent.height);
+   viewport.minDepth = 0.0f;
+   viewport.maxDepth = 1.0f;
+
+   scissor.offset = {0, 0};
+   scissor.extent = vk.swap_chain.extent;
+
+   dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+   dynamic_state.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
+   dynamic_state.pDynamicStates    = dynamic_states.data();
+
+   viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+   viewport_state.viewportCount = 1;
+   viewport_state.pViewports    = &viewport;
+   viewport_state.scissorCount  = 1;
+   viewport_state.pScissors     = &scissor;
    
+   rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+   rasterizer.rasterizerDiscardEnable = VK_FALSE;
+   rasterizer.polygonMode             = VK_POLYGON_MODE_FILL;
+   rasterizer.lineWidth               = 1.0f;
+   rasterizer.cullMode                = VK_CULL_MODE_BACK_BIT;
+   rasterizer.frontFace               = VK_FRONT_FACE_CLOCKWISE;
+   rasterizer.depthBiasEnable         = VK_FALSE; 
+   rasterizer.depthBiasConstantFactor = 0.0f;
+   rasterizer.depthBiasClamp          = 0.0f;
+   rasterizer.depthBiasSlopeFactor    = 0.0f;
+
+   multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+   multisampling.sampleShadingEnable   = VK_FALSE;
+   multisampling.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT;
+   multisampling.minSampleShading      = 1.0f;
+   multisampling.pSampleMask           = nullptr;
+   multisampling.alphaToCoverageEnable = VK_FALSE;
+   multisampling.alphaToOneEnable      = VK_FALSE;
+
+   color_blend_attachment.colorWriteMask =
+       VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+       VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+   color_blend_attachment.blendEnable         = VK_FALSE;
+   color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+   color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+   color_blend_attachment.colorBlendOp        = VK_BLEND_OP_ADD;
+   color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+   color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+   color_blend_attachment.alphaBlendOp        = VK_BLEND_OP_ADD;
+
+   color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+   color_blending.logicOpEnable     = VK_FALSE;
+   color_blending.logicOp           = VK_LOGIC_OP_COPY;
+   color_blending.attachmentCount   = 1;
+   color_blending.pAttachments      = &color_blend_attachment;
+   color_blending.blendConstants[0] = 0.0f;
+   color_blending.blendConstants[1] = 0.0f;
+   color_blending.blendConstants[2] = 0.0f;
+   color_blending.blendConstants[3] = 0.0f;
+
+   pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+   pipeline_layout_info.setLayoutCount = 0;
+   pipeline_layout_info.pSetLayouts    = nullptr;
+   pipeline_layout_info.pushConstantRangeCount = 0;
+   pipeline_layout_info.pPushConstantRanges    = nullptr;
+   VkResult result = vkCreatePipelineLayout(vk.device, &pipeline_layout_info,
+                                            nullptr, &vk.pipeline_layout);
+   if (result != VK_SUCCESS) {
+     spdlog::critical(
+         "Failed to create pipeline layout! {} ", VkResultToString(result));
+     throw std::runtime_error("");
+   }
+
+   pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+   pipeline_info.stageCount          = 2;
+   pipeline_info.pStages             = shader_stages;
+   pipeline_info.pVertexInputState   = &vertex_input_info;
+   pipeline_info.pInputAssemblyState = &input_assembly;
+   pipeline_info.pViewportState      = &viewport_state;
+   pipeline_info.pRasterizationState = &rasterizer;
+   pipeline_info.pMultisampleState   = &multisampling;
+   pipeline_info.pDepthStencilState  = nullptr;
+   pipeline_info.pColorBlendState    = &color_blending;
+   pipeline_info.pDynamicState       = &dynamic_state;
+   pipeline_info.layout              = vk.pipeline_layout;
+   pipeline_info.renderPass          = vk.render_pass;
+   pipeline_info.subpass             = 0;
+
+   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+   pipeline_info.basePipelineIndex = -1;
+   VkResult result = vkCreateGraphicsPipelines(vk.device, VK_NULL_HANDLE, 1,
+                                               &pipeline_info, nullptr,
+                                               &vk.pipeline);
+   if (result != VK_SUCCESS) {
+     spdlog::critical("Failed to create graphics pipeline {}",
+       VkResultToString(result));
+     throw std::runtime_error("");
+   }
+   vkDestroyShaderModule(vk.device, vert_shader_module, nullptr);
+   vkDestroyShaderModule(vk.device, frag_shader_module, nullptr);
  }
+
+ // Vulkan Render Pass 
+
+ void gbengine::GameBoyEngine::CreateRenderPass() {
+   VkAttachmentDescription color_attachment{};
+   VkAttachmentReference color_attachment_reference{};
+   VkSubpassDescription subpass{};
+   VkRenderPassCreateInfo render_pass_info{};
+
+   color_attachment.format         = vk.swap_chain.image_format;
+   color_attachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+   color_attachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+   color_attachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+   color_attachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+   color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+   color_attachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+   color_attachment.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+   color_attachment_reference.attachment = 0;
+   color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+   subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+   subpass.colorAttachmentCount = 1;
+   subpass.pColorAttachments    = &color_attachment_reference;
+
+   render_pass_info.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+   render_pass_info.attachmentCount = 1;
+   render_pass_info.pAttachments    = &color_attachment;
+   render_pass_info.subpassCount    = 1;
+   render_pass_info.pSubpasses      = &subpass;
+
+   VkResult result = vkCreateRenderPass(vk.device, &render_pass_info, nullptr,
+                                        &vk.render_pass);
+   if (result != VK_SUCCESS) {
+     spdlog::critical("Failed to create Render Pass!: {}",
+                      VkResultToString(result));
+     throw std::runtime_error("");
+   }
+ }
+
+ // Vulkan Frame Buffer
+
+ void gbengine::GameBoyEngine::CreateFrameBuffer() {
+   vk.swap_chain.frame_buffer.resize(vk.swap_chain.image_views.size());
+   for (size_t i = 0; i < vk.swap_chain.image_views.size(); i++) {
+     VkImageView attachments[] = {vk.swap_chain.image_views[i]};
+     VkFramebufferCreateInfo frame_buffer_info{};
+     frame_buffer_info.sType      = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+     frame_buffer_info.renderPass = vk.render_pass;
+     frame_buffer_info.attachmentCount = 1;
+     frame_buffer_info.pAttachments    = attachments;
+     frame_buffer_info.width  = vk.swap_chain.extent.width;
+     frame_buffer_info.height = vk.swap_chain.extent.height;
+     frame_buffer_info.layers = 1;
+
+     VkResult result = vkCreateFramebuffer(vk.device, &frame_buffer_info, nullptr,
+                                           &vk.swap_chain.frame_buffer[i]);
+     if (result != VK_SUCCESS) {
+       spdlog::critical("Failed to create Frame Buffer!: {}",
+                        VkResultToString(result));
+       throw std::runtime_error("");
+     }
+   }
+ }
+
+ // Vulkan Command Pool
+
+ void gbengine::GameBoyEngine::CreateCommandPool() {
+   QueueFamilyIndices queue_family_indices = FindQueueFamilies(vk.physical_device);
+   VkCommandPoolCreateInfo pool_info{};
+   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+   pool_info.queueFamilyIndex = queue_family_indices.graphics_family.value();
+   VkResult result = vkCreateCommandPool(vk.device, &pool_info, 
+                                         nullptr, &vk.command_pool);
+   if (result != VK_SUCCESS) {
+     spdlog::critical("Failed to create Command Pool! {}",
+                      VkResultToString(result));
+    throw std::runtime_error("");
+   }
+ }
+
  // SDL Stuff
 
 void gbengine::GameBoyEngine::InitSDL() {
@@ -588,13 +836,19 @@ void gbengine::GameBoyEngine::InitSDL() {
 
  void gbengine::GameBoyEngine::InitVulkan() {
     if (ValidationLayersEnabled) spdlog::set_level(spdlog::level::trace);
+    spdlog::info("Initializing Vulkan Drivers");
     InitVulkanInstance();
     SetupDebugMessenger();
-    CreateSurface();
     PickPhsycialDevice();
     CreateLogicalDevice();
+    spdlog::info("Initializing Vulkan Presentation Layer");
+    CreateSurface();
     CreateSwapChain();
     CreateImageViews();
+    spdlog::info("Creating Vulkan Graphics Pipeline");
+    CreateRenderPass();
+    CreateGraphicsPipeline();
+    CreateFrameBuffer();
  }
 
  void gbengine::GameBoyEngine::CreateSurface() {
@@ -607,6 +861,37 @@ void gbengine::GameBoyEngine::InitSDL() {
  gbengine::GameBoyEngine::~GameBoyEngine() {
    VkDebugUtilsMessengerEXT debug_info{};
    // If i don't do this, memory corrupts.
+   if (vk.command_pool != VK_NULL_HANDLE) {
+     vkDestroyCommandPool(vk.device, vk.command_pool, nullptr);
+   }
+   for (auto frame_buffer : vk.swap_chain.frame_buffer) {
+     vkDestroyFramebuffer(vk.device, frame_buffer, nullptr);
+   }
+
+   if (vk.pipeline != VK_NULL_HANDLE) {
+     vkDestroyPipeline(vk.device, vk.pipeline, nullptr);
+     vk.pipeline = VK_NULL_HANDLE;
+   }
+
+   if (vk.pipeline_layout != VK_NULL_HANDLE) {
+     vkDestroyPipelineLayout(vk.device, vk.pipeline_layout, nullptr);
+     vk.pipeline_layout = VK_NULL_HANDLE;
+   }
+
+   if (vk.render_pass != VK_NULL_HANDLE) {
+     vkDestroyRenderPass(vk.device, vk.render_pass, nullptr);
+     vk.render_pass = VK_NULL_HANDLE;
+   }
+
+   if (vk.pipeline_layout != VK_NULL_HANDLE) {
+     vkDestroyPipelineLayout(vk.device, vk.pipeline_layout, nullptr);
+     vk.pipeline_layout = VK_NULL_HANDLE;
+   }
+
+   if (vk.pipeline_layout != VK_NULL_HANDLE) {
+     vkDestroyPipelineLayout(vk.device, vk.pipeline_layout, nullptr);
+     vk.pipeline_layout = VK_NULL_HANDLE;
+   }
 
    for (auto image_view: vk.swap_chain.image_views) {
      vkDestroyImageView(vk.device, image_view, nullptr);
@@ -617,11 +902,11 @@ void gbengine::GameBoyEngine::InitSDL() {
      vk.swap_chain.KHR = VK_NULL_HANDLE;
    }
    
-   if (vk.device) {
+   if (vk.device != VK_NULL_HANDLE) {
      vkDestroyDevice(vk.device, nullptr);
      vk.device = VK_NULL_HANDLE;
    }
-   if (vk.surface) {
+   if (vk.surface != VK_NULL_HANDLE) {
      vkDestroySurfaceKHR(vk.instance, vk.surface, nullptr);
      vk.surface = VK_NULL_HANDLE;
    }
@@ -629,13 +914,29 @@ void gbengine::GameBoyEngine::InitSDL() {
      DestroyDebugUtilsMessengerEXT(vk.instance, vk.debug_messenger, nullptr);
    }
 
-   if (vk.instance) {
+   if (vk.instance != VK_NULL_HANDLE) {
      vkDestroyInstance(vk.instance, nullptr);
      vk.instance = VK_NULL_HANDLE;
    }
 
    SDL_DestroyWindow(sdl.window);
    SDL_Quit();
+ }
+
+ std::vector<char> gbengine::ReadFile(const std::string& filename) {
+   size_t file_size;
+   std::vector<char> buffer;
+   std::ifstream file(filename, std::ios::ate | std::ios::binary);
+   if (!file.is_open()) {
+     spdlog::critical("failed to open file: {}", filename);
+     throw std::runtime_error("");
+   }
+   file_size = static_cast<size_t>(file.tellg());
+   buffer.resize(file_size);
+   file.seekg(0);
+   file.read(buffer.data(), file_size);
+   file.close();
+   return buffer;
  }
 
  std::string gbengine::VkResultToString(VkResult result) {

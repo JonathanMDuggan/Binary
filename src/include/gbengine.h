@@ -9,6 +9,7 @@
 #include <set>
 #include <algorithm>
 #include <limits>
+#include <fstream>
 
 #include <SDL.h>
 #include <SDL_vulkan.h>
@@ -39,9 +40,8 @@ typedef struct QueueFamilyIndices {
 
 // TODO: You should get infomation from a configure file
 namespace gbengine {
-
-  extern std::string VkResultToString(VkResult result);
-  
+extern std::vector<char> ReadFile(const std::string& filename);
+extern std::string VkResultToString(VkResult result);
 
   const std::vector<const char*> validation_layers = {
       "VK_LAYER_KHRONOS_validation",
@@ -80,6 +80,7 @@ class GameBoyEngine {
     VkSwapchainKHR KHR{};
     std::vector<VkImage> images{};
     std::vector<VkImageView> image_views{};
+    std::vector<VkFramebuffer> frame_buffer;
     VkFormat image_format{};
     VkExtent2D extent{};
     SwapChainSupportDetails support_details = {};
@@ -106,6 +107,11 @@ class GameBoyEngine {
     SwapChain                swap_chain{};
     uint32_t                 graphics_queue_family{};
     FrameData                frame_data[kFrameOverLap] = {};
+    VkPipelineLayout         pipeline_layout;
+    VkRenderPass             render_pass;
+    VkPipelineLayout         pipeline_layout;
+    VkPipeline               pipeline;
+    VkCommandBuffer          command_buffer
   }Vulkan;
 
   enum ResolutionValues {
@@ -144,6 +150,11 @@ class GameBoyEngine {
   void CreateSwapChain();
   void CreateImageViews();
   void CreateGraphicsPipeline();
+  void CreateRenderPass();
+  void CreateFrameBuffer(); 
+  void CreateCommandPool();
+  void CreateCommandBuffer();
+  void CreateSyncObjects();
 
   int RateDeviceSuitabillity(VkPhysicalDevice device);
   void PopulateDebugMessengerCreateInfo(
@@ -171,7 +182,7 @@ class GameBoyEngine {
   VkPresentModeKHR ChooseSwapPresentMode(
       const std::vector<VkPresentModeKHR>& available_present_modes);
 
-
+  VkShaderModule CreateShaderModule(const std::vector<char>& code);
   VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
   std::vector<const char*> GetExtensions();
  public:
