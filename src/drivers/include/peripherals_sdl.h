@@ -9,6 +9,7 @@ class SDL {
   uint32_t* pCount{};
   const char** pNames{};
  public:
+  SDL_Event event;
   SDL_Window* window{};
  
   void Init(Application app);

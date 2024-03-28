@@ -9,6 +9,8 @@
 //       Complex, I need explanation.
 
 #pragma once
+#define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
+#define _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS
 #define VMA_VULKAN_VERSION 1002000
 #include "include/renderer_vulkan.h"
 #include "include/peripherals_sdl.h"
@@ -299,8 +301,8 @@ void gbengine::Vulkan::CreateLogicalDevice() {
                  VkResultToString(result));
   }
 
-  vkGetDeviceQueue(device_, indinces.graphics_family.value(), 0, &queue_);
-  vkGetDeviceQueue(device_, indinces.present_family.value(), 0, &queue_);
+  vkGetDeviceQueue(device_, indinces.graphics_family.value(), 0, &graphics_queue_);
+  vkGetDeviceQueue(device_, indinces.present_family.value(), 0, &present_queue_);
 }
 
 // Vulkan Queue
@@ -438,7 +440,6 @@ VkExtent2D gbengine::Vulkan::ChooseSwapExtent(
 
   return actual_extent;
 }
-// Started breaking the 80 col rule due to lack of readability
 
 void gbengine::Vulkan::CreateSwapChain(SDL_Window* window) {
   uint32_t image_count = 0;
@@ -495,22 +496,45 @@ void gbengine::Vulkan::CreateSwapChain(SDL_Window* window) {
   }
 
   vkGetSwapchainImagesKHR(device_, swap_chain_.KHR_, &image_count, nullptr);
-  swap_chain_.images.resize(image_count);
+  swap_chain_.images_.resize(image_count);
   vkGetSwapchainImagesKHR(device_, swap_chain_.KHR_, &image_count,
-                          swap_chain_.images.data());
+                          swap_chain_.images_.data());
 
   swap_chain_.image_format_ = surface_format.format;
   swap_chain_.extent_ = extent;
 }
 
+void gbengine::Vulkan::RecreateSwapChain(SDL_Window* window, SDL_Event* event) {
+  int width = 0;
+  int height = 0;
+  vkDeviceWaitIdle(device_);
+  SDL_Vulkan_GetDrawableSize(window, &width, &height);
+  while (width == 0 || height == 0) {
+    SDL_Vulkan_GetDrawableSize(window, &width, &height);
+    SDL_WaitEvent(event);
+  }
+  CreateSwapChain(window);
+  CreateImageViews();
+  CreateFrameBuffer();
+}
+
+void gbengine::Vulkan::CleanUpSwapChain() {
+  for (uint32_t i = 0; i < swap_chain_.frame_buffer_.size(); i++) {
+    vkDestroyFramebuffer(device_, swap_chain_.frame_buffer_[i], nullptr);
+  }
+  for (uint32_t i = 0; i < swap_chain_.image_views_.size(); i++) {
+    vkDestroyImageView(device_, swap_chain_.image_views_[i], nullptr);
+  }
+  vkDestroySwapchainKHR(device_, swap_chain_.KHR_, nullptr);
+}
 // Vulkan Image Views
 
 void gbengine::Vulkan::CreateImageViews() {
   VkImageViewCreateInfo image_view_info{};
-  swap_chain_.image_views_.resize(swap_chain_.images.size());
-  for (size_t i = 0; i < swap_chain_.images.size(); i++) {
+  swap_chain_.image_views_.resize(swap_chain_.images_.size());
+  for (size_t i = 0; i < swap_chain_.images_.size(); i++) {
     image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    image_view_info.image = swap_chain_.images[i];
+    image_view_info.image = swap_chain_.images_[i];
     image_view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
     image_view_info.format = swap_chain_.image_format_;
     image_view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -716,6 +740,7 @@ void gbengine::Vulkan::CreateRenderPass() {
   VkAttachmentReference color_attachment_reference{};
   VkSubpassDescription subpass{};
   VkRenderPassCreateInfo render_pass_info{};
+  VkSubpassDependency dependency{};                          
 
   color_attachment.format = swap_chain_.image_format_;
   color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -733,11 +758,20 @@ void gbengine::Vulkan::CreateRenderPass() {
   subpass.colorAttachmentCount = 1;
   subpass.pColorAttachments = &color_attachment_reference;
 
+  dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+  dependency.dstSubpass = 0;                                            
+  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;   
+  dependency.srcAccessMask = 0;                                            
+  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;   
+  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;        
+
   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
   render_pass_info.attachmentCount = 1;
   render_pass_info.pAttachments = &color_attachment;
   render_pass_info.subpassCount = 1;
   render_pass_info.pSubpasses = &subpass;
+  render_pass_info.dependencyCount = 1;       
+  render_pass_info.pDependencies = &dependency;
 
   VkResult result = vkCreateRenderPass(device_, &render_pass_info, nullptr,
                                        &render_pass_);
@@ -793,18 +827,20 @@ void gbengine::Vulkan::CreateCommandPool() {
 }
 
 void gbengine::Vulkan::CreateCommandBuffer() {
+  command_buffers_.resize(kMaxFramesInFlight);
   VkCommandBufferAllocateInfo allocate_info{};
   VkResult result;
   allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocate_info.commandPool = command_pool_;
   allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocate_info.commandBufferCount = 1;
-  result = vkAllocateCommandBuffers(device_, &allocate_info, &command_buffer_);
+  allocate_info.commandBufferCount = command_buffers_.size();
+  result = vkAllocateCommandBuffers(device_, &allocate_info,
+                                    command_buffers_.data());
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create Command Buffer! {}",
                      VkResultToString(result));
     throw std::runtime_error("Failed to create Command Buffer! " +
-                                        VkResultToString(result));
+                             VkResultToString(result));
   }
 }
 
@@ -816,13 +852,14 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0}}};
   VkViewport viewport{};
   VkRect2D scissor{};
+
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   begin_info.flags = 0;
   begin_info.pInheritanceInfo = nullptr;
   result = vkBeginCommandBuffer(command_buffer, &begin_info);
 
   if (result != VK_SUCCESS) {
-    spdlog::critical("Failed to begin Command Buffer! {}",
+    spdlog::critical("Failed to begin recording Command Buffer! {}",
                      VkResultToString(result));
     throw std::runtime_error("failed to begin recording command buffer!" +
                              VkResultToString(result));
@@ -852,9 +889,110 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   vkCmdSetScissor(command_buffer, 0, 1, &scissor);
   vkCmdDraw(command_buffer, 3, 1, 0, 0);
   vkCmdEndRenderPass(command_buffer);
+  result = vkEndCommandBuffer(command_buffer);
+  if (result != VK_SUCCESS) {
+    spdlog::critical("Failed to record Command Buffer! {}",
+                     VkResultToString(result));
+    throw std::runtime_error("failed to record command buffer!" +
+                             VkResultToString(result));
+  }
 }
 
-void gbengine::Vulkan::InitVulkan(SDL_Window* window, Application app) {
+void gbengine::Vulkan::CreateSyncObjects() {
+  semaphore_.image_available_.resize(kMaxFramesInFlight);
+  semaphore_.render_finished_.resize(kMaxFramesInFlight);
+  in_flight_fence_.resize(kMaxFramesInFlight);
+  VkSemaphoreCreateInfo semaphore_info{};
+  VkFenceCreateInfo fence_info{};
+  VkResult result[3];
+
+  semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+
+  for (size_t i = 0; i < kMaxFramesInFlight; i++) {
+    result[0] = vkCreateSemaphore(device_, &semaphore_info, nullptr,
+                                  &semaphore_.image_available_[i]);
+    result[1] = vkCreateSemaphore(device_, &semaphore_info, nullptr,
+                                  &semaphore_.render_finished_[i]);
+    result[2] =
+        vkCreateFence(device_, &fence_info, nullptr, &in_flight_fence_[i]);
+  }
+
+}
+
+void gbengine::Vulkan::DrawFrame(SDL_Window* window, SDL_Event *event) {
+  vkWaitForFences(device_, 1, &in_flight_fence_[current_frame_], VK_TRUE,
+                  UINT64_MAX);
+  uint32_t image_index = 0;
+  VkResult result =
+      vkAcquireNextImageKHR(device_, swap_chain_.KHR_, UINT64_MAX,
+                            semaphore_.image_available_[current_frame_],
+                            VK_NULL_HANDLE, &image_index);
+  if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    RecreateSwapChain(window, event);
+    return;
+  } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+    spdlog::critical("Failed to acquire swap chain image! {}",
+                     VkResultToString(result));
+    throw std::runtime_error("failed to acquire swap chain image!");
+  }
+
+  VkSubmitInfo submit_info{};
+  VkSemaphore wait_semaphores[] = {semaphore_.image_available_[current_frame_]};
+  VkPipelineStageFlags wait_stages[] = {
+      VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT};
+  VkSemaphore signal_semaphores[] = {
+      semaphore_.render_finished_[current_frame_]};
+  VkPresentInfoKHR present_info{};
+  VkSwapchainKHR swap_chains[] = { swap_chain_.KHR_ };
+
+
+  vkResetFences(device_, 1, &in_flight_fence_[current_frame_]);
+  vkResetCommandBuffer(command_buffers_[current_frame_], 0);
+  RecordCommandBuffer(command_buffers_[current_frame_], image_index);
+
+  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit_info.signalSemaphoreCount = 1;
+  submit_info.pWaitSemaphores = wait_semaphores;
+  submit_info.pWaitDstStageMask = wait_stages;
+  submit_info.commandBufferCount = 1;
+  submit_info.pCommandBuffers = &command_buffers_[current_frame_];
+  submit_info.pSignalSemaphores = signal_semaphores;
+
+  result = vkQueueSubmit(graphics_queue_, 1, &submit_info,
+                         in_flight_fence_[current_frame_]);
+
+  if (result != VK_SUCCESS) {
+    spdlog::critical("Failed to submit draw command buffer! {}",
+                     VkResultToString(result));
+    throw std::runtime_error("Failed to submit draw command buffer!" +
+                             VkResultToString(result));
+  }
+
+  present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+  present_info.waitSemaphoreCount = 1;
+  present_info.pWaitSemaphores = signal_semaphores; 
+  present_info.swapchainCount = 1;
+  present_info.pSwapchains = swap_chains;
+  present_info.pImageIndices = &image_index;
+
+  vkQueuePresentKHR(present_queue_, &present_info);
+
+  if (result != VK_SUBOPTIMAL_KHR || frame_buffer_resized_) {
+    frame_buffer_resized_ = false;
+    RecreateSwapChain(window, event);
+  } else if (result != VK_SUCCESS) {
+    spdlog::critical("Failed to present queue! {}", VkResultToString(result));
+    throw std::runtime_error("Failed to present queue!" +
+                             VkResultToString(result));
+  }
+  current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
+}
+
+void gbengine::Vulkan::InitVulkan(SDL_Window* window, Application app,
+                                  SDL_Event *event) {
   if (ValidationLayersEnabled) spdlog::set_level(spdlog::level::trace);
   spdlog::info("Initializing Vulkan Drivers");
   InitVulkanInstance(window, app);
@@ -869,6 +1007,9 @@ void gbengine::Vulkan::InitVulkan(SDL_Window* window, Application app) {
   CreateRenderPass();
   CreateGraphicsPipeline();
   CreateFrameBuffer();
+  CreateCommandPool();
+  CreateCommandBuffer();
+  CreateSyncObjects();
 }
 
 void gbengine::Vulkan::CreateSurface(SDL_Window* window) {
@@ -876,65 +1017,53 @@ void gbengine::Vulkan::CreateSurface(SDL_Window* window) {
     return;
   }
 }
-gbengine::Vulkan::Vulkan(SDL_Window* window, Application app) {
-  InitVulkan(window, app);
+gbengine::Vulkan::Vulkan(SDL_Window* window, Application app, SDL_Event* event) {
+  InitVulkan(window, app, event);
 }
+
 gbengine::Vulkan::~Vulkan() {
-  VkDebugUtilsMessengerEXT debug_info{};
-  // If i don't do this, memory corrupts.
-  if (command_pool_ != VK_NULL_HANDLE) {
-    vkDestroyCommandPool(device_, command_pool_, nullptr);
+  CleanUpSwapChain();
+  for (size_t i = 0; i < kMaxFramesInFlight; i++) {
+    vkDestroySemaphore(device_, semaphore_.image_available_[i], nullptr);
+    semaphore_.image_available_[i] = VK_NULL_HANDLE;
+    vkDestroySemaphore(device_, semaphore_.render_finished_[i], nullptr);
+    semaphore_.render_finished_[i] = VK_NULL_HANDLE;
+    vkDestroyFence(device_, in_flight_fence_[i], nullptr);
+    in_flight_fence_[i] = VK_NULL_HANDLE;
   }
+
+  vkDestroyCommandPool(device_, command_pool_, nullptr);
+  command_pool_ = VK_NULL_HANDLE;
+
   for (auto frame_buffer : swap_chain_.frame_buffer_) {
     vkDestroyFramebuffer(device_, frame_buffer, nullptr);
   }
 
-  if (pipeline_ != VK_NULL_HANDLE) {
-    vkDestroyPipeline(device_, pipeline_, nullptr);
-    pipeline_ = VK_NULL_HANDLE;
-  }
+  vkDestroyPipeline(device_, pipeline_, nullptr);
+  pipeline_ = VK_NULL_HANDLE;
 
-  if (pipeline_layout_ != VK_NULL_HANDLE) {
-    vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
-    pipeline_layout_ = VK_NULL_HANDLE;
-  }
+  vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
+  pipeline_layout_ = VK_NULL_HANDLE;
 
-  if (render_pass_ != VK_NULL_HANDLE) {
-    vkDestroyRenderPass(device_, render_pass_, nullptr);
-    render_pass_ = VK_NULL_HANDLE;
-  }
+  vkDestroyRenderPass(device_, render_pass_, nullptr);
+  render_pass_ = VK_NULL_HANDLE;
 
-  if (pipeline_layout_ != VK_NULL_HANDLE) {
-    vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
-    pipeline_layout_ = VK_NULL_HANDLE;
-  }
+  vkDestroyDevice(device_, nullptr);
+  device_ = VK_NULL_HANDLE;
 
-  for (auto image_view : swap_chain_.image_views_) {
-    vkDestroyImageView(device_, image_view, nullptr);
-  }
+  vkDestroySurfaceKHR(instance_, surface_, nullptr);
+  surface_ = VK_NULL_HANDLE;
 
-  if (swap_chain_.KHR_ != VK_NULL_HANDLE) {
-    vkDestroySwapchainKHR(device_, swap_chain_.KHR_, nullptr);
-    swap_chain_.KHR_ = VK_NULL_HANDLE;
-  }
-
-  if (device_ != VK_NULL_HANDLE) {
-    vkDestroyDevice(device_, nullptr);
-    device_ = VK_NULL_HANDLE;
-  }
-  if (surface_ != VK_NULL_HANDLE) {
-    vkDestroySurfaceKHR(instance_, surface_, nullptr);
-    surface_ = VK_NULL_HANDLE;
-  }
-  if (ValidationLayersEnabled) {
+  if (ValidationLayersEnabled && debug_messenger_ != VK_NULL_HANDLE) {
     DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
   }
 
-  if (instance_ != VK_NULL_HANDLE) {
-    vkDestroyInstance(instance_, nullptr);
-    instance_ = VK_NULL_HANDLE;
-  }
+  vkDestroyInstance(instance_, nullptr);
+  instance_ = VK_NULL_HANDLE;
+  return;
 }
+
+
 
 std::vector<char> gbengine::ReadFile(const std::string& filename) {
   size_t file_size;

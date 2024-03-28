@@ -23,8 +23,7 @@
 namespace gbengine {
 extern std::vector<char> ReadFile(const std::string& filename);
 extern std::string VkResultToString(VkResult result);
-
-enum VulkanConst { kFrameOverLap = 2 };
+enum VulkanConst { kFrameOverLap = 2, kMaxFramesInFlight = 2};
 
 typedef struct QueueFamilyIndices {
   std::optional<uint32_t> graphics_family;
@@ -35,6 +34,14 @@ typedef struct QueueFamilyIndices {
 } QueueFamilyIndices;
 
 class Vulkan {
+public:
+
+  VkDevice device_{};
+ Vulkan(SDL_Window* window, Application app, SDL_Event* event);
+  ~Vulkan();
+ void DrawFrame(SDL_Window* window, SDL_Event* event);
+
+private:
   const std::vector<const char*> validation_layers = {
       "VK_LAYER_KHRONOS_validation",
   };
@@ -45,10 +52,7 @@ class Vulkan {
 #else
   const bool ValidationLayersEnabled = true;
 #endif
-
   enum VulkanConst { kFrameOverLap = 2 };
-
-
 
   typedef struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -58,7 +62,7 @@ class Vulkan {
 
   typedef struct SwapChain {
     VkSwapchainKHR KHR_{};
-    std::vector<VkImage> images{};
+    std::vector<VkImage> images_{};
     std::vector<VkImageView> image_views_{};
     std::vector<VkFramebuffer> frame_buffer_;
     VkFormat image_format_{};
@@ -71,30 +75,38 @@ class Vulkan {
     VkCommandBuffer main_command_buffer_{};
     VkSemaphore swapchain_semaphore_{}, render_semaphore_{};
     VkFence render_fence_{};
+
   }FrameData;
+
+  typedef struct Semaphore {
+    std::vector<VkSemaphore> image_available_;
+    std::vector<VkSemaphore> render_finished_;
+  };
 
   const char* const* instance_validation_layers_{};
   uint32_t sdl_extenstion_count_{};
   const char** kSDLExtensions_{};
   VkInstance instance_; 
-  VkPhysicalDevice gpu_{};
   VkQueueFamilyProperties* queue_props_{};
   VkDebugUtilsMessengerEXT debug_messenger_{};
-  VkDevice device_{};
   VkPhysicalDevice physical_device_{};
   VkSurfaceKHR surface_{};
-  VkQueue queue_{};
+  VkQueue graphics_queue_{};
+  VkQueue present_queue_{};
   VkCommandPool command_pool_{};
-  VkCommandBuffer main_command_buffer_{};
   SwapChain swap_chain_{};
-  uint32_t graphics_queue_family{};
-  FrameData frame_data[kFrameOverLap] = {};
+  uint32_t graphics_queue_family_{};
+  FrameData frame_data_[kFrameOverLap] = {};
   VkPipelineLayout pipeline_layout_;
   VkRenderPass render_pass_;
   VkPipeline pipeline_;
-  VkCommandBuffer command_buffer_;
-  
-private:
+  std::vector<VkCommandBuffer> command_buffers_;
+  std::vector<VkFence>in_flight_fence_;
+  Semaphore semaphore_;
+  uint32_t current_frame_ = 0;
+  VkFence in_flight_fences_{}; 
+  bool frame_buffer_resized_ = false; 
+
   void InitVulkanApplication();
   void InitVulkanInfo();
   void InitVulkanPhysicalDevice();
@@ -114,8 +126,9 @@ private:
   void CreateCommandPool();
   void CreateCommandBuffer();
   void CreateSyncObjects();
+  void RecreateSwapChain(SDL_Window* window, SDL_Event* event);
+  void CleanUpSwapChain();
   void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-
   int RateDeviceSuitabillity(VkPhysicalDevice device_);
   void PopulateDebugMessengerCreateInfo(
       VkDebugUtilsMessengerCreateInfoEXT& debug_info);
@@ -142,13 +155,11 @@ private:
       const std::vector<VkPresentModeKHR>& available_present_modes);
 
   VkShaderModule CreateShaderModule(const std::vector<char>& code);
-  VkExtent2D ChooseSwapExtent(SDL_Window* window,const VkSurfaceCapabilitiesKHR& capabilities);
+  VkExtent2D ChooseSwapExtent(SDL_Window* window,
+                              const VkSurfaceCapabilitiesKHR& capabilities);
   std::vector<const char*> GetExtensions(SDL_Window* window);
-  void InitVulkan(SDL_Window* window, gbengine::Application app);
-
-public:
-  Vulkan(SDL_Window* window, Application app);
-  ~Vulkan();
+  void InitVulkan(SDL_Window* window, gbengine::Application app,
+                  SDL_Event *event);
 };
 
 }

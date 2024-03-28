@@ -16,11 +16,11 @@ int main(int argc, char** argv) {
   app.version = 0x00000001;
   
   gbengine::SDL sdl(app);
-  gbengine::Vulkan vulkan(sdl.window, app);
+  gbengine::Vulkan vulkan(sdl.window, app, &sdl.event);
   while (running) {
     sdl.PoolEvents(&running);
+    vulkan.DrawFrame(sdl.window, &sdl.event);
   }
-  vulkan.~Vulkan();
-  sdl.~SDL();
+  vkDeviceWaitIdle(vulkan.device_);
   return EXIT_SUCCESS;
 }
