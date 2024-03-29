@@ -4,8 +4,8 @@
 #define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
 #define _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS
 #include "include/gbengine.h"
-#include "drivers/include/peripherals_sdl.h"
-#include "drivers/include/renderer_vulkan.h"
+#include "../drivers/include/peripherals_sdl.h"
+#include "../drivers/include/renderer_vulkan.h"
 using namespace gbengine;
 int main(int argc, char** argv) { 
   gbengine::Application app;

@@ -1,19 +1,44 @@
-
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.20)
 project(Gameboy_Engine)
 set(CMAKE_CXX_STANDARD 20)
 
-set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
-set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/include")
+# Main source directory
+set(MAIN_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/main")
+set(MAIN_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/main/include")
+
+# Driver source directory
 set(DRIVER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/drivers")
 set(DRIVER_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/drivers/include")
+
+# Input and output source directory
+set(IO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/io")
+set(IO_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/io/include")
+
+# Graphic user interface source directory
+set(GUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/gui")
+set(GUI_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/include/gui")
+
+# Shader source directory
 set(SHADERS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
 
+# Driver source directory 
 file(GLOB_RECURSE DRIVER_FILES ${DRIVER_DIR}/*.cpp)
-file(GLOB_RECURSE DRIVER_INCLUDE_FILES ${DRIVER_INCLUDE_DIR}/*.h)
-file(GLOB_RECURSE SRC_FILES ${SRC_DIR}/*.cpp)
-file(GLOB_RECURSE HEADER_FILES ${INCLUDE_DIR}/*.h)
+file(GLOB_RECURSE DRIVER_HEADER_FILES ${DRIVER_INCLUDE_DIR}/*.h)
 
+# IO source files 
+file(GLOB_RECURSE IO_FILES ${IO_DIR}/*.cpp)
+file(GLOB_RECURSE IO_INCLUDE_FILES ${IO_INCLUDE_DIR}/*.h)
+
+# Main source files
+file(GLOB_RECURSE MAIN_SRC_FILES ${MAIN_SRC_DIR}/*.cpp)
+file(GLOB_RECURSE MAIN_HEADER_FILES ${MAIN_INCLUDE_DIR}/*.h)
+
+# Put all header and source fils in one variable
+set(ALL_CPP_SRC_FILES ${MAIN_SRC_FILES} ${DRIVER_FILES})
+set(ALL_CPP_HEADER_FILES ${MAIN_HEADER_FILES} ${DRIVER_HEADER_FILES})
+
+# CMake implementation for compiling GLSL shaders from the 
+# shader directory
 if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
   set(GLSL_COMPILER  "$ENV{VULKAN_SDK}/Bin/glslc.exe")
 else()
@@ -50,9 +75,11 @@ if(CMD_RESULT)
 endif()
 
 add_executable(Gameboy_Engine 
-  ${SRC_FILES} ${HEADER_FILES} ${DRIVER_DIR} ${DRIVER_INCLUDE_FILES} 
+  ${ALL_CPP_SRC_FILES} 
+  ${ALL_CPP_HEADER_FILES}
 )
 
+# The programmer must install SDL2 and Vulkan on their own computer
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
 find_package(SDL2_mixer REQUIRED)
@@ -73,15 +100,28 @@ target_link_libraries(Gameboy_Engine PRIVATE
 )
 set_property(TARGET Gameboy_Engine PROPERTY CXX_STANDARD 20)
 
+# Move the resource folder where the executable is 
 file(COPY resources DESTINATION ${DST_DIR}/)
 
-
-
-message(
-"\n[Gameboy_Engine]\n\n"
-"\t\tThe Vulkan INCLUDE_DIR: ${Vulkan_INCLUDE_DIR}\n"
-"\t\tThe Vulkan LIBRARY:     ${Vulkan_LIBRARY}\n"
-"\t\tThe Vulkan SDK:         $ENV{VULKAN_SDK}\n"
-"\t\tCMAKE_PREFIX_PATH:      ${CMAKE_PREFIX_PATH}\n"
-"\n[Gameboy_Engine]\n"
+# Debuging messages
+# Tells me where CMake found the vulkan lib
+message("
+============================== Gameboy_Engine ==============================
+The Vulkan INCLUDE_DIR: ${Vulkan_INCLUDE_DIR}
+The Vulkan LIBRARY:     ${Vulkan_LIBRARY}
+The Vulkan SDK:         $ENV{VULKAN_SDK}
+CMAKE_PREFIX_PATH:      ${CMAKE_PREFIX_PATH}"
 )
+
+message("
+============================= CPP SOURCE FILES =============================")
+foreach(CPP_FILE ${ALL_CPP_SRC_FILES})
+  message("${CPP_FILE}")
+endforeach(CPP_FILE)
+message("
+=============================== HEADER FILES ===============================")
+foreach(HEADER_FILE ${ALL_CPP_HEADER_FILES})
+  message("${HEADER_FILE}")
+endforeach(HEADER_FILE)
+message("
+============================================================================")
