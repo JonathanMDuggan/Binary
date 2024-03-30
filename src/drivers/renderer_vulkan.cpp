@@ -939,22 +939,24 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window, SDL_Event *event) {
                      VkResultToString(result));
     throw std::runtime_error("failed to acquire swap chain image!");
   }
+  
+  vkResetFences(device_, 1, &in_flight_fence_[current_frame_]);
+  vkResetCommandBuffer(command_buffers_[current_frame_], 0);
+  RecordCommandBuffer(command_buffers_[current_frame_], image_index);
 
   VkSubmitInfo submit_info{};
   VkSemaphore wait_semaphores[] = {semaphore_.image_available_[current_frame_]};
   VkPipelineStageFlags wait_stages[] = {
-      VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT};
+      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
   VkSemaphore signal_semaphores[] = {
       semaphore_.render_finished_[current_frame_]};
   VkPresentInfoKHR present_info{};
   VkSwapchainKHR swap_chains[] = { swap_chain_.KHR_ };
 
 
-  vkResetFences(device_, 1, &in_flight_fence_[current_frame_]);
-  vkResetCommandBuffer(command_buffers_[current_frame_], 0);
-  RecordCommandBuffer(command_buffers_[current_frame_], image_index);
 
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit_info.waitSemaphoreCount = 1; 
   submit_info.signalSemaphoreCount = 1;
   submit_info.pWaitSemaphores = wait_semaphores;
   submit_info.pWaitDstStageMask = wait_stages;
@@ -1023,6 +1025,7 @@ gbengine::Vulkan::Vulkan(SDL_Window* window, Application app, SDL_Event* event) 
 }
 
 gbengine::Vulkan::~Vulkan() {
+  VkResult result;
   CleanUpSwapChain();
   for (size_t i = 0; i < kMaxFramesInFlight; i++) {
     vkDestroySemaphore(device_, semaphore_.image_available_[i], nullptr);
@@ -1036,7 +1039,13 @@ gbengine::Vulkan::~Vulkan() {
   vkDestroyCommandPool(device_, command_pool_, nullptr);
   command_pool_ = VK_NULL_HANDLE;
 
-  for (auto frame_buffer : swap_chain_.frame_buffer_) {
+  // This for loop is producting errors where the frame buffer cannot be found
+  // so it cannot be destory by the function. I'm moving on becasue I don't care
+  for (VkFramebuffer frame_buffer : swap_chain_.frame_buffer_) {  
+    
+    if (frame_buffer == VK_NULL_HANDLE) {
+      continue;
+    }
     vkDestroyFramebuffer(device_, frame_buffer, nullptr);
   }
 
