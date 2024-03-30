@@ -1,5 +1,5 @@
 #pragma once
-#include "../../include/gbengine.h"
+#include "../main/include/gbengine.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
 namespace gbengine {
