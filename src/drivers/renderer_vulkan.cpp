@@ -507,12 +507,13 @@ void gbengine::Vulkan::CreateSwapChain(SDL_Window* window) {
 void gbengine::Vulkan::RecreateSwapChain(SDL_Window* window, SDL_Event* event) {
   int width = 0;
   int height = 0;
-  vkDeviceWaitIdle(device_);
   SDL_Vulkan_GetDrawableSize(window, &width, &height);
   while (width == 0 || height == 0) {
     SDL_Vulkan_GetDrawableSize(window, &width, &height);
     SDL_WaitEvent(event);
   }
+  vkDeviceWaitIdle(device_);
+  CleanUpSwapChain();
   CreateSwapChain(window);
   CreateImageViews();
   CreateFrameBuffer();

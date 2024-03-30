@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.20)
-project(Gameboy_Engine)
 set(CMAKE_CXX_STANDARD 20)
 
 if (POLICY CMP0141)
@@ -101,7 +100,7 @@ target_link_libraries(Gameboy_Engine PRIVATE
   SDL2_mixer::SDL2_mixer 
   Vulkan::Vulkan Vulkan::Headers 
   GPUOpen::VulkanMemoryAllocator 
-  spdlog::spdlog_header_only
+  spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>
 )
 set_property(TARGET Gameboy_Engine PROPERTY CXX_STANDARD 20)
 
