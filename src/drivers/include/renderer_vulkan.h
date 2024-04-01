@@ -68,8 +68,7 @@ typedef struct QueueFamilyIndices {
 
 class Vulkan {
 public:
-
-  VkDevice device_{};
+  VkDevice logical_device_{};
  Vulkan(SDL* sdl, Application app);
  ~Vulkan();
  void DrawFrame(SDL_Window* window, SDL_Event* event);
@@ -144,7 +143,7 @@ private:
   void InitVulkanInfo();
   void InitVulkanPhysicalDevice();
   void InitVulkanValidationLayers();
-  bool IsDeviceSuitable(VkPhysicalDevice physical_device_);
+  bool IsPhysicalDeviceSuitable(VkPhysicalDevice physical_device);
 
   void InitVulkanInstance(SDL_Window* window, Application app);
   void SetupDebugMessenger();
@@ -162,7 +161,7 @@ private:
   void RecreateSwapChain(SDL_Window* window, SDL_Event* event);
   void CleanUpSwapChain();
   void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-  int RateDeviceSuitabillity(VkPhysicalDevice device_);
+  int RateDeviceSuitabillity(VkPhysicalDevice physical_device);
   void PopulateDebugMessengerCreateInfo(
       VkDebugUtilsMessengerCreateInfoEXT& debug_info);
   bool VulkanValidationLayerSupported();
@@ -177,11 +176,12 @@ private:
                                      VkDebugUtilsMessengerEXT debugMessenger,
                                      const VkAllocationCallbacks* pAllocator);
 
-  QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device_);
+  QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physical_device);
 
-  bool CheckDeviceExtensionSupport(VkPhysicalDevice device_);
+  bool CheckDeviceExtensionSupport(VkPhysicalDevice physical_device);
 
-  SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device_);
+  SwapChainSupportDetails QuerySwapChainSupport(
+      VkPhysicalDevice physical_device);
   VkSurfaceFormatKHR ChooseSwapSurfaceFormat(
       const std::vector<VkSurfaceFormatKHR>& available_formats);
   VkPresentModeKHR ChooseSwapPresentMode(

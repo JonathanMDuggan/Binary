@@ -14,6 +14,29 @@
 #define VMA_VULKAN_VERSION 1002000
 #include "include/renderer_vulkan.h"
 #include "include/peripherals_sdl.h"
+
+void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
+  if (ValidationLayersEnabled) spdlog::set_level(spdlog::level::trace);
+  spdlog::info("Initializing Vulkan Instance");
+  InitVulkanInstance(sdl->window, app);
+  SetupDebugMessenger();
+  CreateSurface(sdl->window);
+  spdlog::info("Finding a suitable device that supports Vulkan");
+  PickPhysicalDevice();
+  spdlog::info("Initializing Vulkan Logical Device");
+  CreateLogicalDevice();
+  spdlog::info("Initializing Vulkan Presentation Layer");
+  CreateSwapChain(sdl->window);
+  CreateImageViews();
+  spdlog::info("Creating Vulkan Graphics Pipeline");
+  CreateRenderPass();
+  CreateGraphicsPipeline();
+  CreateFrameBuffer();
+  CreateCommandPool();
+  CreateCommandBuffer();
+  CreateSyncObjects();
+}
+
 // Vulkan Debug functions
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL
@@ -84,7 +107,7 @@ void gbengine::Vulkan::PopulateDebugMessengerCreateInfo(
     VkDebugUtilsMessengerCreateInfoEXT& debug_info) {
   debug_info = {
       .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-
+      
       .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
                          VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
                          VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
@@ -101,14 +124,27 @@ void gbengine::Vulkan::PopulateDebugMessengerCreateInfo(
 }
 
 // Vulkan Instance
+
+// Creates a "Vulkan Instance" taking two parameters:
+// Window: What window will Vulkan renender to
+// Application: The application Vulkan is under.
 void gbengine::Vulkan::InitVulkanInstance(SDL_Window* window, Application app) {
+  // The Vulkan Instance sits at the top of the Vulkan hierachy, the vulkan
+  // instance must be initizted with what appliaction infomation ( name,
+  // version, engine etc. while also requiring the extensions of outside
+  // libraies like SDL, GLSW, or other window libaries inorder for vulkan 
+  // to render to a window.
   VkInstanceCreateInfo instance_info{};
   VkApplicationInfo app_info{};
   VkResult result;
+
+  // Checks if validation layers are supported in this version of vulkan
+  // only prints to the console if the program was compiled in debug mode
   if (ValidationLayersEnabled && !VulkanValidationLayerSupported()) {
     spdlog::critical("Validation layers requested, but not available!");
   }
 
+  // Init the application infomation to Vulkan
   app_info = {
       .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
       .pApplicationName = app.name,
@@ -121,13 +157,19 @@ void gbengine::Vulkan::InitVulkanInstance(SDL_Window* window, Application app) {
   instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   instance_info.pApplicationInfo = &app_info;
 
+  // Vulkan Instances can have what are called "extentions". Extensions are
+  // features which allow Vulkan to do more things it otherwise cannot do.
+  // In this line of code, we are calling the get extension function
+  // which will get the extensions needed to use SDL for the windowing 
+  // and the debug extenstion for the validation layers
   std::vector<const char*> sdl_extensions = GetExtensions(window);
   instance_info.enabledExtensionCount =
       static_cast<uint32_t>(sdl_extensions.size());
   instance_info.ppEnabledExtensionNames = sdl_extensions.data();
 
+  // If Validation layers were enabled, populate the debug infomation struct
+  // and add validation layer data to the instance info.
   VkDebugUtilsMessengerCreateInfoEXT debug_info{};
-
   if (ValidationLayersEnabled) {
     instance_info.enabledLayerCount =
         static_cast<uint32_t>(validation_layers.size());
@@ -140,6 +182,7 @@ void gbengine::Vulkan::InitVulkanInstance(SDL_Window* window, Application app) {
     instance_info.pNext = nullptr;
   }
 
+  // Create the vulkan instance with all the infomation given above
   result = vkCreateInstance(&instance_info, nullptr, &instance_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create Vulkan instance");
@@ -147,12 +190,13 @@ void gbengine::Vulkan::InitVulkanInstance(SDL_Window* window, Application app) {
     return;
   }
 
+  // Collect the infomation from the vulkan instance, and print the extensions
+  // to the terminal
   uint32_t extension_count = 0;
   vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
   std::vector<VkExtensionProperties> extensions(extension_count);
   vkEnumerateInstanceExtensionProperties(nullptr, &extension_count,
                                          extensions.data());
-
   spdlog::info("Available extensions:");
   for (const auto& extension : extensions) {
     spdlog::info("  {}", extension.extensionName);
@@ -182,34 +226,48 @@ bool gbengine::Vulkan::VulkanValidationLayerSupported() {
 
 // Vulkan Physical Device Functions
 
-bool gbengine::Vulkan::IsDeviceSuitable(VkPhysicalDevice phyiscal_device) {
+bool gbengine::Vulkan::IsPhysicalDeviceSuitable(VkPhysicalDevice phyiscal_device) {
+  // Not every device which supports Vulkan can display images to the screen
+  // therefore we must check if the physical device is suitable for the
+  // application needs
   QueueFamilyIndices indices = FindQueueFamilies(phyiscal_device);
   bool extension_supported = CheckDeviceExtensionSupport(phyiscal_device);
   bool swap_chain_adequate = false;
+  // Check if the physical device has the required extensions
   if (extension_supported) {
+    // Check if the physical device can utilize swap chains
     SwapChainSupportDetails swap_chain_support =
         QuerySwapChainSupport(phyiscal_device);
     swap_chain_adequate = !swap_chain_support.formats.empty() &&
                           !swap_chain_support.present_modes.empty();
   }
+  // If the physical device and support all of these things return 1
   return indices.IsComplete() && extension_supported && swap_chain_adequate;
 }
 
-bool gbengine::Vulkan::CheckDeviceExtensionSupport(
-    VkPhysicalDevice device_) {
-  uint32_t extension_count;
-  vkEnumerateDeviceExtensionProperties(device_, nullptr, &extension_count,
-                                       nullptr);
-  std::vector<VkExtensionProperties> available_extensions(extension_count);
-  vkEnumerateDeviceExtensionProperties(device_, nullptr, &extension_count,
-                                       available_extensions.data());
 
+bool gbengine::Vulkan::CheckDeviceExtensionSupport(
+    VkPhysicalDevice physical_device) {
+  uint32_t extension_count;
+  // The application requires certain extensions. When we created the vulkan
+  // instance we specified what extensions the are needed for the instance.
+  // The Physical device also need to support these extensions.
+  vkEnumerateDeviceExtensionProperties(physical_device, nullptr,
+                                       &extension_count, nullptr);
+
+  std::vector<VkExtensionProperties> available_extensions(extension_count);
+  vkEnumerateDeviceExtensionProperties(
+      physical_device, nullptr, &extension_count, available_extensions.data());
+
+  // check if the physical has the required extensions needed for the application
+  // to work
   std::set<std::string> required_extensions(device_extensions.begin(),
                                             device_extensions.end());
   for (const auto& extension : available_extensions) {
     required_extensions.erase(extension.extensionName);
   }
 
+  // returns 1 if the physical device supports all the required extensions 
   return required_extensions.empty();
 }
 
@@ -231,38 +289,58 @@ int gbengine::Vulkan::RateDeviceSuitabillity(VkPhysicalDevice phyiscal_device) {
   return score;
 }
 
+// Finds a suitble device that supports Vulkan
 void gbengine::Vulkan::PickPhysicalDevice() {
+  // In Vulkan the programmer must choose the physical device in which vulkan
+  // will use to render to the screen
   uint32_t device_count = 0;
-
+  // Searches the host computer for a device that supports vulkan
   vkEnumeratePhysicalDevices(instance_, &device_count, nullptr);
 
+  // If there is no device in which vulkan cannot support, there's no point
+  // in going on. Throw a runtime error!
   if (device_count == 0) {
     spdlog::critical("Failed to find GPU with vulkan support!");
     throw std::runtime_error("");
   }
 
+  // Fill vector with the devices found by vulkan
   std::vector<VkPhysicalDevice> devices(device_count);
   vkEnumeratePhysicalDevices(instance_, &device_count, devices.data());
 
+  // Not every device which supports vulkan can show images to the screen
+  // enumerate over the them and keep the ones which have the capability
+  // to display images ( has a graphics queue )
   for (const auto& device_ : devices) {
-    if (IsDeviceSuitable(device_)) {
+    if (IsPhysicalDeviceSuitable(device_)) {
       physical_device_ = device_;
       break;
     }
   }
 
+  // If there are no physical devices that can support the application needs
+  // Runtime Error!
   if (physical_device_ == VK_NULL_HANDLE) {
     spdlog::critical("Failed to find a suitable GPU!");
     throw std::runtime_error("");
   }
 }
 
+
 void gbengine::Vulkan::CreateLogicalDevice() {
+  // A logical device is a Vulkan Concept where parts of the physical device is
+  // allocated for the logical device. The logical device is not the hardware
+  // it's an abstraction of resources from the physical device that we can use
+  // for the application 
   float queue_priority = 1.0f;
-  VkDeviceCreateInfo device_info;
+  VkDeviceCreateInfo device_info{};
   VkPhysicalDeviceFeatures device_features{};
+  // Previous functions already checked if the current physical device have the 
+  // Queue families needed for the application, we're calling this to set the
+  // logical device info
   QueueFamilyIndices indinces = FindQueueFamilies(physical_device_);
-  VkDeviceQueueCreateInfo queue_info;
+  VkDeviceQueueCreateInfo queue_info{};
+
   std::vector<VkDeviceQueueCreateInfo> queue_create_info;
   std::set<uint32_t> unique_queue_families = {indinces.graphics_family.value(),
                                               indinces.present_family.value()};
@@ -275,16 +353,20 @@ void gbengine::Vulkan::CreateLogicalDevice() {
     queue_create_info.push_back(queue_info);
   }
 
+  // Match the logical device with the queue index of the physical device
   device_info = {
       .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
       .queueCreateInfoCount = static_cast<uint32_t>(queue_create_info.size()),
       .pQueueCreateInfos = queue_create_info.data(),
       .pEnabledFeatures = &device_features};
 
+  // Add the extensions needed for the application for the logical device
   device_info.enabledExtensionCount =
       static_cast<uint32_t>(device_extensions.size());
   device_info.ppEnabledExtensionNames = device_extensions.data();
 
+  // Add debuging capabilities for the logical device if validation layers were
+  // enabled
   if (ValidationLayersEnabled) {
     device_info.enabledLayerCount =
         static_cast<uint32_t>(validation_layers.size());
@@ -292,8 +374,9 @@ void gbengine::Vulkan::CreateLogicalDevice() {
   } else {
     device_info.enabledLayerCount = 0;
   }
+
   VkResult result =
-      vkCreateDevice(physical_device_, &device_info, nullptr, &device_);
+      vkCreateDevice(physical_device_, &device_info, nullptr, &logical_device_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create logical device");
   } else {
@@ -301,27 +384,43 @@ void gbengine::Vulkan::CreateLogicalDevice() {
                  VkResultToString(result));
   }
 
-  vkGetDeviceQueue(device_, indinces.graphics_family.value(), 0, &graphics_queue_);
-  vkGetDeviceQueue(device_, indinces.present_family.value(), 0, &present_queue_);
+  // The physical device queue location is in a index, to get the queue we
+  // must set the pass the index to this function to fetch the queue
+  vkGetDeviceQueue(logical_device_, indinces.graphics_family.value(), 0, &graphics_queue_);
+  vkGetDeviceQueue(logical_device_, indinces.present_family.value(), 0, &present_queue_);
 }
 
 // Vulkan Queue
 
+// Gets queue familes from the phyiscal device
 gbengine::QueueFamilyIndices gbengine::Vulkan::FindQueueFamilies(
     VkPhysicalDevice phyiscal_device) {
   VkBool32 present_support;
   QueueFamilyIndices indices;
   int i = 0;
   uint32_t queue_family_count = 0;
+  // Get the queue familes from the physical device so we can determind if the
+  // physical device and display graphics to the screen.
   vkGetPhysicalDeviceQueueFamilyProperties(phyiscal_device, &queue_family_count,
                                            nullptr);
   std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
   vkGetPhysicalDeviceQueueFamilyProperties(phyiscal_device, &queue_family_count,
                                            queue_families.data());
+
+  
   for (const auto& queue_family : queue_families) {
+    // Checks if the physical device can display graphics to the screen
+    // If it does set graphic family to i.
+    // 
+    // NOTE: graphic_family is a std::optional, meaning it holds nothing
+    // if it isn't set, this is okay since we can use the method .has_value()
+    // to check if the grpahic_family has a value.
     if (queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
       indices.graphics_family = i;
     }
+    // Even if the queue family supports graphics, that doesn't mean it 
+    // supports presenting those graphics to the host machine. Check if
+    // the queue family has present support
     present_support = false;
     vkGetPhysicalDeviceSurfaceSupportKHR(phyiscal_device, i, surface_,
                                          &present_support);
@@ -329,6 +428,8 @@ gbengine::QueueFamilyIndices gbengine::Vulkan::FindQueueFamilies(
       indices.present_family = i;
     }
 
+    // If the queue family supports both graphics and presenting, break the
+    // for loop and return with the indices.
     if (indices.IsComplete()) break;
     i++;
   }
@@ -337,8 +438,14 @@ gbengine::QueueFamilyIndices gbengine::Vulkan::FindQueueFamilies(
 
 // Vulkan Extensions
 
+// Gets extensions from the SDL library to allow vulkan to do features it
+// otherwise cannot do by itself
 std::vector<const char*> gbengine::Vulkan::GetExtensions(
     SDL_Window* window) {
+
+  // Get the number of extensions sdl needs and increase the size of a vector
+  // based on the number it gives, then push the extension names inside of
+  // vector
   uint32_t sdl_extension_count = 0;
   if (!SDL_Vulkan_GetInstanceExtensions(window, &sdl_extension_count,
                                         nullptr)) {
@@ -351,11 +458,13 @@ std::vector<const char*> gbengine::Vulkan::GetExtensions(
   if (sdl_extension_count > 0) {
     if (!SDL_Vulkan_GetInstanceExtensions(window, &sdl_extension_count,
                                           extensions.data())) {
-      spdlog::critical("Failed to get the Vulkan instance extensions from SDL");
+      spdlog::critical("Failed to get the Vulkan instance extensions names "
+                       "from SDL");
       return {};
     }
   }
 
+  // Adds the debug extensions if validation layers were enabled
   if (ValidationLayersEnabled) {
     extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
   }
@@ -364,6 +473,7 @@ std::vector<const char*> gbengine::Vulkan::GetExtensions(
 }
 // Vulkan SwapChain stuff
 
+// Checks if the physical device supports the khronos groups swap chain
 gbengine::Vulkan::SwapChainSupportDetails
 gbengine::Vulkan::QuerySwapChainSupport(VkPhysicalDevice phyiscal_device) {
   SwapChainSupportDetails details;
@@ -486,7 +596,7 @@ void gbengine::Vulkan::CreateSwapChain(SDL_Window* window) {
   swap_chain_info.clipped = VK_TRUE;
   // swap_chain_info.oldSwapchain   = VK_NULL_HANDLE;
 
-  VkResult result = vkCreateSwapchainKHR(device_, &swap_chain_info, nullptr,
+  VkResult result = vkCreateSwapchainKHR(logical_device_, &swap_chain_info, nullptr,
                                          &swap_chain_.KHR_);
 
   if (result != VK_SUCCESS) {
@@ -494,9 +604,9 @@ void gbengine::Vulkan::CreateSwapChain(SDL_Window* window) {
                      VkResultToString(result), __LINE__, __FILE__);
   }
 
-  vkGetSwapchainImagesKHR(device_, swap_chain_.KHR_, &image_count, nullptr);
+  vkGetSwapchainImagesKHR(logical_device_, swap_chain_.KHR_, &image_count, nullptr);
   swap_chain_.images_.resize(image_count);
-  vkGetSwapchainImagesKHR(device_, swap_chain_.KHR_, &image_count,
+  vkGetSwapchainImagesKHR(logical_device_, swap_chain_.KHR_, &image_count,
                           swap_chain_.images_.data());
 
   swap_chain_.image_format_ = surface_format.format;
@@ -511,7 +621,7 @@ void gbengine::Vulkan::RecreateSwapChain(SDL_Window* window, SDL_Event* event) {
     SDL_Vulkan_GetDrawableSize(window, &width, &height);
     SDL_WaitEvent(event);
   }
-  vkDeviceWaitIdle(device_);
+  vkDeviceWaitIdle(logical_device_);
   CleanUpSwapChain();
   CreateSwapChain(window);
   CreateImageViews();
@@ -520,12 +630,12 @@ void gbengine::Vulkan::RecreateSwapChain(SDL_Window* window, SDL_Event* event) {
 
 void gbengine::Vulkan::CleanUpSwapChain() {
   for (uint32_t i = 0; i < swap_chain_.frame_buffer_.size(); i++) {
-    vkDestroyFramebuffer(device_, swap_chain_.frame_buffer_[i], nullptr);
+    vkDestroyFramebuffer(logical_device_, swap_chain_.frame_buffer_[i], nullptr);
   }
   for (uint32_t i = 0; i < swap_chain_.image_views_.size(); i++) {
-    vkDestroyImageView(device_, swap_chain_.image_views_[i], nullptr);
+    vkDestroyImageView(logical_device_, swap_chain_.image_views_[i], nullptr);
   }
-  vkDestroySwapchainKHR(device_, swap_chain_.KHR_, nullptr);
+  vkDestroySwapchainKHR(logical_device_, swap_chain_.KHR_, nullptr);
 }
 // Vulkan Image Views
 
@@ -547,7 +657,7 @@ void gbengine::Vulkan::CreateImageViews() {
     image_view_info.subresourceRange.baseArrayLayer = 0;
     image_view_info.subresourceRange.layerCount = 1;
 
-    VkResult result = vkCreateImageView(device_, &image_view_info, nullptr,
+    VkResult result = vkCreateImageView(logical_device_, &image_view_info, nullptr,
                                         &swap_chain_.image_views_[i]);
     if (result != VK_SUCCESS) {
       spdlog::error("Failed to create image view! {} on line {} in file {}",
@@ -566,7 +676,7 @@ VkShaderModule gbengine::Vulkan::CreateShaderModule(
   shader_module_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
   VkShaderModule shader_module;
-  VkResult result = vkCreateShaderModule(device_, &shader_module_info, nullptr,
+  VkResult result = vkCreateShaderModule(logical_device_, &shader_module_info, nullptr,
                                          &shader_module);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create shader module: {}",
@@ -697,7 +807,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   pipeline_layout_info.pSetLayouts = nullptr;
   pipeline_layout_info.pushConstantRangeCount = 0;
   pipeline_layout_info.pPushConstantRanges = nullptr;
-  VkResult result = vkCreatePipelineLayout(device_, &pipeline_layout_info,
+  VkResult result = vkCreatePipelineLayout(logical_device_, &pipeline_layout_info,
                                            nullptr, &pipeline_layout_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create pipeline layout! {} ",
@@ -723,14 +833,14 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
   pipeline_info.basePipelineIndex = -1;
   result = vkCreateGraphicsPipelines(
-      device_, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline_);
+      logical_device_, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create graphics pipeline {}",
                      VkResultToString(result));
     throw std::runtime_error("");
   }
-  vkDestroyShaderModule(device_, vert_shader_module, nullptr);
-  vkDestroyShaderModule(device_, frag_shader_module, nullptr);
+  vkDestroyShaderModule(logical_device_, vert_shader_module, nullptr);
+  vkDestroyShaderModule(logical_device_, frag_shader_module, nullptr);
 }
 
 // Vulkan Render Pass
@@ -773,7 +883,7 @@ void gbengine::Vulkan::CreateRenderPass() {
   render_pass_info.dependencyCount = 1;       
   render_pass_info.pDependencies = &dependency;
 
-  VkResult result = vkCreateRenderPass(device_, &render_pass_info, nullptr,
+  VkResult result = vkCreateRenderPass(logical_device_, &render_pass_info, nullptr,
                                        &render_pass_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create Render Pass!: {}",
@@ -799,7 +909,7 @@ void gbengine::Vulkan::CreateFrameBuffer() {
     frame_buffer_info.layers = 1;
 
     result = vkCreateFramebuffer(
-        device_, &frame_buffer_info, nullptr, &swap_chain_.frame_buffer_[i]);
+        logical_device_, &frame_buffer_info, nullptr, &swap_chain_.frame_buffer_[i]);
     if (result != VK_SUCCESS) {
       spdlog::critical("Failed to create Frame Buffer!: {}",
                        VkResultToString(result));
@@ -818,7 +928,7 @@ void gbengine::Vulkan::CreateCommandPool() {
   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
   pool_info.queueFamilyIndex = queue_family_indices.graphics_family.value();
   VkResult result =
-      vkCreateCommandPool(device_, &pool_info, nullptr, &command_pool_);
+      vkCreateCommandPool(logical_device_, &pool_info, nullptr, &command_pool_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create Command Pool! {}",
                      VkResultToString(result));
@@ -834,7 +944,7 @@ void gbengine::Vulkan::CreateCommandBuffer() {
   allocate_info.commandPool = command_pool_;
   allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   allocate_info.commandBufferCount = command_buffers_.size();
-  result = vkAllocateCommandBuffers(device_, &allocate_info,
+  result = vkAllocateCommandBuffers(logical_device_, &allocate_info,
                                     command_buffers_.data());
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create Command Buffer! {}",
@@ -912,22 +1022,22 @@ void gbengine::Vulkan::CreateSyncObjects() {
 
 
   for (size_t i = 0; i < kMaxFramesInFlight; i++) {
-    result[0] = vkCreateSemaphore(device_, &semaphore_info, nullptr,
+    result[0] = vkCreateSemaphore(logical_device_, &semaphore_info, nullptr,
                                   &semaphore_.image_available_[i]);
-    result[1] = vkCreateSemaphore(device_, &semaphore_info, nullptr,
+    result[1] = vkCreateSemaphore(logical_device_, &semaphore_info, nullptr,
                                   &semaphore_.render_finished_[i]);
     result[2] =
-        vkCreateFence(device_, &fence_info, nullptr, &in_flight_fence_[i]);
+        vkCreateFence(logical_device_, &fence_info, nullptr, &in_flight_fence_[i]);
   }
 
 }
 
 void gbengine::Vulkan::DrawFrame(SDL_Window* window, SDL_Event *event) {
-  vkWaitForFences(device_, 1, &in_flight_fence_[current_frame_], VK_TRUE,
+  vkWaitForFences(logical_device_, 1, &in_flight_fence_[current_frame_], VK_TRUE,
                   UINT64_MAX);
   uint32_t image_index = 0;
   VkResult result =
-      vkAcquireNextImageKHR(device_, swap_chain_.KHR_, UINT64_MAX,
+      vkAcquireNextImageKHR(logical_device_, swap_chain_.KHR_, UINT64_MAX,
                             semaphore_.image_available_[current_frame_],
                             VK_NULL_HANDLE, &image_index);
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -939,7 +1049,7 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window, SDL_Event *event) {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
   
-  vkResetFences(device_, 1, &in_flight_fence_[current_frame_]);
+  vkResetFences(logical_device_, 1, &in_flight_fence_[current_frame_]);
   vkResetCommandBuffer(command_buffers_[current_frame_], 0);
   RecordCommandBuffer(command_buffers_[current_frame_], image_index);
 
@@ -993,25 +1103,7 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window, SDL_Event *event) {
   current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
 }
 
-void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
-  if (ValidationLayersEnabled) spdlog::set_level(spdlog::level::trace);
-  spdlog::info("Initializing Vulkan Drivers");
-  InitVulkanInstance(sdl->window, app);
-  SetupDebugMessenger();
-  CreateSurface(sdl->window);
-  PickPhysicalDevice();
-  CreateLogicalDevice();
-  spdlog::info("Initializing Vulkan Presentation Layer");
-  CreateSwapChain(sdl->window);
-  CreateImageViews();
-  spdlog::info("Creating Vulkan Graphics Pipeline");
-  CreateRenderPass();
-  CreateGraphicsPipeline();
-  CreateFrameBuffer();
-  CreateCommandPool();
-  CreateCommandBuffer();
-  CreateSyncObjects();
-}
+
 
 void gbengine::Vulkan::CreateSurface(SDL_Window* window) {
   if (SDL_Vulkan_CreateSurface(window, instance_, &surface_)) {
@@ -1026,15 +1118,15 @@ gbengine::Vulkan::~Vulkan() {
   VkResult result;
   CleanUpSwapChain();
   for (size_t i = 0; i < kMaxFramesInFlight; i++) {
-    vkDestroySemaphore(device_, semaphore_.image_available_[i], nullptr);
+    vkDestroySemaphore(logical_device_, semaphore_.image_available_[i], nullptr);
     semaphore_.image_available_[i] = VK_NULL_HANDLE;
-    vkDestroySemaphore(device_, semaphore_.render_finished_[i], nullptr);
+    vkDestroySemaphore(logical_device_, semaphore_.render_finished_[i], nullptr);
     semaphore_.render_finished_[i] = VK_NULL_HANDLE;
-    vkDestroyFence(device_, in_flight_fence_[i], nullptr);
+    vkDestroyFence(logical_device_, in_flight_fence_[i], nullptr);
     in_flight_fence_[i] = VK_NULL_HANDLE;
   }
 
-  vkDestroyCommandPool(device_, command_pool_, nullptr);
+  vkDestroyCommandPool(logical_device_, command_pool_, nullptr);
   command_pool_ = VK_NULL_HANDLE;
 
   // This for loop is producting errors where the frame buffer cannot be found
@@ -1044,20 +1136,20 @@ gbengine::Vulkan::~Vulkan() {
     if (frame_buffer == VK_NULL_HANDLE) {
       continue;
     }
-    vkDestroyFramebuffer(device_, frame_buffer, nullptr);
+    vkDestroyFramebuffer(logical_device_, frame_buffer, nullptr);
   }
 
-  vkDestroyPipeline(device_, pipeline_, nullptr);
+  vkDestroyPipeline(logical_device_, pipeline_, nullptr);
   pipeline_ = VK_NULL_HANDLE;
 
-  vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
+  vkDestroyPipelineLayout(logical_device_, pipeline_layout_, nullptr);
   pipeline_layout_ = VK_NULL_HANDLE;
 
-  vkDestroyRenderPass(device_, render_pass_, nullptr);
+  vkDestroyRenderPass(logical_device_, render_pass_, nullptr);
   render_pass_ = VK_NULL_HANDLE;
 
-  vkDestroyDevice(device_, nullptr);
-  device_ = VK_NULL_HANDLE;
+  vkDestroyDevice(logical_device_, nullptr);
+  logical_device_ = VK_NULL_HANDLE;
 
   vkDestroySurfaceKHR(instance_, surface_, nullptr);
   surface_ = VK_NULL_HANDLE;

@@ -21,6 +21,6 @@ int main(int argc, char** argv) {
     sdl.PoolEvents(&running);
     vulkan.DrawFrame(sdl.window, &sdl.event);
   }
-  vkDeviceWaitIdle(vulkan.device_);
+  vkDeviceWaitIdle(vulkan.logical_device_);
   return EXIT_SUCCESS;
 }
