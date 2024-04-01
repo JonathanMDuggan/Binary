@@ -1,9 +1,10 @@
 #version 450
 
-layout(location = 0) in vec3 frag_color;
-
-layout(location = 0) out vec4 out_color;
+layout(location = 0) in dvec3 in_position;
+layout(location = 2) in vec3 in_color;
+layout(location = 0) in vec2 frag_color;
 
 void main() {
-    out_color = vec4(frag_color, 1.0);
+    gl_Position = vec4(in_position, 0.0, 1.0);
+    frag_color = in_color;
 }

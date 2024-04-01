@@ -50,7 +50,7 @@ void gbengine::Vulkan::SetupDebugMessenger() {
   PopulateDebugMessengerCreateInfo(debug_info);
 
   if (CreateDebugUtilsMessengerEXT(instance_, &debug_info, nullptr,
-                                   &debug_messenger_) != VK_SUCCESS) {
+                                  &debug_messenger_) != VK_SUCCESS) {
     spdlog::critical("Failed to set up debug messenger!");
   }
 }
@@ -362,9 +362,6 @@ std::vector<const char*> gbengine::Vulkan::GetExtensions(
 
   return extensions;
 }
-
-void gbengine::Vulkan::InitVulkanValidationLayers() {}
-
 // Vulkan SwapChain stuff
 
 gbengine::Vulkan::SwapChainSupportDetails
@@ -419,6 +416,8 @@ VkPresentModeKHR gbengine::Vulkan::ChooseSwapPresentMode(
   }
   return VK_PRESENT_MODE_FIFO_KHR;
 }
+
+
 
 VkExtent2D gbengine::Vulkan::ChooseSwapExtent(
     SDL_Window* window,
@@ -994,17 +993,16 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window, SDL_Event *event) {
   current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
 }
 
-void gbengine::Vulkan::InitVulkan(SDL_Window* window, Application app,
-                                  SDL_Event *event) {
+void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   if (ValidationLayersEnabled) spdlog::set_level(spdlog::level::trace);
   spdlog::info("Initializing Vulkan Drivers");
-  InitVulkanInstance(window, app);
+  InitVulkanInstance(sdl->window, app);
   SetupDebugMessenger();
-  CreateSurface(window);
+  CreateSurface(sdl->window);
   PickPhysicalDevice();
   CreateLogicalDevice();
   spdlog::info("Initializing Vulkan Presentation Layer");
-  CreateSwapChain(window);
+  CreateSwapChain(sdl->window);
   CreateImageViews();
   spdlog::info("Creating Vulkan Graphics Pipeline");
   CreateRenderPass();
@@ -1020,8 +1018,8 @@ void gbengine::Vulkan::CreateSurface(SDL_Window* window) {
     return;
   }
 }
-gbengine::Vulkan::Vulkan(SDL_Window* window, Application app, SDL_Event* event) {
-  InitVulkan(window, app, event);
+gbengine::Vulkan::Vulkan(SDL* sdl, Application app) {
+  InitVulkan(sdl, app);
 }
 
 gbengine::Vulkan::~Vulkan() {
@@ -1040,7 +1038,7 @@ gbengine::Vulkan::~Vulkan() {
   command_pool_ = VK_NULL_HANDLE;
 
   // This for loop is producting errors where the frame buffer cannot be found
-  // so it cannot be destory by the function. I'm moving on becasue I don't care
+  // so it cannot be destory by the function. 
   for (VkFramebuffer frame_buffer : swap_chain_.frame_buffer_) {  
     
     if (frame_buffer == VK_NULL_HANDLE) {

@@ -11,6 +11,7 @@ void gbengine::SDL::Init(Application app) {
   window = SDL_CreateWindow(app.name, SDL_WINDOWPOS_CENTERED, 
                             SDL_WINDOWPOS_CENTERED, app.width,
                             app.height, SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN);
+  
 }
 
 void gbengine::SDL::PoolEvents(bool* running) {
