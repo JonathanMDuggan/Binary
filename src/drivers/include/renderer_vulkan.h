@@ -49,9 +49,12 @@ struct Vertex {
     return attribute_descriptions;
   }
 };
-const std::vector<Vertex> vertices_ = {{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                                      {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-                                      {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+const std::vector<Vertex> vertices_ = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                                       {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+                                       {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+                                       {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+
+const std::vector<uint16_t> indices_ = {0, 1, 2, 2, 3, 0};
 extern std::vector<char> ReadFile(const std::string& file_name);
 extern std::string VkResultToString(VkResult result);
 enum VulkanConst { kFrameOverLap = 2, kMaxFramesInFlight = 2};
@@ -138,6 +141,9 @@ private:
   bool frame_buffer_resized_ = false; 
   VkBuffer vertex_buffer_{};
   VkDeviceMemory vertex_buffer_memory_{};
+  VkBuffer index_buffer_{};
+  VkDeviceMemory index_buffer_memory_{};
+
 
   void InitVulkanApplication();
   void InitVulkanInfo();
@@ -161,7 +167,13 @@ private:
   void RecreateSwapChain(SDL_Window* window, SDL_Event* event);
   void CleanUpSwapChain();
   void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+  void CreateIndexBuffer();
   void CreateVertexBuffer();
+  void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                    VkMemoryPropertyFlags properties, VkBuffer& buffer,
+                    VkDeviceMemory& buffer_memory);
+  void CopyBuffer(VkBuffer source_buffer, VkBuffer destination_buffer,
+                  VkDeviceSize size);
   uint32_t FindMemoryType(uint32_t type_filter, VkMemoryPropertyFlags properties);
   int RateDeviceSuitabillity(VkPhysicalDevice physical_device);
   void PopulateDebugMessengerCreateInfo(

@@ -34,6 +34,7 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   CreateFrameBuffer();
   CreateCommandPool();
   CreateVertexBuffer();
+  CreateIndexBuffer();
   CreateCommandBuffer();
   CreateSyncObjects();
 }
@@ -979,6 +980,9 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   scissor.extent = swap_chain_.extent_;
   vkCmdSetScissor(command_buffer, 0, 1, &scissor);
   vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+  vkCmdBindIndexBuffer(command_buffer, index_buffer_, 0, VK_INDEX_TYPE_UINT16);
+  vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(indices_.size()), 1, 0,
+                   0, 0);
   vkCmdDraw(command_buffer, static_cast<uint32_t>(vertices_.size()), 1, 0, 0);
   vkCmdEndRenderPass(command_buffer);
   result = vkEndCommandBuffer(command_buffer);
@@ -990,47 +994,129 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   }
 }
 
-void gbengine::Vulkan::CreateVertexBuffer() { 
-  VkBufferCreateInfo buffer_info{}; 
-  VkMemoryRequirements memory_requirements;
-  VkMemoryAllocateInfo allocate_info{};
-  VkResult result;
-  void* data;
-  buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  buffer_info.size = sizeof(vertices_[0]) * vertices_.size();
-  buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-  buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  result =
-      vkCreateBuffer(logical_device_, &buffer_info, nullptr, &vertex_buffer_);
-  if (result != VK_SUCCESS) {
-    spdlog::critical("Failed to create buffer! {}",
-                     VkResultToString(result));
-    throw std::runtime_error("Failed to create buffer! " +
-                             VkResultToString(result));
-  }
-  vkGetBufferMemoryRequirements(logical_device_, vertex_buffer_,
-                                &memory_requirements);
-  allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-  allocate_info.allocationSize = memory_requirements.size;
-  allocate_info.memoryTypeIndex =
-      FindMemoryType(memory_requirements.memoryTypeBits,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-  result = vkAllocateMemory(logical_device_, &allocate_info, nullptr,
-                            &vertex_buffer_memory_);
-  if (result != VK_SUCCESS) {
-    spdlog::critical("Failed to allocate vertex buffer memory {} ",
-                     VkResultToString(result));
-    throw std::runtime_error("Failed to allocate vertex buffer memory " +
-                             VkResultToString(result));
-  }
-  vkBindBufferMemory(logical_device_, vertex_buffer_, vertex_buffer_memory_, 0);
-  vkMapMemory(logical_device_, vertex_buffer_memory_, 0, buffer_info.size, 0,
-              &data);
-  memcpy(data, vertices_.data(), (size_t)buffer_info.size);
-  vkUnmapMemory(logical_device_, vertex_buffer_memory_);
+void gbengine::Vulkan::CreateIndexBuffer() {
+  VkDeviceSize buffer_size = sizeof(indices_[0]) * indices_.size();
+  VkBuffer staging_buffer;
+  VkDeviceMemory staging_buffer_memory;
+  void * data;
+  CreateBuffer(
+    buffer_size, 
+    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,           
+    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    staging_buffer, staging_buffer_memory);
+
+  vkMapMemory(logical_device_, staging_buffer_memory, 0, buffer_size, 0, &data);
+  memcpy(data, indices_.data(), (size_t)buffer_size);
+  vkUnmapMemory(logical_device_, staging_buffer_memory);
+  CreateBuffer(
+      buffer_size,
+      VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, index_buffer_, index_buffer_memory_);
+  CopyBuffer(staging_buffer, index_buffer_, buffer_size);
+
+  vkDestroyBuffer(logical_device_, staging_buffer, nullptr);
+  vkFreeMemory(logical_device_, staging_buffer_memory, nullptr);
 }
 
+void gbengine::Vulkan::CreateVertexBuffer() { 
+  VkDeviceSize buffer_size = sizeof(vertices_[0]) * vertices_.size();
+  VkBuffer staging_buffer;
+  VkDeviceMemory staging_buffer_memory;
+  void* data;
+
+  CreateBuffer(
+    buffer_size, 
+    VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    staging_buffer, staging_buffer_memory
+  );
+
+  vkMapMemory(logical_device_, staging_buffer_memory, 0, buffer_size, 0, &data);
+  memcpy(data, vertices_.data(), (size_t)buffer_size); 
+  vkUnmapMemory(logical_device_, staging_buffer_memory);
+
+  CreateBuffer(
+    buffer_size,
+    VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    vertex_buffer_, vertex_buffer_memory_
+  );
+
+  CopyBuffer(staging_buffer, vertex_buffer_, buffer_size);
+  vkDestroyBuffer(logical_device_, staging_buffer, nullptr);
+  vkFreeMemory(logical_device_, staging_buffer_memory, nullptr);
+}
+
+void gbengine::Vulkan::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                                    VkMemoryPropertyFlags properties,
+                                    VkBuffer& buffer,
+                                    VkDeviceMemory& buffer_memory) { 
+  VkBufferCreateInfo buffer_info{};
+  VkMemoryRequirements memory_requirements;
+  VkMemoryAllocateInfo allocate_info{};
+  VkResult result; 
+  buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  buffer_info.size = size;
+  buffer_info.usage = usage;
+  buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  result = vkCreateBuffer(logical_device_, &buffer_info, nullptr, &buffer); 
+  if (result != VK_SUCCESS) { 
+    spdlog::critical("Failed to create buffer! {}", VkResultToString(result)); 
+    throw std::runtime_error("Failed to create buffer" +
+                             VkResultToString(result));
+  }
+  vkGetBufferMemoryRequirements(logical_device_, buffer,
+                                &memory_requirements);
+
+  allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO; 
+  allocate_info.allocationSize = memory_requirements.size;      
+  allocate_info.memoryTypeIndex =                               
+      FindMemoryType(memory_requirements.memoryTypeBits,        
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |      
+                         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT); 
+  result = vkAllocateMemory(logical_device_, &allocate_info, nullptr,
+                            &buffer_memory);
+  if (result != VK_SUCCESS) {
+    spdlog::critical("Failed to allocate buffer memory {} ",
+      VkResultToString(result)); 
+    throw std::runtime_error("Failed to allocate buffer memory " +
+                             VkResultToString(result)); 
+  }
+  vkBindBufferMemory(logical_device_, buffer, buffer_memory, 0);
+}
+
+void gbengine::Vulkan::CopyBuffer(VkBuffer source_buffer,
+                                  VkBuffer destination_buffer,
+                                  VkDeviceSize size) {
+  VkCommandBufferAllocateInfo allocate_info{};
+  VkCommandBuffer command_buffer; 
+  VkCommandBufferBeginInfo begin_info{}; 
+  VkBufferCopy copy_region{};
+  VkSubmitInfo submit_info{};
+
+  allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  allocate_info.commandPool = command_pool_;
+  allocate_info.commandBufferCount = 1;
+  vkAllocateCommandBuffers(logical_device_, &allocate_info, &command_buffer);
+
+  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  vkBeginCommandBuffer(command_buffer, &begin_info);
+
+  copy_region.size = size;
+  vkCmdCopyBuffer(command_buffer, source_buffer, destination_buffer, 1,
+                  &copy_region);
+  vkEndCommandBuffer(command_buffer);
+
+  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit_info.commandBufferCount = 1;
+  submit_info.pCommandBuffers = &command_buffer;
+
+  vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
+  vkQueueWaitIdle(graphics_queue_);
+  vkFreeCommandBuffers(logical_device_, command_pool_, 1, &command_buffer);
+}
 uint32_t gbengine::Vulkan::FindMemoryType(uint32_t type_filter,
                                       VkMemoryPropertyFlags properties) {
   VkPhysicalDeviceMemoryProperties memory_properties;
@@ -1165,10 +1251,7 @@ gbengine::Vulkan::~Vulkan() {
 
   vkDestroyCommandPool(logical_device_, command_pool_, nullptr);
   command_pool_ = VK_NULL_HANDLE;
-
-  // This for loop is producting errors where the frame buffer cannot be found
-  // so it cannot be destory by the function. 
-
+  // Destroy vertex buffer
   if (vertex_buffer_ != VK_NULL_HANDLE) {
     vkDestroyBuffer(logical_device_, vertex_buffer_, nullptr);
     vertex_buffer_ = VK_NULL_HANDLE;
@@ -1177,6 +1260,19 @@ gbengine::Vulkan::~Vulkan() {
     vkFreeMemory(logical_device_, vertex_buffer_memory_, nullptr);
     vertex_buffer_memory_ = VK_NULL_HANDLE;
   }
+
+  // Destroy index buffer
+  if (index_buffer_ != VK_NULL_HANDLE) {
+    vkDestroyBuffer(logical_device_, index_buffer_, nullptr);
+    index_buffer_ = VK_NULL_HANDLE; 
+  }
+  if (index_buffer_memory_ != VK_NULL_HANDLE) { 
+    vkFreeMemory(logical_device_, index_buffer_memory_, nullptr);
+    index_buffer_memory_ = VK_NULL_HANDLE;
+  }
+
+  // This for loop is producting errors where the frame buffer cannot be found
+  // so it cannot be destory by the function. 
   for (VkFramebuffer frame_buffer : swap_chain_.frame_buffer_) {  
     
     if (frame_buffer == VK_NULL_HANDLE) {
