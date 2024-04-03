@@ -99,7 +99,7 @@ private:
   FrameData frame_data_[kFrameOverLap] = {};
   VkPipelineLayout pipeline_layout_;
   VkRenderPass render_pass_;
-  VkPipeline pipeline_;
+  VkPipeline graphics_pipeline_;
   std::vector<VkCommandBuffer> command_buffers_;
   std::vector<VkFence>in_flight_fence_;
   Semaphore semaphore_;

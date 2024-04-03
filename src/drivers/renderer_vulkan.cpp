@@ -367,6 +367,8 @@ void gbengine::Vulkan::InitVulkanValidationLayers() {}
 
 // Vulkan SwapChain stuff
 
+// Returns the capabilities of the physical device presentation and surface
+// modes
 gbengine::Vulkan::SwapChainSupportDetails
 gbengine::Vulkan::QuerySwapChainSupport(VkPhysicalDevice phyiscal_device) {
   SwapChainSupportDetails details;
@@ -398,6 +400,7 @@ gbengine::Vulkan::QuerySwapChainSupport(VkPhysicalDevice phyiscal_device) {
   return details;
 }
 
+// Returns the supported image format for the swap chain
 VkSurfaceFormatKHR gbengine::Vulkan::ChooseSwapSurfaceFormat(
     const std::vector<VkSurfaceFormatKHR>& available_formats) {
   for (const auto& available_format : available_formats) {
@@ -597,6 +600,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   VkPipelineColorBlendStateCreateInfo color_blending{};
   VkPipelineLayoutCreateInfo pipeline_layout_info{};
   VkGraphicsPipelineCreateInfo pipeline_info{};
+  // Get the shaders and store them into local memory
   auto vert_shader_code = ReadFile("shaders/vert.spv");
   auto frag_shader_code = ReadFile("shaders/frag.spv");
   VkShaderModule vert_shader_module = CreateShaderModule(vert_shader_code);
@@ -650,6 +654,8 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   viewport_state.scissorCount = 1;
   viewport_state.pScissors = &scissor;
 
+  // Rasterizer transforms our triangle into discrete pixels for the screen. 
+
   rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
   rasterizer.rasterizerDiscardEnable = VK_FALSE;
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
@@ -661,14 +667,15 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   rasterizer.depthBiasClamp = 0.0f;
   rasterizer.depthBiasSlopeFactor = 0.0f;
 
-  multisampling.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-  multisampling.sampleShadingEnable = VK_FALSE;
-  multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-  multisampling.minSampleShading = 1.0f;
-  multisampling.pSampleMask = nullptr;
-  multisampling.alphaToCoverageEnable = VK_FALSE;
-  multisampling.alphaToOneEnable = VK_FALSE;
+  multisampling = {
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+    .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+    .sampleShadingEnable = VK_FALSE,
+    .minSampleShading = 1.0f,
+    .pSampleMask = nullptr,
+    .alphaToCoverageEnable = VK_FALSE,
+    .alphaToOneEnable = VK_FALSE
+  };
 
   color_blend_attachment.colorWriteMask =
       VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
@@ -723,7 +730,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
   pipeline_info.basePipelineIndex = -1;
   result = vkCreateGraphicsPipelines(
-      device_, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline_);
+      logical_device_, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create graphics pipeline {}",
                      VkResultToString(result));
@@ -811,8 +818,7 @@ void gbengine::Vulkan::CreateFrameBuffer() {
 // Vulkan Command Stuff
 
 void gbengine::Vulkan::CreateCommandPool() {
-  QueueFamilyIndices queue_family_indices =
-      FindQueueFamilies(physical_device_);
+  QueueFamilyIndices queue_family_indices = FindQueueFamilies(physical_device_);
   VkCommandPoolCreateInfo pool_info{};
   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -875,7 +881,7 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   vkCmdBeginRenderPass(command_buffer, &render_pass_info,
                        VK_SUBPASS_CONTENTS_INLINE);
   vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    pipeline_);
+                    graphics_pipeline_);
   viewport.x = 0.0f;
   viewport.y = 0.0f;
   viewport.width = static_cast<float>(swap_chain_.extent_.width);
@@ -1039,8 +1045,8 @@ gbengine::Vulkan::~Vulkan() {
     vkDestroyFramebuffer(device_, frame_buffer, nullptr);
   }
 
-  vkDestroyPipeline(device_, pipeline_, nullptr);
-  pipeline_ = VK_NULL_HANDLE;
+  vkDestroyPipeline(logical_device_, graphics_pipeline_, nullptr);
+  graphics_pipeline_ = VK_NULL_HANDLE;
 
   vkDestroyPipelineLayout(device_, pipeline_layout_, nullptr);
   pipeline_layout_ = VK_NULL_HANDLE;
