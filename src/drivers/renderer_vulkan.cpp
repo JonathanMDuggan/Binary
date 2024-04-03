@@ -33,6 +33,7 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   CreateGraphicsPipeline();
   CreateFrameBuffer();
   CreateCommandPool();
+  CreateVertexBuffer();
   CreateCommandBuffer();
   CreateSyncObjects();
 }
@@ -711,6 +712,10 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   auto frag_shader_code = ReadFile("shaders/frag.spv");
   VkShaderModule vert_shader_module = CreateShaderModule(vert_shader_code);
   VkShaderModule frag_shader_module = CreateShaderModule(frag_shader_code);
+  auto binding_descriptions = Vertex::GetBindingDescription();
+  auto attribute_descriptions = Vertex::GetAttributeDesciptions();
+
+
 
   vert_shader_stage_info.sType =
       VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -729,10 +734,11 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
 
   vertex_input_info.sType =
       VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-  vertex_input_info.vertexBindingDescriptionCount = 0;
-  vertex_input_info.pVertexBindingDescriptions = nullptr;
-  vertex_input_info.vertexAttributeDescriptionCount = 0;
-  vertex_input_info.pVertexAttributeDescriptions = nullptr;
+  vertex_input_info.vertexBindingDescriptionCount = 1;
+  vertex_input_info.vertexAttributeDescriptionCount =
+          static_cast<uint32_t>(attribute_descriptions.size());
+  vertex_input_info.pVertexBindingDescriptions = &binding_descriptions;
+  vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions.data();
 
   input_assembly.sType =
       VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -833,7 +839,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
   pipeline_info.basePipelineIndex = -1;
   result = vkCreateGraphicsPipelines(
-      logical_device_, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline_);
+      logical_device_, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create graphics pipeline {}",
                      VkResultToString(result));
@@ -962,7 +968,8 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0}}};
   VkViewport viewport{};
   VkRect2D scissor{};
-
+  VkDeviceSize offsets[] = {0};
+  VkBuffer vertex_buffers[] = {vertex_buffer_};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   begin_info.flags = 0;
   begin_info.pInheritanceInfo = nullptr;
@@ -985,7 +992,7 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   vkCmdBeginRenderPass(command_buffer, &render_pass_info,
                        VK_SUBPASS_CONTENTS_INLINE);
   vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    pipeline_);
+                    graphics_pipeline_);
   viewport.x = 0.0f;
   viewport.y = 0.0f;
   viewport.width = static_cast<float>(swap_chain_.extent_.width);
@@ -997,7 +1004,8 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   scissor.offset = {0,0};
   scissor.extent = swap_chain_.extent_;
   vkCmdSetScissor(command_buffer, 0, 1, &scissor);
-  vkCmdDraw(command_buffer, 3, 1, 0, 0);
+  vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+  vkCmdDraw(command_buffer, static_cast<uint32_t>(vertices_.size()), 1, 0, 0);
   vkCmdEndRenderPass(command_buffer);
   result = vkEndCommandBuffer(command_buffer);
   if (result != VK_SUCCESS) {
@@ -1006,6 +1014,62 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
     throw std::runtime_error("failed to record command buffer!" +
                              VkResultToString(result));
   }
+}
+
+void gbengine::Vulkan::CreateVertexBuffer() { 
+  VkBufferCreateInfo buffer_info{}; 
+  VkMemoryRequirements memory_requirements;
+  VkMemoryAllocateInfo allocate_info{};
+  VkResult result;
+  void* data;
+  buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  buffer_info.size = sizeof(vertices_[0]) * vertices_.size();
+  buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+  buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  result =
+      vkCreateBuffer(logical_device_, &buffer_info, nullptr, &vertex_buffer_);
+  if (result != VK_SUCCESS) {
+    spdlog::critical("Failed to create buffer! {}",
+                     VkResultToString(result));
+    throw std::runtime_error("Failed to create buffer! " +
+                             VkResultToString(result));
+  }
+  vkGetBufferMemoryRequirements(logical_device_, vertex_buffer_,
+                                &memory_requirements);
+  allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  allocate_info.allocationSize = memory_requirements.size;
+  allocate_info.memoryTypeIndex =
+      FindMemoryType(memory_requirements.memoryTypeBits,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+  result = vkAllocateMemory(logical_device_, &allocate_info, nullptr,
+                            &vertex_buffer_memory_);
+  if (result != VK_SUCCESS) {
+    spdlog::critical("Failed to allocate vertex buffer memory {} ",
+                     VkResultToString(result));
+    throw std::runtime_error("Failed to allocate vertex buffer memory " +
+                             VkResultToString(result));
+  }
+  vkBindBufferMemory(logical_device_, vertex_buffer_, vertex_buffer_memory_, 0);
+  vkMapMemory(logical_device_, vertex_buffer_memory_, 0, buffer_info.size, 0,
+              &data);
+  memcpy(data, vertices_.data(), (size_t)buffer_info.size);
+  vkUnmapMemory(logical_device_, vertex_buffer_memory_);
+}
+
+uint32_t gbengine::Vulkan::FindMemoryType(uint32_t type_filter,
+                                      VkMemoryPropertyFlags properties) {
+  VkPhysicalDeviceMemoryProperties memory_properties;
+  vkGetPhysicalDeviceMemoryProperties(physical_device_, &memory_properties);
+  for (uint32_t i = 0; i < memory_properties.memoryTypeCount; i++) {
+    if ((type_filter & (1 << i)) &&
+       (memory_properties.memoryTypes[i].propertyFlags & properties) ==
+        properties) {
+      return i;
+    }
+  }
+  spdlog::critical("failed to find suitable memory type!");
+  throw std::runtime_error("failed to find suitable memory type!");
 }
 
 void gbengine::Vulkan::CreateSyncObjects() {
@@ -1090,9 +1154,10 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window, SDL_Event *event) {
   present_info.pSwapchains = swap_chains;
   present_info.pImageIndices = &image_index;
 
-  vkQueuePresentKHR(present_queue_, &present_info);
+  result = vkQueuePresentKHR(present_queue_, &present_info);
 
-  if (result != VK_SUBOPTIMAL_KHR || frame_buffer_resized_) {
+  if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
+      frame_buffer_resized_) {
     frame_buffer_resized_ = false;
     RecreateSwapChain(window, event);
   } else if (result != VK_SUCCESS) {
@@ -1102,8 +1167,6 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window, SDL_Event *event) {
   }
   current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
 }
-
-
 
 void gbengine::Vulkan::CreateSurface(SDL_Window* window) {
   if (SDL_Vulkan_CreateSurface(window, instance_, &surface_)) {
@@ -1131,6 +1194,15 @@ gbengine::Vulkan::~Vulkan() {
 
   // This for loop is producting errors where the frame buffer cannot be found
   // so it cannot be destory by the function. 
+
+  if (vertex_buffer_ != VK_NULL_HANDLE) {
+    vkDestroyBuffer(logical_device_, vertex_buffer_, nullptr);
+    vertex_buffer_ = VK_NULL_HANDLE;
+  }
+  if (vertex_buffer_memory_ != VK_NULL_HANDLE) {
+    vkFreeMemory(logical_device_, vertex_buffer_memory_, nullptr);
+    vertex_buffer_memory_ = VK_NULL_HANDLE;
+  }
   for (VkFramebuffer frame_buffer : swap_chain_.frame_buffer_) {  
     
     if (frame_buffer == VK_NULL_HANDLE) {
@@ -1139,8 +1211,8 @@ gbengine::Vulkan::~Vulkan() {
     vkDestroyFramebuffer(logical_device_, frame_buffer, nullptr);
   }
 
-  vkDestroyPipeline(logical_device_, pipeline_, nullptr);
-  pipeline_ = VK_NULL_HANDLE;
+  vkDestroyPipeline(logical_device_, graphics_pipeline_, nullptr);
+  graphics_pipeline_ = VK_NULL_HANDLE;
 
   vkDestroyPipelineLayout(logical_device_, pipeline_layout_, nullptr);
   pipeline_layout_ = VK_NULL_HANDLE;

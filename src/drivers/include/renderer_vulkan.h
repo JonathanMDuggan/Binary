@@ -50,7 +50,7 @@ namespace gbengine {
     }
   };
 
-  const std::vector<Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+  const std::vector<Vertex> vertices_ = {{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
                                         {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
                                         {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
   
@@ -131,13 +131,15 @@ private:
   FrameData frame_data_[kFrameOverLap] = {};
   VkPipelineLayout pipeline_layout_;
   VkRenderPass render_pass_;
-  VkPipeline pipeline_;
+  VkPipeline graphics_pipeline_;
   std::vector<VkCommandBuffer> command_buffers_;
   std::vector<VkFence>in_flight_fence_;
   Semaphore semaphore_;
   uint32_t current_frame_ = 0;
   VkFence in_flight_fences_{}; 
   bool frame_buffer_resized_ = false; 
+  VkBuffer vertex_buffer_{};
+  VkDeviceMemory vertex_buffer_memory_{};
 
   void InitVulkanApplication();
   void InitVulkanInfo();
@@ -161,6 +163,8 @@ private:
   void RecreateSwapChain(SDL_Window* window, SDL_Event* event);
   void CleanUpSwapChain();
   void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+  void CreateVertexBuffer();
+  uint32_t FindMemoryType(uint32_t type_filter, VkMemoryPropertyFlags properties);
   int RateDeviceSuitabillity(VkPhysicalDevice physical_device);
   void PopulateDebugMessengerCreateInfo(
       VkDebugUtilsMessengerCreateInfoEXT& debug_info);
