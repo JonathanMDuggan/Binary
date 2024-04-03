@@ -715,8 +715,6 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   auto binding_descriptions = Vertex::GetBindingDescription();
   auto attribute_descriptions = Vertex::GetAttributeDesciptions();
 
-
-
   vert_shader_stage_info.sType =
       VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -745,13 +743,6 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
   input_assembly.primitiveRestartEnable = VK_FALSE;
 
-  viewport.x = 0.0f;
-  viewport.y = 0.0f;
-  viewport.width = static_cast<float>(swap_chain_.extent_.width);
-  viewport.height = static_cast<float>(swap_chain_.extent_.height);
-  viewport.minDepth = 0.0f;
-  viewport.maxDepth = 1.0f;
-
   scissor.offset = {0, 0};
   scissor.extent = swap_chain_.extent_;
 
@@ -762,40 +753,26 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
 
   viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   viewport_state.viewportCount = 1;
-  viewport_state.pViewports = &viewport;
   viewport_state.scissorCount = 1;
-  viewport_state.pScissors = &scissor;
 
   rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+  rasterizer.depthBiasEnable = VK_FALSE;
   rasterizer.rasterizerDiscardEnable = VK_FALSE;
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
   rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
   rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
-  rasterizer.depthBiasConstantFactor = 0.0f;
-  rasterizer.depthBiasClamp = 0.0f;
-  rasterizer.depthBiasSlopeFactor = 0.0f;
 
   multisampling.sType =
       VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
   multisampling.sampleShadingEnable = VK_FALSE;
   multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-  multisampling.minSampleShading = 1.0f;
-  multisampling.pSampleMask = nullptr;
-  multisampling.alphaToCoverageEnable = VK_FALSE;
-  multisampling.alphaToOneEnable = VK_FALSE;
 
   color_blend_attachment.colorWriteMask =
       VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
       VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
   color_blend_attachment.blendEnable = VK_FALSE;
-  color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-  color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-  color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-  color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-  color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-  color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
   color_blending.sType =
       VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -810,9 +787,8 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
 
   pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipeline_layout_info.setLayoutCount = 0;
-  pipeline_layout_info.pSetLayouts = nullptr;
   pipeline_layout_info.pushConstantRangeCount = 0;
-  pipeline_layout_info.pPushConstantRanges = nullptr;
+
   VkResult result = vkCreatePipelineLayout(logical_device_, &pipeline_layout_info,
                                            nullptr, &pipeline_layout_);
   if (result != VK_SUCCESS) {
@@ -829,15 +805,13 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   pipeline_info.pViewportState = &viewport_state;
   pipeline_info.pRasterizationState = &rasterizer;
   pipeline_info.pMultisampleState = &multisampling;
-  pipeline_info.pDepthStencilState = nullptr;
   pipeline_info.pColorBlendState = &color_blending;
   pipeline_info.pDynamicState = &dynamic_state;
   pipeline_info.layout = pipeline_layout_;
   pipeline_info.renderPass = render_pass_;
   pipeline_info.subpass = 0;
-
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
-  pipeline_info.basePipelineIndex = -1;
+
   result = vkCreateGraphicsPipelines(
       logical_device_, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline_);
   if (result != VK_SUCCESS) {
