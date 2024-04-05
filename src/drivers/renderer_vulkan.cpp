@@ -30,11 +30,16 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   CreateImageViews();
   spdlog::info("Creating Vulkan Graphics Pipeline");
   CreateRenderPass();
+  CreateDescriptorSetLayout();
   CreateGraphicsPipeline();
+  spdlog::info("Allocating Vulkan Buffers");
   CreateFrameBuffer();
   CreateCommandPool();
   CreateVertexBuffer();
   CreateIndexBuffer();
+  CreateUniformBuffers();
+  CreateDescriptorPool();
+  CreateDescriptorSets();
   CreateCommandBuffer();
   CreateSyncObjects();
 }
@@ -93,6 +98,8 @@ VkResult gbengine::Vulkan::CreateDebugUtilsMessengerEXT(
   }
   return VK_SUCCESS;
 }
+
+
 
 void gbengine::Vulkan::DestroyDebugUtilsMessengerEXT(
     VkInstance instance_, VkDebugUtilsMessengerEXT debugMessenger,
@@ -271,6 +278,23 @@ bool gbengine::Vulkan::CheckDeviceExtensionSupport(
 
   // returns 1 if the physical device supports all the required extensions 
   return required_extensions.empty();
+}
+
+void gbengine::Vulkan::CreateUniformBuffers() {
+  VkDeviceSize buffer_size = sizeof(UniformBufferObject);
+  buffer_.uniform_.resize(kMaxFramesInFlight);
+  buffer_.uniform_memory_.resize(kMaxFramesInFlight);
+  buffer_.uniform_mapped_.resize(kMaxFramesInFlight);
+
+  for (size_t i = 0; i < kMaxFramesInFlight; i++) {
+    CreateBuffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 buffer_.uniform_[i], buffer_.uniform_memory_[i]);
+
+    vkMapMemory(logical_device_, buffer_.uniform_memory_[i], 0, buffer_size, 0,
+                &buffer_.uniform_mapped_[i]);
+  }
 }
 
 int gbengine::Vulkan::RateDeviceSuitabillity(VkPhysicalDevice phyiscal_device) {
@@ -639,6 +663,24 @@ void gbengine::Vulkan::CleanUpSwapChain() {
   }
   vkDestroySwapchainKHR(logical_device_, swap_chain_.KHR_, nullptr);
 }
+void gbengine::Vulkan::CreateDescriptorPool() {
+  VkDescriptorPoolSize pool_size{};
+  VkDescriptorPoolCreateInfo pool_info{};
+  VkResult result;
+  pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  pool_size.descriptorCount = static_cast<uint32_t>(kMaxFramesInFlight);
+  pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+  pool_info.poolSizeCount = 1;
+  pool_info.pPoolSizes = &pool_size;
+  pool_info.maxSets = static_cast<uint32_t>(kMaxFramesInFlight);
+  result = vkCreateDescriptorPool(logical_device_, &pool_info, nullptr,
+                                  &descriptor_pool_);
+  if (result != VK_SUCCESS) {
+    spdlog::critical("Failed to create Desciptor Pool! {} on line {} in file {}",
+                     VkResultToString(result), __LINE__, __FILE__);
+    throw std::runtime_error("Failed to create Desciptor Pool!: " + VkResultToString(result));
+  }
+}
 // Vulkan Image Views
 
 void gbengine::Vulkan::CreateImageViews() {
@@ -762,7 +804,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
   rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-  rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+  rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
 
   multisampling.sType =
@@ -787,7 +829,8 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   color_blending.blendConstants[3] = 0.0f;
 
   pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipeline_layout_info.setLayoutCount = 0;
+  pipeline_layout_info.setLayoutCount = 1;
+  pipeline_layout_info.pSetLayouts = &descriptor_set_layout_;
   pipeline_layout_info.pushConstantRangeCount = 0;
 
   VkResult result = vkCreatePipelineLayout(logical_device_, &pipeline_layout_info,
@@ -869,7 +912,8 @@ void gbengine::Vulkan::CreateRenderPass() {
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create Render Pass!: {}",
                      VkResultToString(result));
-    throw std::runtime_error("");
+    throw std::runtime_error("Failed to create Render Pass!:" +
+                             VkResultToString(result));
   }
 }
 
@@ -944,7 +988,7 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   VkViewport viewport{};
   VkRect2D scissor{};
   VkDeviceSize offsets[] = {0};
-  VkBuffer vertex_buffers[] = {vertex_buffer_};
+  VkBuffer vertex_buffers[] = {buffer_.vertex_};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   begin_info.flags = 0;
   begin_info.pInheritanceInfo = nullptr;
@@ -966,24 +1010,32 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
 
   vkCmdBeginRenderPass(command_buffer, &render_pass_info,
                        VK_SUBPASS_CONTENTS_INLINE);
-  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    graphics_pipeline_);
-  viewport.x = 0.0f;
-  viewport.y = 0.0f;
-  viewport.width = static_cast<float>(swap_chain_.extent_.width);
-  viewport.height = static_cast<float>(swap_chain_.extent_.height);
-  viewport.minDepth = 0.0f;
-  viewport.maxDepth = 1.0f;
-  vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-
-  scissor.offset = {0,0};
-  scissor.extent = swap_chain_.extent_;
-  vkCmdSetScissor(command_buffer, 0, 1, &scissor);
-  vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
-  vkCmdBindIndexBuffer(command_buffer, index_buffer_, 0, VK_INDEX_TYPE_UINT16);
-  vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(indices_.size()), 1, 0,
-                   0, 0);
-  vkCmdDraw(command_buffer, static_cast<uint32_t>(vertices_.size()), 1, 0, 0);
+    vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      graphics_pipeline_);
+    // View Port
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(swap_chain_.extent_.width);
+    viewport.height = static_cast<float>(swap_chain_.extent_.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+    // Scissor
+    scissor.offset = {0,0};
+    scissor.extent = swap_chain_.extent_;
+    vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+    // Vertex Buffer
+    vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+    // Index Buffer
+    vkCmdBindIndexBuffer(command_buffer, buffer_.index_, 0, VK_INDEX_TYPE_UINT16);
+    // Bind Descriptors Sets
+    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            pipeline_layout_, 0, 1,
+                            &descriptor_sets_[current_frame_], 0, nullptr);
+    // Draw Indexed
+    vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(indices_.size()), 1, 0,
+                     0, 0);
+    //vkCmdDraw(command_buffer, static_cast<uint32_t>(vertices_.size()), 1, 0, 0);
   vkCmdEndRenderPass(command_buffer);
   result = vkEndCommandBuffer(command_buffer);
   if (result != VK_SUCCESS) {
@@ -1011,8 +1063,9 @@ void gbengine::Vulkan::CreateIndexBuffer() {
   CreateBuffer(
       buffer_size,
       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, index_buffer_, index_buffer_memory_);
-  CopyBuffer(staging_buffer, index_buffer_, buffer_size);
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, buffer_.index_,
+      buffer_.index_memory_);
+  CopyBuffer(staging_buffer, buffer_.index_, buffer_size);
 
   vkDestroyBuffer(logical_device_, staging_buffer, nullptr);
   vkFreeMemory(logical_device_, staging_buffer_memory, nullptr);
@@ -1038,13 +1091,73 @@ void gbengine::Vulkan::CreateVertexBuffer() {
   CreateBuffer(
     buffer_size,
     VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    vertex_buffer_, vertex_buffer_memory_
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, buffer_.vertex_, buffer_.vertex_memory_
   );
 
-  CopyBuffer(staging_buffer, vertex_buffer_, buffer_size);
+  CopyBuffer(staging_buffer, buffer_.vertex_, buffer_size);
   vkDestroyBuffer(logical_device_, staging_buffer, nullptr);
   vkFreeMemory(logical_device_, staging_buffer_memory, nullptr);
+}
+
+void gbengine::Vulkan::CreateDescriptorSetLayout() {
+  VkDescriptorSetLayoutBinding ubo_layout_binding{};
+  VkDescriptorSetLayoutCreateInfo layout_info{};
+  VkResult result;
+  ubo_layout_binding.binding = 0;
+  ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  ubo_layout_binding.descriptorCount = 1;
+  ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; 
+  ubo_layout_binding.pImmutableSamplers = nullptr;
+  layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  layout_info.bindingCount = 1;
+  layout_info.pBindings = &ubo_layout_binding;
+  result = vkCreateDescriptorSetLayout(logical_device_, &layout_info, nullptr,
+                                       &descriptor_set_layout_);
+  if (result != VK_SUCCESS) {
+    spdlog::critical("Failed to create descriptor set layout! {}",
+                     VkResultToString(result));
+    throw std::runtime_error("failed to create descriptor set layout!" +
+                             VkResultToString(result));
+  }
+}
+
+void gbengine::Vulkan::CreateDescriptorSets() {
+  std::vector<VkDescriptorSetLayout> layout(kMaxFramesInFlight,
+                                            descriptor_set_layout_);
+  VkDescriptorSetAllocateInfo allocate_info{};
+  VkResult result;
+  allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  allocate_info.descriptorPool = descriptor_pool_;
+  allocate_info.descriptorSetCount = static_cast<uint32_t>(kMaxFramesInFlight);
+  allocate_info.pSetLayouts = layout.data();
+  descriptor_sets_.resize(kMaxFramesInFlight);
+  result = vkAllocateDescriptorSets(logical_device_, &allocate_info,
+                           descriptor_sets_.data());
+  if (result != VK_SUCCESS) {
+    spdlog::critical("Failed to create descriptor set!: {}",
+                     VkResultToString(result));
+    throw std::runtime_error("Failed to create descriptor set! " +
+                             VkResultToString(result));
+  }
+
+  for (size_t i = 0; i < kMaxFramesInFlight; i++) {
+    VkWriteDescriptorSet description_write{};
+    VkDescriptorBufferInfo buffer_info{};
+    buffer_info.buffer = buffer_.uniform_[i];
+    buffer_info.offset = 0;
+    buffer_info.range = sizeof(UniformBufferObject);
+
+    description_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    description_write.dstSet = descriptor_sets_[i];
+    description_write.dstBinding = 0;
+    description_write.dstArrayElement = 0;
+    description_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    description_write.descriptorCount = 1;
+    description_write.pBufferInfo = &buffer_info;
+    description_write.pImageInfo = nullptr;
+    description_write.pTexelBufferView = nullptr;
+    vkUpdateDescriptorSets(logical_device_, 1, &description_write, 0, nullptr);
+  }
 }
 
 void gbengine::Vulkan::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
@@ -1173,6 +1286,7 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window, SDL_Event *event) {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
   
+  UpdateUniformBuffer(current_frame_);
   vkResetFences(logical_device_, 1, &in_flight_fence_[current_frame_]);
   vkResetCommandBuffer(command_buffers_[current_frame_], 0);
   RecordCommandBuffer(command_buffers_[current_frame_], image_index);
@@ -1185,8 +1299,6 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window, SDL_Event *event) {
       semaphore_.render_finished_[current_frame_]};
   VkPresentInfoKHR present_info{};
   VkSwapchainKHR swap_chains[] = { swap_chain_.KHR_ };
-
-
 
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit_info.waitSemaphoreCount = 1; 
@@ -1228,11 +1340,36 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window, SDL_Event *event) {
   current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
 }
 
+void gbengine::Vulkan::UpdateUniformBuffer(uint32_t current_image) {
+  static auto start_time = std::chrono::high_resolution_clock::now();
+  auto current_time = std::chrono::high_resolution_clock::now();
+  float time = std::chrono::duration<float, std::chrono::seconds::period>(
+               current_time - start_time).count();
+  UniformBufferObject ubo{};
+
+  ubo.mode1 = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), 
+                          glm::vec3(0.0f, 0.0f, 1.0f)); 
+
+  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), 
+                         glm::vec3(0.0f, 0.0f, 0.0f),
+                         glm::vec3(0.0f, 0.0f, 1.0f));
+
+  ubo.proj = glm::perspective(
+      glm::radians(45.0f), 
+      swap_chain_.extent_.width / (float)swap_chain_.extent_.height, 0.1f,
+      10.0f);
+
+  ubo.proj[1][1] *= -1;
+
+  memcpy(buffer_.uniform_mapped_[current_image], &ubo, sizeof(ubo));
+}
+
 void gbengine::Vulkan::CreateSurface(SDL_Window* window) {
   if (SDL_Vulkan_CreateSurface(window, instance_, &surface_)) {
     return;
   }
 }
+
 gbengine::Vulkan::Vulkan(SDL* sdl, Application app) {
   InitVulkan(sdl, app);
 }
@@ -1240,6 +1377,22 @@ gbengine::Vulkan::Vulkan(SDL* sdl, Application app) {
 gbengine::Vulkan::~Vulkan() {
   VkResult result;
   CleanUpSwapChain();
+  vkDestroyDescriptorPool(logical_device_, descriptor_pool_, nullptr);
+  descriptor_pool_ = VK_NULL_HANDLE;
+  vkDestroyDescriptorSetLayout(logical_device_, descriptor_set_layout_,
+                               nullptr);
+  descriptor_set_layout_ = VK_NULL_HANDLE;
+  for (size_t i = 0; i < kMaxFramesInFlight; i++) { 
+    vkDestroyBuffer(logical_device_, buffer_.uniform_[i], nullptr); 
+    buffer_.uniform_[i] = VK_NULL_HANDLE;
+    vkFreeMemory(logical_device_, buffer_.uniform_memory_[i], nullptr);
+    buffer_.uniform_memory_[i] = VK_NULL_HANDLE;
+  }
+
+  vkDestroyDescriptorSetLayout(logical_device_, descriptor_set_layout_,
+                               nullptr);
+
+  descriptor_set_layout_ = VK_NULL_HANDLE;
   for (size_t i = 0; i < kMaxFramesInFlight; i++) {
     vkDestroySemaphore(logical_device_, semaphore_.image_available_[i], nullptr);
     semaphore_.image_available_[i] = VK_NULL_HANDLE;
@@ -1252,23 +1405,23 @@ gbengine::Vulkan::~Vulkan() {
   vkDestroyCommandPool(logical_device_, command_pool_, nullptr);
   command_pool_ = VK_NULL_HANDLE;
   // Destroy vertex buffer
-  if (vertex_buffer_ != VK_NULL_HANDLE) {
-    vkDestroyBuffer(logical_device_, vertex_buffer_, nullptr);
-    vertex_buffer_ = VK_NULL_HANDLE;
+  if (buffer_.vertex_ != VK_NULL_HANDLE) {
+    vkDestroyBuffer(logical_device_, buffer_.vertex_, nullptr);
+    buffer_.vertex_ = VK_NULL_HANDLE;
   }
-  if (vertex_buffer_memory_ != VK_NULL_HANDLE) {
-    vkFreeMemory(logical_device_, vertex_buffer_memory_, nullptr);
-    vertex_buffer_memory_ = VK_NULL_HANDLE;
+  if (buffer_.vertex_memory_ != VK_NULL_HANDLE) {
+    vkFreeMemory(logical_device_, buffer_.vertex_memory_, nullptr);
+    buffer_.vertex_memory_ = VK_NULL_HANDLE;
   }
 
   // Destroy index buffer
-  if (index_buffer_ != VK_NULL_HANDLE) {
-    vkDestroyBuffer(logical_device_, index_buffer_, nullptr);
-    index_buffer_ = VK_NULL_HANDLE; 
+  if (buffer_.index_ != VK_NULL_HANDLE) {
+    vkDestroyBuffer(logical_device_, buffer_.index_, nullptr);
+    buffer_.index_ = VK_NULL_HANDLE; 
   }
-  if (index_buffer_memory_ != VK_NULL_HANDLE) { 
-    vkFreeMemory(logical_device_, index_buffer_memory_, nullptr);
-    index_buffer_memory_ = VK_NULL_HANDLE;
+  if (buffer_.index_memory_ != VK_NULL_HANDLE) {
+    vkFreeMemory(logical_device_, buffer_.index_memory_, nullptr);
+    buffer_.index_memory_ = VK_NULL_HANDLE;
   }
 
   // This for loop is producting errors where the frame buffer cannot be found

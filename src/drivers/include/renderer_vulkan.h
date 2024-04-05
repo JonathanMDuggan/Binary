@@ -20,6 +20,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "spdlog/spdlog.h"
 #include "peripherals_sdl.h"
 namespace gbengine {
@@ -35,7 +36,8 @@ struct Vertex {
     return binding_description;
   }
 
-  static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDesciptions(){
+  static std::array<VkVertexInputAttributeDescription, 2> 
+    GetAttributeDesciptions(){
     std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions{};
     attribute_descriptions[0].binding = 0;
     attribute_descriptions[0].location = 0;
@@ -49,16 +51,21 @@ struct Vertex {
     return attribute_descriptions;
   }
 };
-const std::vector<Vertex> vertices_ = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                                       {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-                                       {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-                                       {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+
+const std::vector<Vertex> vertices_ = {{{-0.5f, -0.5f},{1.0f, 0.0f, 0.0f}},
+                                       {{ 0.5f, -0.5f},{0.0f, 1.0f, 0.0f}},
+                                       {{ 0.5f,  0.5f},{0.0f, 0.0f, 1.0f}},
+                                       {{-0.5f,  0.5f},{1.0f, 1.0f, 1.0f}}};
 
 const std::vector<uint16_t> indices_ = {0, 1, 2, 2, 3, 0};
 extern std::vector<char> ReadFile(const std::string& file_name);
 extern std::string VkResultToString(VkResult result);
 enum VulkanConst { kFrameOverLap = 2, kMaxFramesInFlight = 2};
-
+struct UniformBufferObject {
+  glm::mat4 mode1;
+  glm::mat4 view;
+  glm::mat4 proj;
+};
 typedef struct QueueFamilyIndices {
   std::optional<uint32_t> graphics_family;
   std::optional<uint32_t> present_family;
@@ -68,13 +75,13 @@ typedef struct QueueFamilyIndices {
 } QueueFamilyIndices;
 
 class Vulkan {
-public:
+ public:
   VkDevice logical_device_{};
- Vulkan(SDL* sdl, Application app);
- ~Vulkan();
- void DrawFrame(SDL_Window* window, SDL_Event* event);
+  Vulkan(SDL* sdl, Application app);
+  ~Vulkan();
+  void DrawFrame(SDL_Window* window, SDL_Event* event);
 
-private:
+ private:
   const std::vector<const char*> validation_layers = {
       "VK_LAYER_KHRONOS_validation",
   };
@@ -101,7 +108,7 @@ private:
     VkFormat image_format_{};
     VkExtent2D extent_{};
     SwapChainSupportDetails support_details_ = {};
-  }SwapChain;
+  } SwapChain;
 
   typedef struct FrameData {
     VkCommandPool command_pool_{};
@@ -109,41 +116,50 @@ private:
     VkSemaphore swapchain_semaphore_{}, render_semaphore_{};
     VkFence render_fence_{};
 
-  }FrameData;
+  } FrameData;
 
   typedef struct Semaphore {
     std::vector<VkSemaphore> image_available_;
     std::vector<VkSemaphore> render_finished_;
   };
 
+  typedef struct Buffer {
+    VkBuffer vertex_;
+    VkBuffer index_;
+    VkDeviceMemory vertex_memory_;
+    VkDeviceMemory index_memory_;
+    std::vector<VkBuffer> uniform_;
+    std::vector<VkDeviceMemory> uniform_memory_;
+    std::vector<void*> uniform_mapped_;
+  };
+
   const char* const* instance_validation_layers_{};
   uint32_t sdl_extenstion_count_{};
   const char** kSDLExtensions_{};
-  VkInstance instance_; 
+  VkInstance instance_;
   VkQueueFamilyProperties* queue_props_{};
   VkDebugUtilsMessengerEXT debug_messenger_{};
   VkPhysicalDevice physical_device_{};
   VkSurfaceKHR surface_{};
   VkQueue graphics_queue_{};
   VkQueue present_queue_{};
-  VkCommandPool command_pool_{};
   SwapChain swap_chain_{};
   uint32_t graphics_queue_family_{};
   FrameData frame_data_[kFrameOverLap] = {};
+  VkDescriptorSetLayout descriptor_set_layout_{};
   VkPipelineLayout pipeline_layout_;
   VkRenderPass render_pass_;
   VkPipeline graphics_pipeline_;
+  VkCommandPool command_pool_{};
   std::vector<VkCommandBuffer> command_buffers_;
   std::vector<VkFence>in_flight_fence_;
   Semaphore semaphore_;
   uint32_t current_frame_ = 0;
   VkFence in_flight_fences_{}; 
   bool frame_buffer_resized_ = false; 
-  VkBuffer vertex_buffer_{};
-  VkDeviceMemory vertex_buffer_memory_{};
-  VkBuffer index_buffer_{};
-  VkDeviceMemory index_buffer_memory_{};
-
+  Buffer buffer_{};
+  VkDescriptorPool descriptor_pool_{};
+  std::vector<VkDescriptorSet> descriptor_sets_;
 
   void InitVulkanApplication();
   void InitVulkanInfo();
@@ -166,15 +182,19 @@ private:
   void CreateSyncObjects();
   void RecreateSwapChain(SDL_Window* window, SDL_Event* event);
   void CleanUpSwapChain();
+  void CreateDescriptorPool();
   void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
   void CreateIndexBuffer();
   void CreateVertexBuffer();
+  void CreateDescriptorSetLayout();
+  void CreateDescriptorSets();
   void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                     VkMemoryPropertyFlags properties, VkBuffer& buffer,
                     VkDeviceMemory& buffer_memory);
   void CopyBuffer(VkBuffer source_buffer, VkBuffer destination_buffer,
                   VkDeviceSize size);
-  uint32_t FindMemoryType(uint32_t type_filter, VkMemoryPropertyFlags properties);
+  uint32_t FindMemoryType(uint32_t type_filter,
+                          VkMemoryPropertyFlags properties);
   int RateDeviceSuitabillity(VkPhysicalDevice physical_device);
   void PopulateDebugMessengerCreateInfo(
       VkDebugUtilsMessengerCreateInfoEXT& debug_info);
@@ -185,7 +205,7 @@ private:
       const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
       const VkAllocationCallbacks* pAllocator,
       VkDebugUtilsMessengerEXT* pDebugMessenger);
-
+  void UpdateUniformBuffer(uint32_t current_image);
   void DestroyDebugUtilsMessengerEXT(VkInstance instance_,
                                      VkDebugUtilsMessengerEXT debugMessenger,
                                      const VkAllocationCallbacks* pAllocator);
@@ -193,7 +213,7 @@ private:
   QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physical_device);
 
   bool CheckDeviceExtensionSupport(VkPhysicalDevice physical_device);
-
+  void CreateUniformBuffers();
   SwapChainSupportDetails QuerySwapChainSupport(
       VkPhysicalDevice physical_device);
   VkSurfaceFormatKHR ChooseSwapSurfaceFormat(
