@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
   gbengine::Vulkan vulkan(&sdl, app);
   while (running) {
     sdl.PoolEvents(&running);
-    vulkan.DrawFrame(sdl.window, &sdl.event);
+    vulkan.DrawFrame(sdl.window_, &sdl.event_);
   }
   vkDeviceWaitIdle(vulkan.logical_device_);
   return EXIT_SUCCESS;

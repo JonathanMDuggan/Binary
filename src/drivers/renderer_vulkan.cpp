@@ -18,15 +18,15 @@
 void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   if (ValidationLayersEnabled) spdlog::set_level(spdlog::level::trace);
   spdlog::info("Initializing Vulkan Instance");
-  InitVulkanInstance(sdl->window, app);
+  InitVulkanInstance(sdl->window_, app);
   SetupDebugMessenger();
-  CreateSurface(sdl->window);
+  CreateSurface(sdl->window_);
   spdlog::info("Finding a suitable device that supports Vulkan");
   PickPhysicalDevice();
   spdlog::info("Initializing Vulkan Logical Device");
   CreateLogicalDevice();
   spdlog::info("Initializing Vulkan Presentation Layer");
-  CreateSwapChain(sdl->window);
+  CreateSwapChain(sdl->window_);
   CreateImageViews();
   spdlog::info("Creating Vulkan Graphics Pipeline");
   CreateRenderPass();
@@ -34,6 +34,7 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   CreateGraphicsPipeline();
   spdlog::info("Allocating Vulkan Buffers");
   CreateFrameBuffer();
+  CreateTextureImage(sdl);
   CreateCommandPool();
   CreateVertexBuffer();
   CreateIndexBuffer();
@@ -137,7 +138,7 @@ void gbengine::Vulkan::PopulateDebugMessengerCreateInfo(
 // Creates a "Vulkan Instance" taking two parameters:
 // Window: What window will Vulkan renender to
 // Application: The application Vulkan is under.
-void gbengine::Vulkan::InitVulkanInstance(SDL_Window* window, Application app) {
+void gbengine::Vulkan::InitVulkanInstance(SDL_Window* window_, Application app) {
   // The Vulkan Instance sits at the top of the Vulkan hierachy, the vulkan
   // instance must be initizted with what appliaction infomation ( name,
   // version, engine etc. while also requiring the extensions of outside
@@ -171,7 +172,7 @@ void gbengine::Vulkan::InitVulkanInstance(SDL_Window* window, Application app) {
   // In this line of code, we are calling the get extension function
   // which will get the extensions needed to use SDL for the windowing 
   // and the debug extenstion for the validation layers
-  std::vector<const char*> sdl_extensions = GetExtensions(window);
+  std::vector<const char*> sdl_extensions = GetExtensions(window_);
   instance_info.enabledExtensionCount =
       static_cast<uint32_t>(sdl_extensions.size());
   instance_info.ppEnabledExtensionNames = sdl_extensions.data();
@@ -235,7 +236,8 @@ bool gbengine::Vulkan::VulkanValidationLayerSupported() {
 
 // Vulkan Physical Device Functions
 
-bool gbengine::Vulkan::IsPhysicalDeviceSuitable(VkPhysicalDevice phyiscal_device) {
+bool gbengine::Vulkan::IsPhysicalDeviceSuitable(
+    VkPhysicalDevice phyiscal_device) {
   // Not every device which supports Vulkan can display images to the screen
   // therefore we must check if the physical device is suitable for the
   // application needs
@@ -412,8 +414,10 @@ void gbengine::Vulkan::CreateLogicalDevice() {
 
   // The physical device queue location is in a index, to get the queue we
   // must set the pass the index to this function to fetch the queue
-  vkGetDeviceQueue(logical_device_, indinces.graphics_family.value(), 0, &graphics_queue_);
-  vkGetDeviceQueue(logical_device_, indinces.present_family.value(), 0, &present_queue_);
+  vkGetDeviceQueue(logical_device_, indinces.graphics_family.value(), 0,
+                   &graphics_queue_);
+  vkGetDeviceQueue(logical_device_, indinces.present_family.value(), 0,
+                   &present_queue_);
 }
 
 // Vulkan Queue
@@ -467,13 +471,13 @@ gbengine::QueueFamilyIndices gbengine::Vulkan::FindQueueFamilies(
 // Gets extensions from the SDL library to allow vulkan to do features it
 // otherwise cannot do by itself
 std::vector<const char*> gbengine::Vulkan::GetExtensions(
-    SDL_Window* window) {
+    SDL_Window* window_) {
 
   // Get the number of extensions sdl needs and increase the size of a vector
   // based on the number it gives, then push the extension names inside of
   // vector
   uint32_t sdl_extension_count = 0;
-  if (!SDL_Vulkan_GetInstanceExtensions(window, &sdl_extension_count,
+  if (!SDL_Vulkan_GetInstanceExtensions(window_, &sdl_extension_count,
                                         nullptr)) {
     spdlog::critical(
         "Failed to get the number of Vulkan instance extensions from SDL");
@@ -482,7 +486,7 @@ std::vector<const char*> gbengine::Vulkan::GetExtensions(
 
   std::vector<const char*> extensions(sdl_extension_count);
   if (sdl_extension_count > 0) {
-    if (!SDL_Vulkan_GetInstanceExtensions(window, &sdl_extension_count,
+    if (!SDL_Vulkan_GetInstanceExtensions(window_, &sdl_extension_count,
                                           extensions.data())) {
       spdlog::critical("Failed to get the Vulkan instance extensions names "
                        "from SDL");
@@ -556,11 +560,11 @@ VkPresentModeKHR gbengine::Vulkan::ChooseSwapPresentMode(
 
 
 VkExtent2D gbengine::Vulkan::ChooseSwapExtent(
-    SDL_Window* window,
+    SDL_Window* window_,
     const VkSurfaceCapabilitiesKHR& capabilities) {
   int width, height = 0;
 
-  SDL_Vulkan_GetDrawableSize(window, &width, &height);
+  SDL_Vulkan_GetDrawableSize(window_, &width, &height);
 
   VkExtent2D actual_extent = {static_cast<uint32_t>(width),
                               static_cast<uint32_t>(height)};
@@ -576,7 +580,7 @@ VkExtent2D gbengine::Vulkan::ChooseSwapExtent(
   return actual_extent;
 }
 
-void gbengine::Vulkan::CreateSwapChain(SDL_Window* window) {
+void gbengine::Vulkan::CreateSwapChain(SDL_Window* window_) {
   uint32_t image_count = 0;
   SwapChainSupportDetails swap_chain_support =
       QuerySwapChainSupport(physical_device_);
@@ -584,7 +588,7 @@ void gbengine::Vulkan::CreateSwapChain(SDL_Window* window) {
       ChooseSwapSurfaceFormat(swap_chain_support.formats);
   VkPresentModeKHR present_mode =
       ChooseSwapPresentMode(swap_chain_support.present_modes);
-  VkExtent2D extent = ChooseSwapExtent(window, swap_chain_support.capabilities);
+  VkExtent2D extent = ChooseSwapExtent(window_, swap_chain_support.capabilities);
   QueueFamilyIndices indices = FindQueueFamilies(physical_device_);
   VkSwapchainCreateInfoKHR swap_chain_info{};
   const uint32_t queue_family_indices[2] = {indices.graphics_family.value(),
@@ -622,15 +626,16 @@ void gbengine::Vulkan::CreateSwapChain(SDL_Window* window) {
   swap_chain_info.clipped = VK_TRUE;
   // swap_chain_info.oldSwapchain   = VK_NULL_HANDLE;
 
-  VkResult result = vkCreateSwapchainKHR(logical_device_, &swap_chain_info, nullptr,
-                                         &swap_chain_.KHR_);
+  VkResult result = vkCreateSwapchainKHR(logical_device_, &swap_chain_info,
+                                         nullptr, &swap_chain_.KHR_);
 
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create swap chain! {} on line {} in file {}",
                      VkResultToString(result), __LINE__, __FILE__);
   }
 
-  vkGetSwapchainImagesKHR(logical_device_, swap_chain_.KHR_, &image_count, nullptr);
+  vkGetSwapchainImagesKHR(logical_device_, swap_chain_.KHR_, &image_count,
+                          nullptr);
   swap_chain_.images_.resize(image_count);
   vkGetSwapchainImagesKHR(logical_device_, swap_chain_.KHR_, &image_count,
                           swap_chain_.images_.data());
@@ -639,24 +644,25 @@ void gbengine::Vulkan::CreateSwapChain(SDL_Window* window) {
   swap_chain_.extent_ = extent;
 }
 
-void gbengine::Vulkan::RecreateSwapChain(SDL_Window* window, SDL_Event* event) {
+void gbengine::Vulkan::RecreateSwapChain(SDL_Window* window_, SDL_Event* event) {
   int width = 0;
   int height = 0;
-  SDL_Vulkan_GetDrawableSize(window, &width, &height);
+  SDL_Vulkan_GetDrawableSize(window_, &width, &height);
   while (width == 0 || height == 0) {
-    SDL_Vulkan_GetDrawableSize(window, &width, &height);
+    SDL_Vulkan_GetDrawableSize(window_, &width, &height);
     SDL_WaitEvent(event);
   }
   vkDeviceWaitIdle(logical_device_);
   CleanUpSwapChain();
-  CreateSwapChain(window);
+  CreateSwapChain(window_);
   CreateImageViews();
   CreateFrameBuffer();
 }
 
 void gbengine::Vulkan::CleanUpSwapChain() {
   for (uint32_t i = 0; i < swap_chain_.frame_buffer_.size(); i++) {
-    vkDestroyFramebuffer(logical_device_, swap_chain_.frame_buffer_[i], nullptr);
+    vkDestroyFramebuffer(logical_device_, swap_chain_.frame_buffer_[i],
+                         nullptr);
   }
   for (uint32_t i = 0; i < swap_chain_.image_views_.size(); i++) {
     vkDestroyImageView(logical_device_, swap_chain_.image_views_[i], nullptr);
@@ -676,9 +682,11 @@ void gbengine::Vulkan::CreateDescriptorPool() {
   result = vkCreateDescriptorPool(logical_device_, &pool_info, nullptr,
                                   &descriptor_pool_);
   if (result != VK_SUCCESS) {
-    spdlog::critical("Failed to create Desciptor Pool! {} on line {} in file {}",
-                     VkResultToString(result), __LINE__, __FILE__);
-    throw std::runtime_error("Failed to create Desciptor Pool!: " + VkResultToString(result));
+    spdlog::critical(
+        "Failed to create Desciptor Pool! {} on line {} in file {}",
+        VkResultToString(result), __LINE__, __FILE__);
+    throw std::runtime_error("Failed to create Desciptor Pool!: " +
+                             VkResultToString(result));
   }
 }
 // Vulkan Image Views
@@ -701,8 +709,8 @@ void gbengine::Vulkan::CreateImageViews() {
     image_view_info.subresourceRange.baseArrayLayer = 0;
     image_view_info.subresourceRange.layerCount = 1;
 
-    VkResult result = vkCreateImageView(logical_device_, &image_view_info, nullptr,
-                                        &swap_chain_.image_views_[i]);
+    VkResult result = vkCreateImageView(logical_device_, &image_view_info,
+                                        nullptr, &swap_chain_.image_views_[i]);
     if (result != VK_SUCCESS) {
       spdlog::error("Failed to create image view! {} on line {} in file {}",
                     VkResultToString(result), __LINE__, __FILE__);
@@ -720,8 +728,8 @@ VkShaderModule gbengine::Vulkan::CreateShaderModule(
   shader_module_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
   VkShaderModule shader_module;
-  VkResult result = vkCreateShaderModule(logical_device_, &shader_module_info, nullptr,
-                                         &shader_module);
+  VkResult result = vkCreateShaderModule(logical_device_, &shader_module_info,
+                                         nullptr, &shader_module);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create shader module: {}",
                      VkResultToString(result));
@@ -833,8 +841,9 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   pipeline_layout_info.pSetLayouts = &descriptor_set_layout_;
   pipeline_layout_info.pushConstantRangeCount = 0;
 
-  VkResult result = vkCreatePipelineLayout(logical_device_, &pipeline_layout_info,
-                                           nullptr, &pipeline_layout_);
+  VkResult result = vkCreatePipelineLayout(
+      logical_device_, &pipeline_layout_info, nullptr, &pipeline_layout_
+  );
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create pipeline layout! {} ",
                      VkResultToString(result));
@@ -856,8 +865,8 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   pipeline_info.subpass = 0;
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 
-  result = vkCreateGraphicsPipelines(
-      logical_device_, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline_);
+  result = vkCreateGraphicsPipelines(logical_device_, VK_NULL_HANDLE, 1,
+                                &pipeline_info, nullptr, &graphics_pipeline_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create graphics pipeline {}",
                      VkResultToString(result));
@@ -907,8 +916,8 @@ void gbengine::Vulkan::CreateRenderPass() {
   render_pass_info.dependencyCount = 1;       
   render_pass_info.pDependencies = &dependency;
 
-  VkResult result = vkCreateRenderPass(logical_device_, &render_pass_info, nullptr,
-                                       &render_pass_);
+  VkResult result = vkCreateRenderPass(logical_device_, &render_pass_info,
+                                       nullptr, &render_pass_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create Render Pass!: {}",
                      VkResultToString(result));
@@ -933,8 +942,8 @@ void gbengine::Vulkan::CreateFrameBuffer() {
     frame_buffer_info.height = swap_chain_.extent_.height;
     frame_buffer_info.layers = 1;
 
-    result = vkCreateFramebuffer(
-        logical_device_, &frame_buffer_info, nullptr, &swap_chain_.frame_buffer_[i]);
+    result = vkCreateFramebuffer(logical_device_, &frame_buffer_info, nullptr,
+                                 &swap_chain_.frame_buffer_[i]);
     if (result != VK_SUCCESS) {
       spdlog::critical("Failed to create Frame Buffer!: {}",
                        VkResultToString(result));
@@ -946,8 +955,7 @@ void gbengine::Vulkan::CreateFrameBuffer() {
 // Vulkan Command Stuff
 
 void gbengine::Vulkan::CreateCommandPool() {
-  QueueFamilyIndices queue_family_indices =
-      FindQueueFamilies(physical_device_);
+  QueueFamilyIndices queue_family_indices = FindQueueFamilies(physical_device_);
   VkCommandPoolCreateInfo pool_info{};
   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -1027,14 +1035,15 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
     // Vertex Buffer
     vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
     // Index Buffer
-    vkCmdBindIndexBuffer(command_buffer, buffer_.index_, 0, VK_INDEX_TYPE_UINT16);
+    vkCmdBindIndexBuffer(command_buffer, buffer_.index_, 0,
+                         VK_INDEX_TYPE_UINT16);
     // Bind Descriptors Sets
     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             pipeline_layout_, 0, 1,
                             &descriptor_sets_[current_frame_], 0, nullptr);
     // Draw Indexed
-    vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(indices_.size()), 1, 0,
-                     0, 0);
+    vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(indices_.size()), 1,
+                     0, 0, 0);
     //vkCmdDraw(command_buffer, static_cast<uint32_t>(vertices_.size()), 1, 0, 0);
   vkCmdEndRenderPass(command_buffer);
   result = vkEndCommandBuffer(command_buffer);
@@ -1160,6 +1169,10 @@ void gbengine::Vulkan::CreateDescriptorSets() {
   }
 }
 
+void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
+  sdl->GetTextureFromPath("resources/textures/sunshine.jpg");
+}
+
 void gbengine::Vulkan::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                                     VkMemoryPropertyFlags properties,
                                     VkBuffer& buffer,
@@ -1263,22 +1276,22 @@ void gbengine::Vulkan::CreateSyncObjects() {
                                   &semaphore_.image_available_[i]);
     result[1] = vkCreateSemaphore(logical_device_, &semaphore_info, nullptr,
                                   &semaphore_.render_finished_[i]);
-    result[2] =
-        vkCreateFence(logical_device_, &fence_info, nullptr, &in_flight_fence_[i]);
+    result[2] = vkCreateFence(logical_device_, &fence_info, nullptr,
+                              &in_flight_fence_[i]);
   }
 
 }
 
-void gbengine::Vulkan::DrawFrame(SDL_Window* window, SDL_Event *event) {
-  vkWaitForFences(logical_device_, 1, &in_flight_fence_[current_frame_], VK_TRUE,
-                  UINT64_MAX);
+void gbengine::Vulkan::DrawFrame(SDL_Window* window_, SDL_Event *event) {
+  vkWaitForFences(logical_device_, 1, &in_flight_fence_[current_frame_],
+                  VK_TRUE, UINT64_MAX);
   uint32_t image_index = 0;
   VkResult result =
       vkAcquireNextImageKHR(logical_device_, swap_chain_.KHR_, UINT64_MAX,
                             semaphore_.image_available_[current_frame_],
                             VK_NULL_HANDLE, &image_index);
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-    RecreateSwapChain(window, event);
+    RecreateSwapChain(window_, event);
     return;
   } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
     spdlog::critical("Failed to acquire swap chain image! {}",
@@ -1331,7 +1344,7 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window, SDL_Event *event) {
   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
       frame_buffer_resized_) {
     frame_buffer_resized_ = false;
-    RecreateSwapChain(window, event);
+    RecreateSwapChain(window_, event);
   } else if (result != VK_SUCCESS) {
     spdlog::critical("Failed to present queue! {}", VkResultToString(result));
     throw std::runtime_error("Failed to present queue!" +
@@ -1347,7 +1360,7 @@ void gbengine::Vulkan::UpdateUniformBuffer(uint32_t current_image) {
                current_time - start_time).count();
   UniformBufferObject ubo{};
 
-  ubo.mode1 = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), 
+  ubo.mode1 = glm::rotate(glm::mat4(1.0f), time * glm::radians(120.0f), 
                           glm::vec3(0.0f, 0.0f, 1.0f)); 
 
   ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), 
@@ -1355,7 +1368,7 @@ void gbengine::Vulkan::UpdateUniformBuffer(uint32_t current_image) {
                          glm::vec3(0.0f, 0.0f, 1.0f));
 
   ubo.proj = glm::perspective(
-      glm::radians(45.0f), 
+      glm::radians(20.0f), 
       swap_chain_.extent_.width / (float)swap_chain_.extent_.height, 0.1f,
       10.0f);
 
@@ -1364,8 +1377,8 @@ void gbengine::Vulkan::UpdateUniformBuffer(uint32_t current_image) {
   memcpy(buffer_.uniform_mapped_[current_image], &ubo, sizeof(ubo));
 }
 
-void gbengine::Vulkan::CreateSurface(SDL_Window* window) {
-  if (SDL_Vulkan_CreateSurface(window, instance_, &surface_)) {
+void gbengine::Vulkan::CreateSurface(SDL_Window* window_) {
+  if (SDL_Vulkan_CreateSurface(window_, instance_, &surface_)) {
     return;
   }
 }
@@ -1394,9 +1407,11 @@ gbengine::Vulkan::~Vulkan() {
 
   descriptor_set_layout_ = VK_NULL_HANDLE;
   for (size_t i = 0; i < kMaxFramesInFlight; i++) {
-    vkDestroySemaphore(logical_device_, semaphore_.image_available_[i], nullptr);
+    vkDestroySemaphore(logical_device_, semaphore_.image_available_[i],
+                       nullptr);
     semaphore_.image_available_[i] = VK_NULL_HANDLE;
-    vkDestroySemaphore(logical_device_, semaphore_.render_finished_[i], nullptr);
+    vkDestroySemaphore(logical_device_, semaphore_.render_finished_[i],
+                       nullptr);
     semaphore_.render_finished_[i] = VK_NULL_HANDLE;
     vkDestroyFence(logical_device_, in_flight_fence_[i], nullptr);
     in_flight_fence_[i] = VK_NULL_HANDLE;

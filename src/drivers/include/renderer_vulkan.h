@@ -13,6 +13,7 @@
 #include <limits>
 #include <fstream>
 #include <SDL.h>
+#include <SDL_image.h>
 #include <SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
@@ -79,7 +80,7 @@ class Vulkan {
   VkDevice logical_device_{};
   Vulkan(SDL* sdl, Application app);
   ~Vulkan();
-  void DrawFrame(SDL_Window* window, SDL_Event* event);
+  void DrawFrame(SDL_Window* window_, SDL_Event* event);
 
  private:
   const std::vector<const char*> validation_layers = {
@@ -167,12 +168,12 @@ class Vulkan {
   void InitVulkanValidationLayers();
   bool IsPhysicalDeviceSuitable(VkPhysicalDevice physical_device);
 
-  void InitVulkanInstance(SDL_Window* window, Application app);
+  void InitVulkanInstance(SDL_Window* window_, Application app);
   void SetupDebugMessenger();
-  void CreateSurface(SDL_Window* window);
+  void CreateSurface(SDL_Window* window_);
   void PickPhysicalDevice();
   void CreateLogicalDevice();
-  void CreateSwapChain(SDL_Window* window);
+  void CreateSwapChain(SDL_Window* window_);
   void CreateImageViews();
   void CreateGraphicsPipeline();
   void CreateRenderPass();
@@ -180,7 +181,7 @@ class Vulkan {
   void CreateCommandPool();
   void CreateCommandBuffer();
   void CreateSyncObjects();
-  void RecreateSwapChain(SDL_Window* window, SDL_Event* event);
+  void RecreateSwapChain(SDL_Window* window_, SDL_Event* event);
   void CleanUpSwapChain();
   void CreateDescriptorPool();
   void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -188,6 +189,7 @@ class Vulkan {
   void CreateVertexBuffer();
   void CreateDescriptorSetLayout();
   void CreateDescriptorSets();
+  void CreateTextureImage(SDL * sdl);
   void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                     VkMemoryPropertyFlags properties, VkBuffer& buffer,
                     VkDeviceMemory& buffer_memory);
@@ -221,9 +223,9 @@ class Vulkan {
   VkPresentModeKHR ChooseSwapPresentMode(
       const std::vector<VkPresentModeKHR>& available_present_modes); 
   VkShaderModule CreateShaderModule(const std::vector<char>& code);
-  VkExtent2D ChooseSwapExtent(SDL_Window* window,
+  VkExtent2D ChooseSwapExtent(SDL_Window* window_,
                               const VkSurfaceCapabilitiesKHR& capabilities);
-  std::vector<const char*> GetExtensions(SDL_Window* window);
+  std::vector<const char*> GetExtensions(SDL_Window* window_);
   void InitVulkan(gbengine::SDL* sdl, gbengine::Application app);
 };
 

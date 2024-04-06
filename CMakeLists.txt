@@ -106,7 +106,6 @@ set_property(TARGET Gameboy_Engine PROPERTY CXX_STANDARD 20)
 
 # Move the resource folder where the executable is 
 file(COPY resources DESTINATION ${DST_DIR}/)
-
 # Debuging messages
 # Tells me where CMake found the vulkan lib
 message("
