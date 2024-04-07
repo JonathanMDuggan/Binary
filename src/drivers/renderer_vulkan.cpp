@@ -1170,7 +1170,23 @@ void gbengine::Vulkan::CreateDescriptorSets() {
 }
 
 void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
-  sdl->GetTextureFromPath("resources/textures/sunshine.jpg");
+  VkBuffer staging_buffer;
+  VkDeviceSize image_size;
+  VkDeviceMemory staging_buffer_memory;
+  uint32_t width, height, format;
+  void* data;
+  sdl->InitSurfaceFromPath("resources/textures/sunshine.jpg", File::JPEG);
+  width = sdl->surface_->w;
+  height = sdl->surface_->h;
+  image_size = sdl->surface_->format->BytesPerPixel * width * height;
+  CreateBuffer(image_size,
+               VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |         
+               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,     
+               staging_buffer, staging_buffer_memory);
+  vkMapMemory(logical_device_, staging_buffer_memory, 0, image_size, 0, &data);
+  memcpy(data, sdl->surface_->pixels, static_cast<size_t>(image_size));
+  vkUnmapMemory(logical_device_, staging_buffer_memory);
 }
 
 void gbengine::Vulkan::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,

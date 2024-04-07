@@ -14,32 +14,49 @@ set(MAIN_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/main/include")
 set(DRIVER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/drivers")
 set(DRIVER_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/drivers/include")
 
+
+# Types source directory
+set(TYPE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/types")
+set(TYPE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/types/include")
+
 # Input and output source directory
 set(IO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/io")
 set(IO_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/io/include")
 
 # Graphic user interface source directory
-set(GUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/gui")
-set(GUI_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/include/gui")
+#set(GUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/gui")
+#set(GUI_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/gui/gui")
 
 # Shader source directory
 set(SHADERS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
 
 # Driver source directory 
-file(GLOB_RECURSE DRIVER_FILES ${DRIVER_DIR}/*.cpp)
+file(GLOB_RECURSE DRIVER_SRC_FILES ${DRIVER_DIR}/*.cpp)
 file(GLOB_RECURSE DRIVER_HEADER_FILES ${DRIVER_INCLUDE_DIR}/*.h)
 
 # IO source files 
-file(GLOB_RECURSE IO_FILES ${IO_DIR}/*.cpp)
-file(GLOB_RECURSE IO_INCLUDE_FILES ${IO_INCLUDE_DIR}/*.h)
+file(GLOB_RECURSE IO_SRC_FILES ${IO_DIR}/*.cpp)
+file(GLOB_RECURSE IO_HEADER_FILES ${IO_INCLUDE_DIR}/*.h)
+
+# Types source files
+file(GLOB_RECURSE TYPE_SRC_FILES ${TYPE_DIR}/*.cpp)
+file(GLOB_RECURSE TYPE_HEADER_FILES ${TYPE_INCLUDE_DIR}/*.h)
 
 # Main source files
 file(GLOB_RECURSE MAIN_SRC_FILES ${MAIN_SRC_DIR}/*.cpp)
 file(GLOB_RECURSE MAIN_HEADER_FILES ${MAIN_INCLUDE_DIR}/*.h)
 
 # Put all header and source fils in one variable
-set(ALL_CPP_SRC_FILES ${MAIN_SRC_FILES} ${DRIVER_FILES})
-set(ALL_CPP_HEADER_FILES ${MAIN_HEADER_FILES} ${DRIVER_HEADER_FILES})
+set(ALL_CPP_SRC_FILES 
+  ${MAIN_SRC_FILES} 
+  ${DRIVER_SRC_FILES}
+  ${TYPE_SRC_FILES} 
+)
+set(ALL_CPP_HEADER_FILES 
+  ${MAIN_HEADER_FILES} 
+  ${DRIVER_HEADER_FILES}
+  ${TYPE_HEADER_FILES}
+)
 
 # CMake implementation for compiling GLSL shaders from the 
 # shader directory
@@ -106,6 +123,7 @@ set_property(TARGET Gameboy_Engine PROPERTY CXX_STANDARD 20)
 
 # Move the resource folder where the executable is 
 file(COPY resources DESTINATION ${DST_DIR}/)
+#file(COPY ${_sdl2image_dll} DESTINATION ${DST_DIR})
 # Debuging messages
 # Tells me where CMake found the vulkan lib
 message("
@@ -113,7 +131,8 @@ message("
 The Vulkan INCLUDE_DIR: ${Vulkan_INCLUDE_DIR}
 The Vulkan LIBRARY:     ${Vulkan_LIBRARY}
 The Vulkan SDK:         $ENV{VULKAN_SDK}
-CMAKE_PREFIX_PATH:      ${CMAKE_PREFIX_PATH}"
+CMAKE_PREFIX_PATH:      ${CMAKE_PREFIX_PATH}
+SDL Image               ${SDL2_IMAGE_INCLUDE_DIR}"
 )
 
 message("
