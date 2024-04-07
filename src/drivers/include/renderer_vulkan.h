@@ -161,12 +161,18 @@ class Vulkan {
   Buffer buffer_{};
   VkDescriptorPool descriptor_pool_{};
   std::vector<VkDescriptorSet> descriptor_sets_;
+  VkImage texture_image_;
+  VkDeviceMemory texture_image_memory_;
 
   void InitVulkanApplication();
   void InitVulkanInfo();
   void InitVulkanPhysicalDevice();
   void InitVulkanValidationLayers();
   bool IsPhysicalDeviceSuitable(VkPhysicalDevice physical_device);
+  void CreateImage(uint32_t width, uint32_t height, VkFormat format,
+                   VkImageTiling tiling, VkImageUsageFlags usage,
+                   VkMemoryPropertyFlags properties, VkImage& image,
+                   VkDeviceMemory& image_memory);
 
   void InitVulkanInstance(SDL_Window* window_, Application app);
   void SetupDebugMessenger();

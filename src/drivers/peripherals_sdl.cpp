@@ -136,4 +136,3 @@ gbengine::SDL::~SDL() {
   if (window_ != nullptr) SDL_DestroyWindow(window_);
   SDL_Quit();
 }
-

@@ -257,6 +257,7 @@ bool gbengine::Vulkan::IsPhysicalDeviceSuitable(
 }
 
 
+
 bool gbengine::Vulkan::CheckDeviceExtensionSupport(
     VkPhysicalDevice physical_device) {
   uint32_t extension_count;
@@ -1175,6 +1176,8 @@ void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
   VkDeviceMemory staging_buffer_memory;
   uint32_t width, height, format;
   void* data;
+  VkResult result;
+
   sdl->InitSurfaceFromPath("resources/textures/sunshine.jpg", File::JPEG);
   width = sdl->surface_->w;
   height = sdl->surface_->h;
@@ -1187,7 +1190,66 @@ void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
   vkMapMemory(logical_device_, staging_buffer_memory, 0, image_size, 0, &data);
   memcpy(data, sdl->surface_->pixels, static_cast<size_t>(image_size));
   vkUnmapMemory(logical_device_, staging_buffer_memory);
+
+  CreateImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+              VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture_image_,
+              texture_image_memory_);
 }
+
+void gbengine::Vulkan::CreateImage(uint32_t width, uint32_t height,
+                                   VkFormat format, VkImageTiling tiling,
+                                   VkImageUsageFlags usage,
+                                   VkMemoryPropertyFlags properties,
+                                   VkImage& image,
+                                   VkDeviceMemory& image_memory) {
+  VkResult result;
+  VkImageCreateInfo image_info{};
+  VkMemoryRequirements memory_requirements;
+  VkMemoryAllocateInfo allocate_info{};
+
+  image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  image_info.imageType = VK_IMAGE_TYPE_2D;
+  image_info.extent.width = width;
+  image_info.extent.height = height;
+  image_info.extent.depth = 1;
+  image_info.mipLevels = 1;
+  image_info.arrayLayers = 1;
+  image_info.format = format;
+  image_info.tiling = tiling;
+  image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  image_info.usage = usage;
+  image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+  image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  image_info.flags = 0;
+
+  result = vkCreateImage(logical_device_, &image_info, nullptr, &image);
+
+  if (result != VK_SUCCESS) {
+    spdlog::critical("Failed to create image! {}", VkResultToString(result));
+    throw std::runtime_error("Failed to create image! " +
+                             VkResultToString(result));
+  }
+
+  vkGetImageMemoryRequirements(logical_device_, image,
+                               &memory_requirements);
+
+  allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  allocate_info.allocationSize = memory_requirements.size;
+  allocate_info.memoryTypeIndex =
+      FindMemoryType(memory_requirements.memoryTypeBits, properties);
+
+  result =
+      vkAllocateMemory(logical_device_, &allocate_info, nullptr, &image_memory);
+  if (result != VK_SUCCESS) {
+    spdlog::critical("Failed to allocate image memory! {}",
+                     VkResultToString(result));
+    throw std::runtime_error("Failed to allocate image memory! " +
+                             VkResultToString(result));
+  }
+  vkBindImageMemory(logical_device_, image, image_memory, 0);
+}
+
 
 void gbengine::Vulkan::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                                     VkMemoryPropertyFlags properties,
