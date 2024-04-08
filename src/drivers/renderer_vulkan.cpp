@@ -467,6 +467,34 @@ gbengine::QueueFamilyIndices gbengine::Vulkan::FindQueueFamilies(
   return indices;
 }
 
+VkCommandBuffer gbengine::Vulkan::BeginSingleTimeCommands() {
+  VkCommandBufferAllocateInfo allocate_info{};
+  VkCommandBufferBeginInfo begin_info{};
+  VkCommandBuffer command_buffer;
+  allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  allocate_info.commandPool = command_pool_;
+  allocate_info.commandBufferCount = 1;
+
+  vkAllocateCommandBuffers(logical_device_, &allocate_info, &command_buffer);
+  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  vkBeginCommandBuffer(command_buffer, &begin_info);
+  return command_buffer; 
+}
+
+void gbengine::Vulkan::EndSingleTimeCommands(VkCommandBuffer command_buffer) {
+  VkSubmitInfo submit_info{};
+  vkEndCommandBuffer(command_buffer);
+  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit_info.commandBufferCount = 1;
+  submit_info.pCommandBuffers = &command_buffer;
+
+  vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
+  vkQueueWaitIdle(graphics_queue_);
+  vkFreeCommandBuffers(logical_device_, command_pool_, 1, &command_buffer);
+}
+
 // Vulkan Extensions
 
 // Gets extensions from the SDL library to allow vulkan to do features it
@@ -1298,28 +1326,13 @@ void gbengine::Vulkan::CopyBuffer(VkBuffer source_buffer,
   VkBufferCopy copy_region{};
   VkSubmitInfo submit_info{};
 
-  allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocate_info.commandPool = command_pool_;
-  allocate_info.commandBufferCount = 1;
-  vkAllocateCommandBuffers(logical_device_, &allocate_info, &command_buffer);
-
-  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  vkBeginCommandBuffer(command_buffer, &begin_info);
+  command_buffer = BeginSingleTimeCommands();
 
   copy_region.size = size;
   vkCmdCopyBuffer(command_buffer, source_buffer, destination_buffer, 1,
                   &copy_region);
   vkEndCommandBuffer(command_buffer);
-
-  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &command_buffer;
-
-  vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
-  vkQueueWaitIdle(graphics_queue_);
-  vkFreeCommandBuffers(logical_device_, command_pool_, 1, &command_buffer);
+  EndSingleTimeCommands(command_buffer);
 }
 uint32_t gbengine::Vulkan::FindMemoryType(uint32_t type_filter,
                                       VkMemoryPropertyFlags properties) {

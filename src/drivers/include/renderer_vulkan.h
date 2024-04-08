@@ -219,7 +219,8 @@ class Vulkan {
                                      const VkAllocationCallbacks* pAllocator);
 
   QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physical_device);
-
+  VkCommandBuffer BeginSingleTimeCommands();
+  void EndSingleTimeCommands(VkCommandBuffer command_buffer);
   bool CheckDeviceExtensionSupport(VkPhysicalDevice physical_device);
   void CreateUniformBuffers();
   SwapChainSupportDetails QuerySwapChainSupport(
