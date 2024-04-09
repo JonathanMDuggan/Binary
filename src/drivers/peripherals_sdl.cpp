@@ -86,10 +86,12 @@ void gbengine::SDL::InitSurfaceFromPath(const char* path_to_texture,
     return;
   }
   // FIXME: Go to the IMG_Init() and add the flags for it this won't support 
-  // all the format because you cannot find the flags for them.
+  // all the formats because you cannot find the flags for them.
   switch (file_type) {
     case File::PNG:  surface_ = IMG_LoadPNG_RW(read_write_);    break;
-    case File::JPEG: surface_ = IMG_LoadJPG_RW(read_write_);    break;
+    case File::JPEG: surface_ = IMG_LoadJPG_RW(read_write_);    
+      surface_ = SDL_ConvertSurfaceFormat(surface_, SDL_PIXELFORMAT_RGBA32, 0);
+      break;
     case File::BMP:  surface_ = SDL_LoadBMP_RW(read_write_, 1); break;
     case File::GIF:  surface_ = IMG_LoadGIF_RW(read_write_);    break;
     case File::TIF:  surface_ = IMG_LoadTIF_RW(read_write_);    break;

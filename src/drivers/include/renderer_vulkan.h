@@ -25,6 +25,14 @@
 #include "spdlog/spdlog.h"
 #include "peripherals_sdl.h"
 namespace gbengine {
+// If I don't make these function inline the command buffer stops
+// recording when returning for no reason.
+extern inline VkCommandBuffer BeginSingleTimeCommands(
+    VkCommandPool command_pool, VkDevice logical_device);
+extern inline void EndSingleTimeCommands(VkCommandBuffer command_buffer,
+                                         VkCommandPool command_pool, 
+                                         VkDevice logical_device,
+                                         VkQueue queue);
 struct Vertex {
   glm::vec2 pos;
   glm::vec3 color;
@@ -217,10 +225,14 @@ class Vulkan {
   void DestroyDebugUtilsMessengerEXT(VkInstance instance_,
                                      VkDebugUtilsMessengerEXT debugMessenger,
                                      const VkAllocationCallbacks* pAllocator);
-
+  void TransitionImageLayout(VkImage image, VkFormat format,
+                             VkImageLayout old_layout,
+                             VkImageLayout new_layout);
+  void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
+                         uint32_t height);
   QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physical_device);
-  VkCommandBuffer BeginSingleTimeCommands();
-  void EndSingleTimeCommands(VkCommandBuffer command_buffer);
+ // VkCommandBuffer BeginSingleTimeCommands();
+  //void EndSingleTimeCommands(VkCommandBuffer command_buffer);
   bool CheckDeviceExtensionSupport(VkPhysicalDevice physical_device);
   void CreateUniformBuffers();
   SwapChainSupportDetails QuerySwapChainSupport(

@@ -34,8 +34,8 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   CreateGraphicsPipeline();
   spdlog::info("Allocating Vulkan Buffers");
   CreateFrameBuffer();
-  CreateTextureImage(sdl);
   CreateCommandPool();
+  CreateTextureImage(sdl);
   CreateVertexBuffer();
   CreateIndexBuffer();
   CreateUniformBuffers();
@@ -112,6 +112,8 @@ void gbengine::Vulkan::DestroyDebugUtilsMessengerEXT(
     func(instance_, debugMessenger, pAllocator);
   }
 }
+
+
 
 void gbengine::Vulkan::PopulateDebugMessengerCreateInfo(
     VkDebugUtilsMessengerCreateInfoEXT& debug_info) {
@@ -467,33 +469,6 @@ gbengine::QueueFamilyIndices gbengine::Vulkan::FindQueueFamilies(
   return indices;
 }
 
-VkCommandBuffer gbengine::Vulkan::BeginSingleTimeCommands() {
-  VkCommandBufferAllocateInfo allocate_info{};
-  VkCommandBufferBeginInfo begin_info{};
-  VkCommandBuffer command_buffer;
-  allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocate_info.commandPool = command_pool_;
-  allocate_info.commandBufferCount = 1;
-
-  vkAllocateCommandBuffers(logical_device_, &allocate_info, &command_buffer);
-  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  vkBeginCommandBuffer(command_buffer, &begin_info);
-  return command_buffer; 
-}
-
-void gbengine::Vulkan::EndSingleTimeCommands(VkCommandBuffer command_buffer) {
-  VkSubmitInfo submit_info{};
-  vkEndCommandBuffer(command_buffer);
-  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submit_info.commandBufferCount = 1;
-  submit_info.pCommandBuffers = &command_buffer;
-
-  vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
-  vkQueueWaitIdle(graphics_queue_);
-  vkFreeCommandBuffers(logical_device_, command_pool_, 1, &command_buffer);
-}
 
 // Vulkan Extensions
 
@@ -1209,20 +1184,36 @@ void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
   sdl->InitSurfaceFromPath("resources/textures/sunshine.jpg", File::JPEG);
   width = sdl->surface_->w;
   height = sdl->surface_->h;
-  image_size = sdl->surface_->format->BytesPerPixel * width * height;
+  image_size = sdl->surface_->format->BytesPerPixel * width * height; 
   CreateBuffer(image_size,
                VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |         
                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,     
                staging_buffer, staging_buffer_memory);
+
   vkMapMemory(logical_device_, staging_buffer_memory, 0, image_size, 0, &data);
   memcpy(data, sdl->surface_->pixels, static_cast<size_t>(image_size));
   vkUnmapMemory(logical_device_, staging_buffer_memory);
 
-  CreateImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-              VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture_image_,
-              texture_image_memory_);
+  CreateImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, 
+    VK_IMAGE_TILING_OPTIMAL,         
+    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+    texture_image_,
+    texture_image_memory_);
+
+  TransitionImageLayout(texture_image_, VK_FORMAT_R8G8B8A8_SRGB,
+                        VK_IMAGE_LAYOUT_UNDEFINED,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  CopyBufferToImage(staging_buffer, texture_image_, width, height);
+
+  TransitionImageLayout(
+      texture_image_, VK_FORMAT_R8G8B8A8_SRGB,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+  vkDestroyBuffer(logical_device_, staging_buffer, nullptr);
+  vkFreeMemory(logical_device_, staging_buffer_memory, nullptr);
 }
 
 void gbengine::Vulkan::CreateImage(uint32_t width, uint32_t height,
@@ -1326,13 +1317,13 @@ void gbengine::Vulkan::CopyBuffer(VkBuffer source_buffer,
   VkBufferCopy copy_region{};
   VkSubmitInfo submit_info{};
 
-  command_buffer = BeginSingleTimeCommands();
+  command_buffer = BeginSingleTimeCommands(command_pool_, logical_device_);
 
   copy_region.size = size;
   vkCmdCopyBuffer(command_buffer, source_buffer, destination_buffer, 1,
                   &copy_region);
-  vkEndCommandBuffer(command_buffer);
-  EndSingleTimeCommands(command_buffer);
+  EndSingleTimeCommands(command_buffer, command_pool_, logical_device_, 
+                        graphics_queue_); 
 }
 uint32_t gbengine::Vulkan::FindMemoryType(uint32_t type_filter,
                                       VkMemoryPropertyFlags properties) {
@@ -1348,14 +1339,139 @@ uint32_t gbengine::Vulkan::FindMemoryType(uint32_t type_filter,
   spdlog::critical("failed to find suitable memory type!");
   throw std::runtime_error("failed to find suitable memory type!");
 }
+void gbengine::Vulkan::TransitionImageLayout(VkImage image, VkFormat format,
+                                             VkImageLayout old_layout,
+                                             VkImageLayout new_layout) {
+  VkImageMemoryBarrier barrier{};
+  VkPipelineStageFlags source_stage;
+  VkPipelineStageFlags destination_stage;
+  VkCommandBuffer command_buffer =
+      BeginSingleTimeCommands(command_pool_, logical_device_);
 
+  barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+  barrier.oldLayout = old_layout;
+  barrier.newLayout = new_layout;
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.image = image;
+  barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  barrier.subresourceRange.baseMipLevel = 0;
+  barrier.subresourceRange.levelCount = 1;
+  barrier.subresourceRange.baseArrayLayer = 0;
+  barrier.subresourceRange.layerCount = 1;
+
+  if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED &&
+      new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+    source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+  } else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
+             new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    source_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    destination_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+  } else {
+    spdlog::warn("Unsupported Layout translation!");
+    throw std::invalid_argument("Unsupported Layout translation!");
+  }
+  vkCmdPipelineBarrier(command_buffer, source_stage, destination_stage, 0, 0,
+                       nullptr, 0,
+                       nullptr, 1,
+                       &barrier);
+  EndSingleTimeCommands(command_buffer, command_pool_, logical_device_,
+                        graphics_queue_);
+}
+VkCommandBuffer gbengine::BeginSingleTimeCommands(VkCommandPool command_pool, 
+                                                  VkDevice logical_device) {  
+  VkCommandBufferAllocateInfo allocate_info{};
+  VkCommandBufferBeginInfo begin_info{}; 
+  VkCommandBuffer command_buffer; 
+  allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO; 
+  allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; 
+  allocate_info.commandPool = command_pool;  
+  allocate_info.commandBufferCount = 1; 
+    
+  vkAllocateCommandBuffers(logical_device, &allocate_info, &command_buffer);  
+  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO; 
+  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; 
+  vkBeginCommandBuffer(command_buffer, &begin_info); 
+  return command_buffer;
+}
+
+void gbengine::EndSingleTimeCommands(VkCommandBuffer command_buffer, 
+                                     VkCommandPool command_pool, 
+                                     VkDevice logical_device, VkQueue queue) {
+  VkSubmitInfo submit_info{}; 
+  vkEndCommandBuffer(command_buffer); 
+  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO; 
+  submit_info.commandBufferCount = 1; 
+  submit_info.pCommandBuffers = &command_buffer;
+
+  vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE);
+  vkQueueWaitIdle(queue); 
+  vkFreeCommandBuffers(logical_device, command_pool, 1, &command_buffer);
+} 
+
+//VkCommandBuffer gbengine::Vulkan::BeginSingleTimeCommands() {
+//  VkCommandBufferAllocateInfo allocate_info{}; 
+//  VkCommandBufferBeginInfo begin_info{};
+//  VkCommandBuffer command_buffer;
+//  allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+//  allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+//  allocate_info.commandPool = command_pool_;
+//  allocate_info.commandBufferCount = 1;
+//
+//  vkAllocateCommandBuffers(logical_device_, &allocate_info, &command_buffer);
+//  begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+//  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+//  vkBeginCommandBuffer(command_buffer, &begin_info);
+//  return command_buffer;
+//}
+
+//void gbengine::Vulkan::EndSingleTimeCommands(VkCommandBuffer command_buffer) {
+//  VkSubmitInfo submit_info{};
+//  vkEndCommandBuffer(command_buffer);
+//  submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+//  submit_info.commandBufferCount = 1;
+//  submit_info.pCommandBuffers = &command_buffer;
+//
+//  vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
+//  vkQueueWaitIdle(graphics_queue_);
+//  vkFreeCommandBuffers(logical_device_, command_pool_, 1, &command_buffer);
+//}
+//
+
+void gbengine::Vulkan::CopyBufferToImage(VkBuffer buffer, VkImage image,
+                                         uint32_t width, uint32_t height) {
+  VkCommandBuffer command_buffer =
+      BeginSingleTimeCommands(command_pool_, logical_device_);
+  VkBufferImageCopy region{};
+  region.bufferOffset = 0;
+  region.bufferRowLength = 0;
+  region.bufferImageHeight = 0;
+  region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  region.imageSubresource.mipLevel = 0;
+  region.imageSubresource.baseArrayLayer = 0;
+  region.imageSubresource.layerCount = 1;
+  region.imageOffset = {0, 0, 0};
+  region.imageExtent = {width, height, 1};
+  vkCmdCopyBufferToImage(command_buffer, buffer, image,
+                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+                         &region);
+  EndSingleTimeCommands(command_buffer, command_pool_, logical_device_, 
+                        graphics_queue_); 
+}
 void gbengine::Vulkan::CreateSyncObjects() {
   semaphore_.image_available_.resize(kMaxFramesInFlight);
   semaphore_.render_finished_.resize(kMaxFramesInFlight);
   in_flight_fence_.resize(kMaxFramesInFlight);
   VkSemaphoreCreateInfo semaphore_info{};
   VkFenceCreateInfo fence_info{};
-  VkResult result[3];
+  std::array<VkResult,3> result;
 
   semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
   fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -1481,6 +1597,10 @@ gbengine::Vulkan::Vulkan(SDL* sdl, Application app) {
 gbengine::Vulkan::~Vulkan() {
   VkResult result;
   CleanUpSwapChain();
+
+  vkDestroyImage(logical_device_, texture_image_, nullptr);
+  vkFreeMemory(logical_device_, texture_image_memory_, nullptr);
+
   vkDestroyDescriptorPool(logical_device_, descriptor_pool_, nullptr);
   descriptor_pool_ = VK_NULL_HANDLE;
   vkDestroyDescriptorSetLayout(logical_device_, descriptor_set_layout_,
@@ -1530,15 +1650,19 @@ gbengine::Vulkan::~Vulkan() {
     buffer_.index_memory_ = VK_NULL_HANDLE;
   }
 
-  // This for loop is producting errors where the frame buffer cannot be found
-  // so it cannot be destory by the function. 
-  for (VkFramebuffer frame_buffer : swap_chain_.frame_buffer_) {  
-    
-    if (frame_buffer == VK_NULL_HANDLE) {
-      continue;
-    }
-    vkDestroyFramebuffer(logical_device_, frame_buffer, nullptr);
-  }
+  // FIXME!: Your suppose to destory the framebuffer once the vulkan
+  // instance goes out of scope, However when we do this here, the
+  // frame buffer somehow doesn't exist. Find out where the frame buffer
+  // is deallocating itself.
+  //                         
+  //for (VkFramebuffer frame_buffer : swap_chain_.frame_buffer_) {  
+  //  
+  // // Tried fixing it by checking if it's null, doesn't work.
+  //  if (frame_buffer == VK_NULL_HANDLE) {
+  //    continue;
+  //  }
+  //  vkDestroyFramebuffer(logical_device_, frame_buffer, nullptr);
+  //}
 
   vkDestroyPipeline(logical_device_, graphics_pipeline_, nullptr);
   graphics_pipeline_ = VK_NULL_HANDLE;
@@ -1563,6 +1687,10 @@ gbengine::Vulkan::~Vulkan() {
   instance_ = VK_NULL_HANDLE;
   return;
 }
+
+
+
+
 
 
 
