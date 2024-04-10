@@ -34,9 +34,9 @@ extern inline void EndSingleTimeCommands(VkCommandBuffer command_buffer,
                                          VkDevice logical_device,
                                          VkQueue queue);
 struct Vertex {
-  glm::vec2 pos;
-  glm::vec3 color;
-
+  glm::vec2 position_;
+  glm::vec3 color_;
+  glm::vec2 texture_coordinates_;
   static VkVertexInputBindingDescription GetBindingDescription() {
     VkVertexInputBindingDescription binding_description{};
     binding_description.binding = 0;
@@ -45,26 +45,32 @@ struct Vertex {
     return binding_description;
   }
 
-  static std::array<VkVertexInputAttributeDescription, 2> 
-    GetAttributeDesciptions(){
-    std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions{};
+  static std::array<VkVertexInputAttributeDescription, 3>
+  GetAttributeDesciptions() {
+    std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions{};
     attribute_descriptions[0].binding = 0;
     attribute_descriptions[0].location = 0;
     attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-    attribute_descriptions[0].offset = offsetof(Vertex, pos);
+    attribute_descriptions[0].offset = offsetof(Vertex, position_);
 
     attribute_descriptions[1].binding = 0;
     attribute_descriptions[1].location = 1;
     attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attribute_descriptions[1].offset = offsetof(Vertex, color);
+    attribute_descriptions[1].offset = offsetof(Vertex, color_);
+
+    attribute_descriptions[2].binding = 0;
+    attribute_descriptions[2].location = 2;
+    attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+    attribute_descriptions[2].offset = offsetof(Vertex, texture_coordinates_);
+
     return attribute_descriptions;
   }
 };
-
-const std::vector<Vertex> vertices_ = {{{-0.5f, -0.5f},{1.0f, 0.0f, 0.0f}},
-                                       {{ 0.5f, -0.5f},{0.0f, 1.0f, 0.0f}},
-                                       {{ 0.5f,  0.5f},{0.0f, 0.0f, 1.0f}},
-                                       {{-0.5f,  0.5f},{1.0f, 1.0f, 1.0f}}};
+const std::vector<Vertex> vertices_ = {
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f,  -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+    {{0.5f,   0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+    {{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}};
 
 const std::vector<uint16_t> indices_ = {0, 1, 2, 2, 3, 0};
 extern std::vector<char> ReadFile(const std::string& file_name);
@@ -171,6 +177,9 @@ class Vulkan {
   std::vector<VkDescriptorSet> descriptor_sets_;
   VkImage texture_image_;
   VkDeviceMemory texture_image_memory_;
+  VkImageView texture_image_view_{};
+  VkSampler texture_sampler_{};
+  
 
   void InitVulkanApplication();
   void InitVulkanInfo();
@@ -203,7 +212,9 @@ class Vulkan {
   void CreateVertexBuffer();
   void CreateDescriptorSetLayout();
   void CreateDescriptorSets();
+  void CreateTextureImageView();
   void CreateTextureImage(SDL * sdl);
+  void CreateTextureSampler();
   void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                     VkMemoryPropertyFlags properties, VkBuffer& buffer,
                     VkDeviceMemory& buffer_memory);
@@ -215,7 +226,7 @@ class Vulkan {
   void PopulateDebugMessengerCreateInfo(
       VkDebugUtilsMessengerCreateInfoEXT& debug_info);
   bool VulkanValidationLayerSupported();
-
+  VkImageView CreateImageView(VkImage image, VkFormat format);
   VkResult CreateDebugUtilsMessengerEXT(
       VkInstance instance_,
       const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
@@ -231,8 +242,6 @@ class Vulkan {
   void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
                          uint32_t height);
   QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physical_device);
- // VkCommandBuffer BeginSingleTimeCommands();
-  //void EndSingleTimeCommands(VkCommandBuffer command_buffer);
   bool CheckDeviceExtensionSupport(VkPhysicalDevice physical_device);
   void CreateUniformBuffers();
   SwapChainSupportDetails QuerySwapChainSupport(
