@@ -546,6 +546,7 @@ gbengine::Vulkan::QuerySwapChainSupport(VkPhysicalDevice phyiscal_device) {
   return details;
 }
 
+// Returns the supported image format for the swap chain
 VkSurfaceFormatKHR gbengine::Vulkan::ChooseSwapSurfaceFormat(
     const std::vector<VkSurfaceFormatKHR>& available_formats) {
   for (const auto& available_format : available_formats) {
@@ -807,6 +808,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   VkPipelineColorBlendStateCreateInfo color_blending{};
   VkPipelineLayoutCreateInfo pipeline_layout_info{};
   VkGraphicsPipelineCreateInfo pipeline_info{};
+  // Get the shaders and store them into local memory
   auto vert_shader_code = ReadFile("shaders/vert.spv");
   auto frag_shader_code = ReadFile("shaders/frag.spv");
   VkShaderModule vert_shader_module = CreateShaderModule(vert_shader_code);
@@ -854,6 +856,8 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   viewport_state.viewportCount = 1;
   viewport_state.scissorCount = 1;
+
+  // Rasterizer transforms our triangle into discrete pixels for the screen. 
 
   rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
   rasterizer.depthBiasEnable = VK_FALSE;
@@ -1091,8 +1095,6 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
                              VkResultToString(result));
   }
 
-
-
   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   render_pass_info.renderPass = render_pass_;
   render_pass_info.framebuffer = swap_chain_.frame_buffer_[image_index];
@@ -1107,6 +1109,7 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
 
   vkCmdBeginRenderPass(command_buffer, &render_pass_info,
                        VK_SUBPASS_CONTENTS_INLINE);
+
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       graphics_pipeline_);
     // View Port
@@ -1806,6 +1809,7 @@ gbengine::Vulkan::~Vulkan() {
     vkFreeMemory(logical_device_, buffer_.index_memory_, nullptr);
     buffer_.index_memory_ = VK_NULL_HANDLE;
   }
+
 
   // FIXME!: Your suppose to destory the framebuffer once the vulkan
   // instance goes out of scope, However when we do this here, the
