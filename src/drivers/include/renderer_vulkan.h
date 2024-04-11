@@ -171,7 +171,9 @@ class Vulkan {
   VkPipelineLayout pipeline_layout_;
   VkRenderPass render_pass_;
   VkPipeline graphics_pipeline_;
+
   VkCommandPool command_pool_{};
+
   std::vector<VkCommandBuffer> command_buffers_;
   std::vector<VkFence>in_flight_fence_;
   Semaphore semaphore_;

@@ -514,7 +514,9 @@ std::vector<const char*> gbengine::Vulkan::GetExtensions(
 }
 // Vulkan SwapChain stuff
 
+
 // Checks if the physical device supports the khronos groups swap chain
+
 gbengine::Vulkan::SwapChainSupportDetails
 gbengine::Vulkan::QuerySwapChainSupport(VkPhysicalDevice phyiscal_device) {
   SwapChainSupportDetails details;
@@ -546,6 +548,7 @@ gbengine::Vulkan::QuerySwapChainSupport(VkPhysicalDevice phyiscal_device) {
   return details;
 }
 
+// Returns the supported image format for the swap chain
 VkSurfaceFormatKHR gbengine::Vulkan::ChooseSwapSurfaceFormat(
     const std::vector<VkSurfaceFormatKHR>& available_formats) {
   for (const auto& available_format : available_formats) {
@@ -807,6 +810,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   VkPipelineColorBlendStateCreateInfo color_blending{};
   VkPipelineLayoutCreateInfo pipeline_layout_info{};
   VkGraphicsPipelineCreateInfo pipeline_info{};
+  // Get the shaders and store them into local memory
   auto vert_shader_code = ReadFile("shaders/vert.spv");
   auto frag_shader_code = ReadFile("shaders/frag.spv");
   VkShaderModule vert_shader_module = CreateShaderModule(vert_shader_code);
@@ -855,6 +859,8 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   viewport_state.viewportCount = 1;
   viewport_state.scissorCount = 1;
 
+  // Rasterizer transforms our triangle into discrete pixels for the screen. 
+
   rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
   rasterizer.depthBiasEnable = VK_FALSE;
   rasterizer.rasterizerDiscardEnable = VK_FALSE;
@@ -863,6 +869,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
   rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
+
 
   multisampling.sType =
       VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -876,6 +883,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
   depth_stencil.depthBoundsTestEnable = VK_FALSE;
   depth_stencil.stencilTestEnable = VK_FALSE;
+
 
   color_blend_attachment.colorWriteMask =
       VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
@@ -923,8 +931,10 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   pipeline_info.subpass = 0;
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 
+
   result = vkCreateGraphicsPipelines(logical_device_, VK_NULL_HANDLE, 1,
                                 &pipeline_info, nullptr, &graphics_pipeline_);
+
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create graphics pipeline {}",
                      VkResultToString(result));
@@ -1107,6 +1117,7 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
 
   vkCmdBeginRenderPass(command_buffer, &render_pass_info,
                        VK_SUBPASS_CONTENTS_INLINE);
+
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       graphics_pipeline_);
     // View Port
@@ -1134,6 +1145,7 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
     vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(indices_.size()), 1,
                      0, 0, 0);
     //vkCmdDraw(command_buffer, static_cast<uint32_t>(vertices_.size()), 1, 0, 0);
+
   vkCmdEndRenderPass(command_buffer);
   result = vkEndCommandBuffer(command_buffer);
   if (result != VK_SUCCESS) {
@@ -1797,6 +1809,7 @@ gbengine::Vulkan::~Vulkan() {
     buffer_.vertex_memory_ = VK_NULL_HANDLE;
   }
 
+
   // Destroy index buffer
   if (buffer_.index_ != VK_NULL_HANDLE) {
     vkDestroyBuffer(logical_device_, buffer_.index_, nullptr);
@@ -1806,6 +1819,7 @@ gbengine::Vulkan::~Vulkan() {
     vkFreeMemory(logical_device_, buffer_.index_memory_, nullptr);
     buffer_.index_memory_ = VK_NULL_HANDLE;
   }
+
 
   // FIXME!: Your suppose to destory the framebuffer once the vulkan
   // instance goes out of scope, However when we do this here, the
