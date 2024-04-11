@@ -34,8 +34,9 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   CreateDescriptorSetLayout();
   CreateGraphicsPipeline();
   spdlog::info("Allocating Vulkan Buffers");
-  CreateFrameBuffer();
   CreateCommandPool();
+  CreateDepthResources();
+  CreateFrameBuffer(); 
   CreateTextureImage(sdl);
   CreateTextureImageView();
   CreateTextureSampler();
@@ -590,6 +591,44 @@ VkExtent2D gbengine::Vulkan::ChooseSwapExtent(
   return actual_extent;
 }
 
+VkFormat gbengine::Vulkan::FindSupportedFormat(
+    const std::vector<VkFormat>& candidates, VkImageTiling tiling,
+    VkFormatFeatureFlags features) {
+  for (VkFormat format : candidates) {
+    VkFormatProperties properties;
+    vkGetPhysicalDeviceFormatProperties(physical_device_, format, &properties);
+    if (tiling == VK_IMAGE_TILING_LINEAR &&
+        (properties.linearTilingFeatures & features) == features) {
+      return format;  
+    } else if (tiling == VK_IMAGE_TILING_OPTIMAL &&
+        (properties.optimalTilingFeatures & features) == features);
+    return format;  
+  }
+  spdlog::critical("Failed to find supported format for tiling");
+  throw std::runtime_error("Failed to find supported format for tiling");
+}
+VkFormat gbengine::Vulkan::FindDepthFormat() {
+  return FindSupportedFormat(
+      {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
+       VK_FORMAT_D24_UNORM_S8_UINT},
+      VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+  
+}
+bool gbengine::Vulkan::HasStenceilComponent(VkFormat format) { 
+  return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+         format == VK_FORMAT_D24_UNORM_S8_UINT;
+}
+
+void gbengine::Vulkan::CreateDepthResources() {
+  VkFormat depth_format = FindDepthFormat();
+  CreateImage(
+      swap_chain_.extent_.width, swap_chain_.extent_.height, depth_format, 
+      VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depth_image_, depth_image_memory_);
+  depth_image_view_ = 
+      CreateImageView(depth_image_, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT);
+}
+
 void gbengine::Vulkan::CreateSwapChain(SDL_Window* window_) {
   uint32_t image_count = 0;
   SwapChainSupportDetails swap_chain_support =
@@ -666,10 +705,18 @@ void gbengine::Vulkan::RecreateSwapChain(SDL_Window* window_, SDL_Event* event) 
   CleanUpSwapChain();
   CreateSwapChain(window_);
   CreateImageViews();
+  CreateDepthResources();
   CreateFrameBuffer();
 }
 
 void gbengine::Vulkan::CleanUpSwapChain() {
+
+  vkDestroyImageView(logical_device_, depth_image_view_, nullptr);
+  depth_image_view_ = VK_NULL_HANDLE;
+  vkDestroyImage(logical_device_, depth_image_, nullptr);
+  depth_image_ = VK_NULL_HANDLE; 
+  vkFreeMemory(logical_device_, depth_image_memory_, nullptr);
+  depth_image_memory_ = VK_NULL_HANDLE; 
   for (uint32_t i = 0; i < swap_chain_.frame_buffer_.size(); i++) {
     vkDestroyFramebuffer(logical_device_, swap_chain_.frame_buffer_[i],
                          nullptr);
@@ -678,6 +725,7 @@ void gbengine::Vulkan::CleanUpSwapChain() {
     vkDestroyImageView(logical_device_, swap_chain_.image_views_[i], nullptr);
   }
   vkDestroySwapchainKHR(logical_device_, swap_chain_.KHR_, nullptr);
+  vkFreeMemory(logical_device_, depth_image_memory_, nullptr);
 }
 void gbengine::Vulkan::CreateDescriptorPool() {
   std::array<VkDescriptorPoolSize, 2>pool_size{};
@@ -712,7 +760,8 @@ void gbengine::Vulkan::CreateImageViews() {
   swap_chain_.image_views_.resize(swap_chain_.images_.size());
   for (size_t i = 0; i < swap_chain_.images_.size(); i++) {
     swap_chain_.image_views_[i] =
-        CreateImageView(swap_chain_.images_[i], swap_chain_.image_format_);
+        CreateImageView(swap_chain_.images_[i], swap_chain_.image_format_,
+                        VK_IMAGE_ASPECT_COLOR_BIT);
   }
 }
 
@@ -745,6 +794,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   VkPipelineShaderStageCreateInfo shader_stages[2];
   std::vector<VkDynamicState> dynamic_states = {VK_DYNAMIC_STATE_VIEWPORT,
                                                 VK_DYNAMIC_STATE_SCISSOR};
+  VkPipelineDepthStencilStateCreateInfo depth_stencil{}; 
   VkPipelineDynamicStateCreateInfo dynamic_state{};
   VkPipelineVertexInputStateCreateInfo vertex_input_info{};
   VkPipelineInputAssemblyStateCreateInfo input_assembly{};
@@ -819,6 +869,14 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   multisampling.sampleShadingEnable = VK_FALSE;
   multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
+  depth_stencil.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+  depth_stencil.depthTestEnable = VK_TRUE;
+  depth_stencil.depthWriteEnable = VK_TRUE;
+  depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
+  depth_stencil.depthBoundsTestEnable = VK_FALSE;
+  depth_stencil.stencilTestEnable = VK_FALSE;
+
   color_blend_attachment.colorWriteMask =
       VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
       VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -859,6 +917,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   pipeline_info.pMultisampleState = &multisampling;
   pipeline_info.pColorBlendState = &color_blending;
   pipeline_info.pDynamicState = &dynamic_state;
+  pipeline_info.pDepthStencilState = &depth_stencil;
   pipeline_info.layout = pipeline_layout_;
   pipeline_info.renderPass = render_pass_;
   pipeline_info.subpass = 0;
@@ -882,8 +941,10 @@ void gbengine::Vulkan::CreateRenderPass() {
   VkAttachmentReference color_attachment_reference{};
   VkSubpassDescription subpass{};
   VkRenderPassCreateInfo render_pass_info{};
-  VkSubpassDependency dependency{};                          
-
+  VkSubpassDependency dependency{};               
+  VkAttachmentDescription depth_attachment{};
+  VkAttachmentReference depth_attachment_reference{}; 
+  std::array<VkAttachmentDescription, 2> attachments{};
   color_attachment.format = swap_chain_.image_format_;
   color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
   color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -899,17 +960,36 @@ void gbengine::Vulkan::CreateRenderPass() {
   subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
   subpass.colorAttachmentCount = 1;
   subpass.pColorAttachments = &color_attachment_reference;
+  subpass.pDepthStencilAttachment = &depth_attachment_reference;
 
   dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
   dependency.dstSubpass = 0;                                            
-  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;   
+  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
   dependency.srcAccessMask = 0;                                            
-  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;   
-  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;        
+  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
+  depth_attachment.format = FindDepthFormat();
+  depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+  depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  depth_attachment.finalLayout =
+      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+  depth_attachment_reference.attachment = 1;
+  depth_attachment_reference.layout =
+      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+  attachments = {color_attachment, depth_attachment};
   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  render_pass_info.attachmentCount = 1;
-  render_pass_info.pAttachments = &color_attachment;
+  render_pass_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+  render_pass_info.pAttachments = attachments.data();
   render_pass_info.subpassCount = 1;
   render_pass_info.pSubpasses = &subpass;
   render_pass_info.dependencyCount = 1;       
@@ -931,12 +1011,13 @@ void gbengine::Vulkan::CreateFrameBuffer() {
   VkResult result;
   swap_chain_.frame_buffer_.resize(swap_chain_.image_views_.size());
   for (size_t i = 0; i < swap_chain_.image_views_.size(); i++) {
-    VkImageView attachments[] = {swap_chain_.image_views_[i]};
+    std::array<VkImageView, 2> attachments = {swap_chain_.image_views_[i],
+                                              depth_image_view_};
     VkFramebufferCreateInfo frame_buffer_info{};
     frame_buffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     frame_buffer_info.renderPass = render_pass_;
-    frame_buffer_info.attachmentCount = 1;
-    frame_buffer_info.pAttachments = attachments;
+    frame_buffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+    frame_buffer_info.pAttachments = attachments.data();
     frame_buffer_info.width = swap_chain_.extent_.width;
     frame_buffer_info.height = swap_chain_.extent_.height;
     frame_buffer_info.layers = 1;
@@ -996,6 +1077,8 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   VkRect2D scissor{};
   VkDeviceSize offsets[] = {0};
   VkBuffer vertex_buffers[] = {buffer_.vertex_};
+  std::array<VkClearValue, 2> clear_values{};
+  VkPipelineDepthStencilStateCreateInfo depth_stencil{};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   begin_info.flags = 0;
   begin_info.pInheritanceInfo = nullptr;
@@ -1007,13 +1090,20 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
     throw std::runtime_error("failed to begin recording command buffer!" +
                              VkResultToString(result));
   }
+
+
+
   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   render_pass_info.renderPass = render_pass_;
   render_pass_info.framebuffer = swap_chain_.frame_buffer_[image_index];
   render_pass_info.renderArea.offset = {0, 0};
   render_pass_info.renderArea.extent = swap_chain_.extent_;
-  render_pass_info.clearValueCount = 1;
-  render_pass_info.pClearValues = &clear_color;
+
+  clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+  clear_values[1].depthStencil = {1.0f, 0};
+
+  render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
+  render_pass_info.pClearValues = clear_values.data(); 
 
   vkCmdBeginRenderPass(command_buffer, &render_pass_info,
                        VK_SUBPASS_CONTENTS_INLINE);
@@ -1276,6 +1366,8 @@ void gbengine::Vulkan::CreateTextureSampler() {
   }
 }
 
+
+
 void gbengine::Vulkan::CreateImage(uint32_t width, uint32_t height,
                                    VkFormat format, VkImageTiling tiling,
                                    VkImageUsageFlags usage,
@@ -1385,6 +1477,7 @@ void gbengine::Vulkan::CopyBuffer(VkBuffer source_buffer,
   EndSingleTimeCommands(command_buffer, command_pool_, logical_device_, 
                         graphics_queue_); 
 }
+
 uint32_t gbengine::Vulkan::FindMemoryType(uint32_t type_filter,
                                       VkMemoryPropertyFlags properties) {
   VkPhysicalDeviceMemoryProperties memory_properties;
@@ -1401,14 +1494,12 @@ uint32_t gbengine::Vulkan::FindMemoryType(uint32_t type_filter,
 }
 
 void gbengine::Vulkan::CreateTextureImageView() {
-  texture_image_view_ =
-      CreateImageView(texture_image_, VK_FORMAT_R8G8B8A8_SRGB);
-
+  texture_image_view_ = CreateImageView(texture_image_, VK_FORMAT_R8G8B8A8_SRGB,
+                                        VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
-
-
-VkImageView gbengine::Vulkan::CreateImageView(VkImage image, VkFormat format) {
+VkImageView gbengine::Vulkan::CreateImageView(VkImage image, VkFormat format,
+                                              VkImageAspectFlags aspect_flag) {
   VkImageViewCreateInfo view_info{};
   VkImageView image_view; 
   VkResult result;
@@ -1416,7 +1507,7 @@ VkImageView gbengine::Vulkan::CreateImageView(VkImage image, VkFormat format) {
   view_info.image = image; 
   view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
   view_info.format = format; 
-  view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  view_info.subresourceRange.aspectMask = aspect_flag;
   view_info.subresourceRange.baseMipLevel = 0;
   view_info.subresourceRange.levelCount = 1;
   view_info.subresourceRange.baseArrayLayer = 0;
@@ -1432,7 +1523,6 @@ VkImageView gbengine::Vulkan::CreateImageView(VkImage image, VkFormat format) {
   }
   return image_view; 
 }
-
 
 void gbengine::Vulkan::TransitionImageLayout(VkImage image, VkFormat format,
                                              VkImageLayout old_layout,
@@ -1552,7 +1642,6 @@ void gbengine::Vulkan::CreateSyncObjects() {
     result[2] = vkCreateFence(logical_device_, &fence_info, nullptr,
                               &in_flight_fence_[i]);
   }
-
 }
 
 void gbengine::Vulkan::DrawFrame(SDL_Window* window_, SDL_Event *event) {
@@ -1633,7 +1722,7 @@ void gbengine::Vulkan::UpdateUniformBuffer(uint32_t current_image) {
                current_time - start_time).count();
   UniformBufferObject ubo{};
 
-  ubo.mode1 = glm::rotate(glm::mat4(1.0f), time * glm::radians(120.0f), 
+  ubo.mode1 = glm::rotate(glm::mat4(1.0f), time * glm::radians(180.0f), 
                           glm::vec3(0.0f, 0.0f, 1.0f)); 
 
   ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), 
@@ -1641,7 +1730,7 @@ void gbengine::Vulkan::UpdateUniformBuffer(uint32_t current_image) {
                          glm::vec3(0.0f, 0.0f, 1.0f));
 
   ubo.proj = glm::perspective(
-      glm::radians(20.0f), 
+      glm::radians(45.0f), 
       swap_chain_.extent_.width / (float)swap_chain_.extent_.height, 0.1f,
       10.0f);
 
@@ -1755,12 +1844,6 @@ gbengine::Vulkan::~Vulkan() {
   instance_ = VK_NULL_HANDLE;
   return;
 }
-
-
-
-
-
-
 
 std::vector<char> gbengine::ReadFile(const std::string& filename) {
   size_t file_size;

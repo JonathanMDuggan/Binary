@@ -34,7 +34,7 @@ extern inline void EndSingleTimeCommands(VkCommandBuffer command_buffer,
                                          VkDevice logical_device,
                                          VkQueue queue);
 struct Vertex {
-  glm::vec2 position_;
+  glm::vec3 position_;
   glm::vec3 color_;
   glm::vec2 texture_coordinates_;
   static VkVertexInputBindingDescription GetBindingDescription() {
@@ -50,7 +50,7 @@ struct Vertex {
     std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions{};
     attribute_descriptions[0].binding = 0;
     attribute_descriptions[0].location = 0;
-    attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+    attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
     attribute_descriptions[0].offset = offsetof(Vertex, position_);
 
     attribute_descriptions[1].binding = 0;
@@ -67,12 +67,18 @@ struct Vertex {
   }
 };
 const std::vector<Vertex> vertices_ = {
-    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f,  -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f,   0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-    {{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}};
+    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 
-const std::vector<uint16_t> indices_ = {0, 1, 2, 2, 3, 0};
+    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+};
+
+const std::vector<uint16_t> indices_ = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
 extern std::vector<char> ReadFile(const std::string& file_name);
 extern std::string VkResultToString(VkResult result);
 enum VulkanConst { kFrameOverLap = 2, kMaxFramesInFlight = 2};
@@ -179,7 +185,9 @@ class Vulkan {
   VkDeviceMemory texture_image_memory_;
   VkImageView texture_image_view_{};
   VkSampler texture_sampler_{};
-  
+  VkImage depth_image_;
+  VkDeviceMemory depth_image_memory_;
+  VkImageView depth_image_view_;
 
   void InitVulkanApplication();
   void InitVulkanInfo();
@@ -215,6 +223,7 @@ class Vulkan {
   void CreateTextureImageView();
   void CreateTextureImage(SDL * sdl);
   void CreateTextureSampler();
+  void CreateDepthResources();
   void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                     VkMemoryPropertyFlags properties, VkBuffer& buffer,
                     VkDeviceMemory& buffer_memory);
@@ -226,7 +235,8 @@ class Vulkan {
   void PopulateDebugMessengerCreateInfo(
       VkDebugUtilsMessengerCreateInfoEXT& debug_info);
   bool VulkanValidationLayerSupported();
-  VkImageView CreateImageView(VkImage image, VkFormat format);
+  VkImageView CreateImageView(VkImage image, VkFormat format,
+                              VkImageAspectFlags aspect_flag);
   VkResult CreateDebugUtilsMessengerEXT(
       VkInstance instance_,
       const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
@@ -253,8 +263,12 @@ class Vulkan {
   VkShaderModule CreateShaderModule(const std::vector<char>& code);
   VkExtent2D ChooseSwapExtent(SDL_Window* window_,
                               const VkSurfaceCapabilitiesKHR& capabilities);
+  VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates,
+                               VkImageTiling tiling,
+                               VkFormatFeatureFlags features);
+  VkFormat FindDepthFormat(); 
+  bool HasStenceilComponent(VkFormat format);
   std::vector<const char*> GetExtensions(SDL_Window* window_);
   void InitVulkan(gbengine::SDL* sdl, gbengine::Application app);
 };
-
 }
