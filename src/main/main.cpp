@@ -4,8 +4,8 @@
 #define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
 #define _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS
 #include "include/gbengine.h"
-#include "drivers/include/peripherals_sdl.h"
-#include "drivers/include/renderer_vulkan.h"
+#include "../drivers/include/peripherals_sdl.h"
+#include "../drivers/include/renderer_vulkan.h"
 using namespace gbengine;
 int main(int argc, char** argv) { 
   gbengine::Application app;
@@ -16,11 +16,11 @@ int main(int argc, char** argv) {
   app.version = 0x00000001;
   
   gbengine::SDL sdl(app);
-  gbengine::Vulkan vulkan(sdl.window, app, &sdl.event);
+  gbengine::Vulkan vulkan(&sdl, app);
   while (running) {
     sdl.PoolEvents(&running);
-    vulkan.DrawFrame(sdl.window, &sdl.event);
+    vulkan.DrawFrame(sdl.window_, &sdl.event_);
   }
-  vkDeviceWaitIdle(vulkan.device_);
+  vkDeviceWaitIdle(vulkan.logical_device_);
   return EXIT_SUCCESS;
 }
