@@ -115,7 +115,7 @@ target_link_libraries(Gameboy_Engine PRIVATE
   SDL2::SDL2 SDL2::SDL2main 
   SDL2_image::SDL2_image 
   SDL2_mixer::SDL2_mixer 
-  Vulkan::Vulkan Vulkan::Headers 
+  Vulkan::Vulkan Vulkan::Headers
   GPUOpen::VulkanMemoryAllocator 
   spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>
 )

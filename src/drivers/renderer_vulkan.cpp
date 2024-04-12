@@ -301,23 +301,6 @@ bool gbengine::Vulkan::CheckDeviceExtensionSupport(
   return required_extensions.empty();
 }
 
-//void gbengine::Vulkan::CreateUniformBuffers() {
-//  VkDeviceSize buffer_size = sizeof(UniformBufferObject);
-//  buffer_.uniform_.resize(kMaxFramesInFlight);
-//  buffer_.uniform_memory_.resize(kMaxFramesInFlight);
-//  buffer_.uniform_mapped_.resize(kMaxFramesInFlight);
-//
-//  for (size_t i = 0; i < kMaxFramesInFlight; i++) {
-//    CreateBuffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-//                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-//                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-//                 buffer_.uniform_[i], buffer_.uniform_memory_[i]);
-//
-//    vkMapMemory(logical_device_, buffer_.uniform_memory_[i], 0, buffer_size, 0,
-//                &buffer_.uniform_mapped_[i]);
-//  }
-//}
-
 int gbengine::Vulkan::RateDeviceSuitabillity(VkPhysicalDevice phyiscal_device) {
   int score = 0;
   VkPhysicalDeviceProperties device_properties;
@@ -618,28 +601,6 @@ VkFormat gbengine::Vulkan::FindSupportedFormat(
   throw std::runtime_error("Failed to find supported format for tiling");
 }
 
-//VkFormat gbengine::Vulkan::FindDepthFormat() {
-//  return FindSupportedFormat(
-//      {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
-//       VK_FORMAT_D24_UNORM_S8_UINT},
-//      VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-//  
-//}
-//bool gbengine::Vulkan::HasStenceilComponent(VkFormat format) { 
-//  return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
-//         format == VK_FORMAT_D24_UNORM_S8_UINT;
-//}
-
-//void gbengine::Vulkan::CreateDepthResources() {
-//  VkFormat depth_format = FindDepthFormat();
-//  CreateImage(
-//      swap_chain_.extent_.width, swap_chain_.extent_.height, depth_format, 
-//      VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
-//      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depth_image_, depth_image_memory_);
-//  depth_image_view_ = 
-//      CreateImageView(depth_image_, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT);
-//}
-
 void gbengine::Vulkan::CreateSwapChain(SDL_Window* window_) {
   uint32_t image_count = 0;
   SwapChainSupportDetails swap_chain_support =
@@ -792,8 +753,9 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   VkPipelineShaderStageCreateInfo vert_shader_stage_info{};
   VkPipelineShaderStageCreateInfo frag_shader_stage_info{};
   VkPipelineShaderStageCreateInfo shader_stages[2];
-  std::vector<VkDynamicState> dynamic_states = {VK_DYNAMIC_STATE_VIEWPORT,
-                                                VK_DYNAMIC_STATE_SCISSOR};
+  std::vector<VkDynamicState> dynamic_states = {
+    VK_DYNAMIC_STATE_VIEWPORT,
+    VK_DYNAMIC_STATE_SCISSOR};
   VkPipelineDynamicStateCreateInfo dynamic_state{};
   VkPipelineVertexInputStateCreateInfo vertex_input_info{};
   VkPipelineInputAssemblyStateCreateInfo input_assembly{};
@@ -863,7 +825,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
   rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-  rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE; 
+  rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
 
   multisampling.sType =
@@ -878,8 +840,8 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
 
   color_blending.sType =
       VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-  color_blending.logicOpEnable = VK_FALSE;
-  color_blending.logicOp = VK_LOGIC_OP_COPY;
+  color_blending.logicOpEnable = VK_FALSE; 
+  color_blending.logicOp = VK_LOGIC_OP_CLEAR; 
   color_blending.attachmentCount = 1;
   color_blending.pAttachments = &color_blend_attachment;
   color_blending.blendConstants[0] = 0.0f;
@@ -1239,8 +1201,6 @@ void gbengine::Vulkan::CreateDescriptorSets() {
   }
 }
 
-
-
 void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
   VkBuffer staging_buffer;
   VkDeviceSize image_size;
@@ -1249,14 +1209,14 @@ void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
   void* data;
   VkResult result;
 
-  sdl->InitSurfaceFromPath("resources/textures/sunshine.jpg", File::JPEG);
+  sdl->InitSurfaceFromPath("resources/textures/sunshine.png", File::PNG);
   width = sdl->surface_->w;
   height = sdl->surface_->h;
   image_size = sdl->surface_->format->BytesPerPixel * width * height; 
   CreateBuffer(image_size,
                VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |         
-               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,     
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                staging_buffer, staging_buffer_memory);
   
   vkMapMemory(logical_device_, staging_buffer_memory, 0, image_size, 0, &data);
@@ -1290,8 +1250,8 @@ void gbengine::Vulkan::CreateTextureSampler() {
   VkResult result;
   vkGetPhysicalDeviceProperties(physical_device_, &properties);
   sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-  sampler_info.magFilter = VK_FILTER_LINEAR;
-  sampler_info.minFilter = VK_FILTER_LINEAR;
+  sampler_info.magFilter = VK_FILTER_NEAREST; 
+  sampler_info.minFilter = VK_FILTER_NEAREST;
   sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -1301,7 +1261,7 @@ void gbengine::Vulkan::CreateTextureSampler() {
   sampler_info.unnormalizedCoordinates = VK_FALSE;
   sampler_info.compareEnable = VK_FALSE;
   sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
-  sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+  sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
   sampler_info.mipLodBias = 0.0f;
   sampler_info.minLod = 0.0f;
   sampler_info.maxLod = 0.0f;
@@ -1663,30 +1623,6 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window_, SDL_Event *event) {
   }
   current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
 }
-
-//void gbengine::Vulkan::UpdateUniformBuffer(uint32_t current_image) {
-//  static auto start_time = std::chrono::high_resolution_clock::now();
-//  auto current_time = std::chrono::high_resolution_clock::now();
-//  float time = std::chrono::duration<float, std::chrono::seconds::period>(
-//               current_time - start_time).count();
-//  UniformBufferObject ubo{};
-//
-//  ubo.mode1 = glm::rotate(glm::mat4(1.0f), time * glm::radians(180.0f), 
-//                          glm::vec3(0.0f, 0.0f, 1.0f)); 
-//
-//  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), 
-//                         glm::vec3(0.0f, 0.0f, 0.0f),
-//                         glm::vec3(0.0f, 0.0f, 1.0f));
-//
-//  ubo.proj = glm::perspective(
-//      glm::radians(45.0f), 
-//      swap_chain_.extent_.width / (float)swap_chain_.extent_.height, 0.1f,
-//      10.0f);
-//
-//  ubo.proj[1][1] *= -1;
-//
-//  memcpy(buffer_.uniform_mapped_[current_image], &ubo, sizeof(ubo));
-//}
 
 void gbengine::Vulkan::CreateSurface(SDL_Window* window_) {
   if (SDL_Vulkan_CreateSurface(window_, instance_, &surface_)) {
