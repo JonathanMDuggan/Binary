@@ -20,7 +20,9 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   if (ValidationLayersEnabled) spdlog::set_level(spdlog::level::trace);
   spdlog::info("Initializing Vulkan Instance");
   InitVulkanInstance(sdl->window_, app);
+  spdlog::info("Seting up Vulkan Debug Messenger");
   SetupDebugMessenger();
+  spdlog::info("Creating Vulkan surface");
   CreateSurface(sdl->window_);
   spdlog::info("Finding a suitable device that supports Vulkan");
   PickPhysicalDevice();
@@ -29,23 +31,30 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   spdlog::info("Initializing Vulkan Presentation Layer");
   CreateSwapChain(sdl->window_);
   CreateImageViews();
-  spdlog::info("Creating Vulkan Graphics Pipeline");
+  spdlog::info("Creating Vulkan Render Pass");
   CreateRenderPass();
+  spdlog::info("Laying out the Vulkan descriptor sets");
   CreateDescriptorSetLayout();
+  spdlog::info("Creating Vulkan Graphics Pipeline"); 
   CreateGraphicsPipeline();
-  spdlog::info("Allocating Vulkan Buffers");
+  spdlog::info("Creating Vulkan Command Pools ");
   CreateCommandPool();
-  CreateDepthResources();
+  //CreateDepthResources();
   CreateFrameBuffer(); 
+  spdlog::info("Fetching texture resources to Vulkan");
   CreateTextureImage(sdl);
   CreateTextureImageView();
   CreateTextureSampler();
   CreateVertexBuffer(); 
   CreateIndexBuffer();
-  CreateUniformBuffers();
+  //CreateUniformBuffers();
+  spdlog::info("Creating Vulkan Descriptor Pools ");
   CreateDescriptorPool();
+  spdlog::info("Creating Vulkan Descriptor Sets ");
   CreateDescriptorSets();
+  spdlog::info("Creating Vulkan Command Buffers ");
   CreateCommandBuffer();
+  spdlog::info("Syncing the Vulkan objects together");
   CreateSyncObjects();
 }
 
@@ -292,22 +301,22 @@ bool gbengine::Vulkan::CheckDeviceExtensionSupport(
   return required_extensions.empty();
 }
 
-void gbengine::Vulkan::CreateUniformBuffers() {
-  VkDeviceSize buffer_size = sizeof(UniformBufferObject);
-  buffer_.uniform_.resize(kMaxFramesInFlight);
-  buffer_.uniform_memory_.resize(kMaxFramesInFlight);
-  buffer_.uniform_mapped_.resize(kMaxFramesInFlight);
-
-  for (size_t i = 0; i < kMaxFramesInFlight; i++) {
-    CreateBuffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                 buffer_.uniform_[i], buffer_.uniform_memory_[i]);
-
-    vkMapMemory(logical_device_, buffer_.uniform_memory_[i], 0, buffer_size, 0,
-                &buffer_.uniform_mapped_[i]);
-  }
-}
+//void gbengine::Vulkan::CreateUniformBuffers() {
+//  VkDeviceSize buffer_size = sizeof(UniformBufferObject);
+//  buffer_.uniform_.resize(kMaxFramesInFlight);
+//  buffer_.uniform_memory_.resize(kMaxFramesInFlight);
+//  buffer_.uniform_mapped_.resize(kMaxFramesInFlight);
+//
+//  for (size_t i = 0; i < kMaxFramesInFlight; i++) {
+//    CreateBuffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+//                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+//                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+//                 buffer_.uniform_[i], buffer_.uniform_memory_[i]);
+//
+//    vkMapMemory(logical_device_, buffer_.uniform_memory_[i], 0, buffer_size, 0,
+//                &buffer_.uniform_mapped_[i]);
+//  }
+//}
 
 int gbengine::Vulkan::RateDeviceSuitabillity(VkPhysicalDevice phyiscal_device) {
   int score = 0;
@@ -608,27 +617,28 @@ VkFormat gbengine::Vulkan::FindSupportedFormat(
   spdlog::critical("Failed to find supported format for tiling");
   throw std::runtime_error("Failed to find supported format for tiling");
 }
-VkFormat gbengine::Vulkan::FindDepthFormat() {
-  return FindSupportedFormat(
-      {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
-       VK_FORMAT_D24_UNORM_S8_UINT},
-      VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-  
-}
-bool gbengine::Vulkan::HasStenceilComponent(VkFormat format) { 
-  return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
-         format == VK_FORMAT_D24_UNORM_S8_UINT;
-}
 
-void gbengine::Vulkan::CreateDepthResources() {
-  VkFormat depth_format = FindDepthFormat();
-  CreateImage(
-      swap_chain_.extent_.width, swap_chain_.extent_.height, depth_format, 
-      VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depth_image_, depth_image_memory_);
-  depth_image_view_ = 
-      CreateImageView(depth_image_, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT);
-}
+//VkFormat gbengine::Vulkan::FindDepthFormat() {
+//  return FindSupportedFormat(
+//      {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
+//       VK_FORMAT_D24_UNORM_S8_UINT},
+//      VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+//  
+//}
+//bool gbengine::Vulkan::HasStenceilComponent(VkFormat format) { 
+//  return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+//         format == VK_FORMAT_D24_UNORM_S8_UINT;
+//}
+
+//void gbengine::Vulkan::CreateDepthResources() {
+//  VkFormat depth_format = FindDepthFormat();
+//  CreateImage(
+//      swap_chain_.extent_.width, swap_chain_.extent_.height, depth_format, 
+//      VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
+//      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depth_image_, depth_image_memory_);
+//  depth_image_view_ = 
+//      CreateImageView(depth_image_, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT);
+//}
 
 void gbengine::Vulkan::CreateSwapChain(SDL_Window* window_) {
   uint32_t image_count = 0;
@@ -706,18 +716,11 @@ void gbengine::Vulkan::RecreateSwapChain(SDL_Window* window_, SDL_Event* event) 
   CleanUpSwapChain();
   CreateSwapChain(window_);
   CreateImageViews();
-  CreateDepthResources();
   CreateFrameBuffer();
 }
 
 void gbengine::Vulkan::CleanUpSwapChain() {
 
-  vkDestroyImageView(logical_device_, depth_image_view_, nullptr);
-  depth_image_view_ = VK_NULL_HANDLE;
-  vkDestroyImage(logical_device_, depth_image_, nullptr);
-  depth_image_ = VK_NULL_HANDLE; 
-  vkFreeMemory(logical_device_, depth_image_memory_, nullptr);
-  depth_image_memory_ = VK_NULL_HANDLE; 
   for (uint32_t i = 0; i < swap_chain_.frame_buffer_.size(); i++) {
     vkDestroyFramebuffer(logical_device_, swap_chain_.frame_buffer_[i],
                          nullptr);
@@ -726,22 +729,18 @@ void gbengine::Vulkan::CleanUpSwapChain() {
     vkDestroyImageView(logical_device_, swap_chain_.image_views_[i], nullptr);
   }
   vkDestroySwapchainKHR(logical_device_, swap_chain_.KHR_, nullptr);
-  vkFreeMemory(logical_device_, depth_image_memory_, nullptr);
 }
 void gbengine::Vulkan::CreateDescriptorPool() {
-  std::array<VkDescriptorPoolSize, 2>pool_size{};
-  VkDescriptorPoolCreateInfo pool_info{};  
-  std::array<VkWriteDescriptorSet, 2> descriptor_writes{}; 
+  VkDescriptorPoolSize pool_size{};
+  VkDescriptorPoolCreateInfo pool_info{};
   VkResult result;
 
-  pool_size[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;  
-  pool_size[0].descriptorCount = static_cast<uint32_t>(kMaxFramesInFlight);  
-  pool_size[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;  
-  pool_size[1].descriptorCount = static_cast<uint32_t>(kMaxFramesInFlight);   
+  pool_size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  pool_size.descriptorCount = static_cast<uint32_t>(kMaxFramesInFlight);
 
   pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO; 
-  pool_info.poolSizeCount = static_cast<uint32_t>(pool_size.size()); 
-  pool_info.pPoolSizes = pool_size.data(); 
+  pool_info.poolSizeCount = 1;
+  pool_info.pPoolSizes = &pool_size;  
   pool_info.maxSets = static_cast<uint32_t>(kMaxFramesInFlight);  
 
   result = vkCreateDescriptorPool(logical_device_, &pool_info, nullptr,
@@ -795,7 +794,6 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   VkPipelineShaderStageCreateInfo shader_stages[2];
   std::vector<VkDynamicState> dynamic_states = {VK_DYNAMIC_STATE_VIEWPORT,
                                                 VK_DYNAMIC_STATE_SCISSOR};
-  VkPipelineDepthStencilStateCreateInfo depth_stencil{}; 
   VkPipelineDynamicStateCreateInfo dynamic_state{};
   VkPipelineVertexInputStateCreateInfo vertex_input_info{};
   VkPipelineInputAssemblyStateCreateInfo input_assembly{};
@@ -865,21 +863,13 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
   rasterizer.lineWidth = 1.0f;
   rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-  rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+  rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE; 
   rasterizer.depthBiasEnable = VK_FALSE;
 
   multisampling.sType =
       VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
   multisampling.sampleShadingEnable = VK_FALSE;
   multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-  depth_stencil.sType =
-      VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-  depth_stencil.depthTestEnable = VK_TRUE;
-  depth_stencil.depthWriteEnable = VK_TRUE;
-  depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
-  depth_stencil.depthBoundsTestEnable = VK_FALSE;
-  depth_stencil.stencilTestEnable = VK_FALSE;
 
   color_blend_attachment.colorWriteMask =
       VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
@@ -900,7 +890,6 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipeline_layout_info.setLayoutCount = 1;
   pipeline_layout_info.pSetLayouts = &descriptor_set_layout_;
-  pipeline_layout_info.pushConstantRangeCount = 0;
 
   VkResult result = vkCreatePipelineLayout(
       logical_device_, &pipeline_layout_info, nullptr, &pipeline_layout_
@@ -921,7 +910,6 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   pipeline_info.pMultisampleState = &multisampling;
   pipeline_info.pColorBlendState = &color_blending;
   pipeline_info.pDynamicState = &dynamic_state;
-  pipeline_info.pDepthStencilState = &depth_stencil;
   pipeline_info.layout = pipeline_layout_;
   pipeline_info.renderPass = render_pass_;
   pipeline_info.subpass = 0;
@@ -946,9 +934,7 @@ void gbengine::Vulkan::CreateRenderPass() {
   VkSubpassDescription subpass{};
   VkRenderPassCreateInfo render_pass_info{};
   VkSubpassDependency dependency{};               
-  VkAttachmentDescription depth_attachment{};
-  VkAttachmentReference depth_attachment_reference{}; 
-  std::array<VkAttachmentDescription, 2> attachments{};
+  VkAttachmentDescription attachments{};
   color_attachment.format = swap_chain_.image_format_;
   color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
   color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -964,36 +950,18 @@ void gbengine::Vulkan::CreateRenderPass() {
   subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
   subpass.colorAttachmentCount = 1;
   subpass.pColorAttachments = &color_attachment_reference;
-  subpass.pDepthStencilAttachment = &depth_attachment_reference;
-
+ 
   dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
   dependency.dstSubpass = 0;                                            
-  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
   dependency.srcAccessMask = 0;                                            
-  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-  depth_attachment.format = FindDepthFormat();
-  depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-  depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-  depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  depth_attachment.finalLayout =
-      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-  depth_attachment_reference.attachment = 1;
-  depth_attachment_reference.layout =
-      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-  attachments = {color_attachment, depth_attachment};
+  attachments = color_attachment;
   render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-  render_pass_info.attachmentCount = static_cast<uint32_t>(attachments.size());
-  render_pass_info.pAttachments = attachments.data();
+  render_pass_info.attachmentCount = 1;
+  render_pass_info.pAttachments = &attachments; 
   render_pass_info.subpassCount = 1;
   render_pass_info.pSubpasses = &subpass;
   render_pass_info.dependencyCount = 1;       
@@ -1015,16 +983,16 @@ void gbengine::Vulkan::CreateFrameBuffer() {
   VkResult result;
   swap_chain_.frame_buffer_.resize(swap_chain_.image_views_.size());
   for (size_t i = 0; i < swap_chain_.image_views_.size(); i++) {
-    std::array<VkImageView, 2> attachments = {swap_chain_.image_views_[i],
-                                              depth_image_view_};
-    VkFramebufferCreateInfo frame_buffer_info{};
+
+    VkImageView attachments = swap_chain_.image_views_[i];
+    VkFramebufferCreateInfo frame_buffer_info{}; 
     frame_buffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    frame_buffer_info.renderPass = render_pass_;
-    frame_buffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
-    frame_buffer_info.pAttachments = attachments.data();
-    frame_buffer_info.width = swap_chain_.extent_.width;
-    frame_buffer_info.height = swap_chain_.extent_.height;
-    frame_buffer_info.layers = 1;
+    frame_buffer_info.renderPass = render_pass_; 
+    frame_buffer_info.attachmentCount = 1;
+    frame_buffer_info.pAttachments = &attachments;
+    frame_buffer_info.width = swap_chain_.extent_.width; 
+    frame_buffer_info.height = swap_chain_.extent_.height;  
+    frame_buffer_info.layers = 1; 
 
     result = vkCreateFramebuffer(logical_device_, &frame_buffer_info, nullptr,
                                  &swap_chain_.frame_buffer_[i]);
@@ -1081,7 +1049,7 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   VkRect2D scissor{};
   VkDeviceSize offsets[] = {0};
   VkBuffer vertex_buffers[] = {buffer_.vertex_};
-  std::array<VkClearValue, 2> clear_values{};
+  VkClearValue clear_values{}; 
   VkPipelineDepthStencilStateCreateInfo depth_stencil{};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   begin_info.flags = 0;
@@ -1101,11 +1069,10 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   render_pass_info.renderArea.offset = {0, 0};
   render_pass_info.renderArea.extent = swap_chain_.extent_;
 
-  clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-  clear_values[1].depthStencil = {1.0f, 0};
+  clear_values.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 
-  render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
-  render_pass_info.pClearValues = clear_values.data(); 
+  render_pass_info.clearValueCount = 1;
+  render_pass_info.pClearValues = &clear_values;
 
   vkCmdBeginRenderPass(command_buffer, &render_pass_info,
                        VK_SUBPASS_CONTENTS_INLINE);
@@ -1134,9 +1101,9 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
                             pipeline_layout_, 0, 1,
                             &descriptor_sets_[current_frame_], 0, nullptr);
     // Draw Indexed
-    vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(indices_.size()), 1,
-                     0, 0, 0);
-    //vkCmdDraw(command_buffer, static_cast<uint32_t>(vertices_.size()), 1, 0, 0);
+     vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(indices_.size()), 1,
+                    0, 0, 0);
+    //vkCmdDraw(command_buffer, static_cast<uint32_t>(vertices_.size()), 1, 0, 0); 
   vkCmdEndRenderPass(command_buffer);
   result = vkEndCommandBuffer(command_buffer);
   if (result != VK_SUCCESS) {
@@ -1201,31 +1168,24 @@ void gbengine::Vulkan::CreateVertexBuffer() {
 }
 
 void gbengine::Vulkan::CreateDescriptorSetLayout() {
-  VkDescriptorSetLayoutBinding ubo_layout_binding{};
   VkDescriptorSetLayoutCreateInfo layout_info{};
   VkDescriptorSetLayoutBinding sampler_layout_binding{};
-  std::array<VkDescriptorSetLayoutBinding, 2> bindings{};
-  
-  VkDescriptorPoolCreateInfo pool_info{};
+  VkDescriptorSetLayoutBinding bindings{};
   VkResult result;
-  ubo_layout_binding.binding = 0;
-  ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  ubo_layout_binding.descriptorCount = 1;
-  ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; 
-  ubo_layout_binding.pImmutableSamplers = nullptr;
 
-  sampler_layout_binding.binding = 1;
+  // Bind the image sampler to the descriptor set layout for transformation
+  // during the fragmentation stage of the graphics pipeline
+  sampler_layout_binding.binding = 0;
+  sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
   sampler_layout_binding.descriptorCount = 1;
-  sampler_layout_binding.descriptorType =
-      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  sampler_layout_binding.pImmutableSamplers = nullptr;
   sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+  sampler_layout_binding.pImmutableSamplers = nullptr;
 
-  bindings = {ubo_layout_binding, sampler_layout_binding}; 
+  bindings = sampler_layout_binding;
 
   layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  layout_info.bindingCount = static_cast<uint32_t>(bindings.size());
-  layout_info.pBindings = bindings.data();
+  layout_info.bindingCount = 1;
+  layout_info.pBindings = &bindings;
   result = vkCreateDescriptorSetLayout(logical_device_, &layout_info, nullptr,
                                        &descriptor_set_layout_);
   if (result != VK_SUCCESS) {
@@ -1241,7 +1201,7 @@ void gbengine::Vulkan::CreateDescriptorSetLayout() {
 void gbengine::Vulkan::CreateDescriptorSets() {
   std::vector<VkDescriptorSetLayout> layout(kMaxFramesInFlight,
                                             descriptor_set_layout_);
-  std::array<VkWriteDescriptorSet, 2> descriptor_writes{}; 
+  VkWriteDescriptorSet descriptor_writes{};
   VkDescriptorSetAllocateInfo allocate_info{};
   VkResult result;
   allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1260,36 +1220,22 @@ void gbengine::Vulkan::CreateDescriptorSets() {
   }
 
   for (size_t i = 0; i < kMaxFramesInFlight; i++) {
-    VkDescriptorBufferInfo buffer_info{}; 
     VkDescriptorImageInfo image_info{}; 
-    buffer_info.buffer = buffer_.uniform_[i];
-    buffer_info.offset = 0;
-    buffer_info.range = sizeof(UniformBufferObject);
 
     image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     image_info.imageView = texture_image_view_;
     image_info.sampler = texture_sampler_;
 
-    descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptor_writes[0].dstSet = descriptor_sets_[i];
-    descriptor_writes[0].dstBinding = 0;
-    descriptor_writes[0].dstArrayElement = 0;
-    descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptor_writes[0].descriptorCount = 1;
-    descriptor_writes[0].pBufferInfo = &buffer_info;
+    descriptor_writes.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET; 
+    descriptor_writes.dstSet = descriptor_sets_[i]; 
+    descriptor_writes.dstBinding = 0;  
+    descriptor_writes.dstArrayElement = 0; 
+    descriptor_writes.descriptorType = 
+        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; 
+    descriptor_writes.descriptorCount = 1;
+    descriptor_writes.pImageInfo = &image_info; 
 
-    descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptor_writes[1].dstSet = descriptor_sets_[i];
-    descriptor_writes[1].dstBinding = 1; 
-    descriptor_writes[1].dstArrayElement = 0;
-    descriptor_writes[1].descriptorType =
-        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptor_writes[1].descriptorCount = 1;
-    descriptor_writes[1].pImageInfo = &image_info;
-
-    vkUpdateDescriptorSets(logical_device_,
-                           static_cast<uint32_t>(descriptor_writes.size()), 
-                           descriptor_writes.data(), 0, nullptr); 
+    vkUpdateDescriptorSets(logical_device_, 1, &descriptor_writes, 0, nullptr);
   }
 }
 
@@ -1664,7 +1610,7 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window_, SDL_Event *event) {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
   
-  UpdateUniformBuffer(current_frame_);
+  //UpdateUniformBuffer(current_frame_);
   vkResetFences(logical_device_, 1, &in_flight_fence_[current_frame_]);
   vkResetCommandBuffer(command_buffers_[current_frame_], 0);
   RecordCommandBuffer(command_buffers_[current_frame_], image_index);
@@ -1718,29 +1664,29 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window_, SDL_Event *event) {
   current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
 }
 
-void gbengine::Vulkan::UpdateUniformBuffer(uint32_t current_image) {
-  static auto start_time = std::chrono::high_resolution_clock::now();
-  auto current_time = std::chrono::high_resolution_clock::now();
-  float time = std::chrono::duration<float, std::chrono::seconds::period>(
-               current_time - start_time).count();
-  UniformBufferObject ubo{};
-
-  ubo.mode1 = glm::rotate(glm::mat4(1.0f), time * glm::radians(180.0f), 
-                          glm::vec3(0.0f, 0.0f, 1.0f)); 
-
-  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), 
-                         glm::vec3(0.0f, 0.0f, 0.0f),
-                         glm::vec3(0.0f, 0.0f, 1.0f));
-
-  ubo.proj = glm::perspective(
-      glm::radians(45.0f), 
-      swap_chain_.extent_.width / (float)swap_chain_.extent_.height, 0.1f,
-      10.0f);
-
-  ubo.proj[1][1] *= -1;
-
-  memcpy(buffer_.uniform_mapped_[current_image], &ubo, sizeof(ubo));
-}
+//void gbengine::Vulkan::UpdateUniformBuffer(uint32_t current_image) {
+//  static auto start_time = std::chrono::high_resolution_clock::now();
+//  auto current_time = std::chrono::high_resolution_clock::now();
+//  float time = std::chrono::duration<float, std::chrono::seconds::period>(
+//               current_time - start_time).count();
+//  UniformBufferObject ubo{};
+//
+//  ubo.mode1 = glm::rotate(glm::mat4(1.0f), time * glm::radians(180.0f), 
+//                          glm::vec3(0.0f, 0.0f, 1.0f)); 
+//
+//  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), 
+//                         glm::vec3(0.0f, 0.0f, 0.0f),
+//                         glm::vec3(0.0f, 0.0f, 1.0f));
+//
+//  ubo.proj = glm::perspective(
+//      glm::radians(45.0f), 
+//      swap_chain_.extent_.width / (float)swap_chain_.extent_.height, 0.1f,
+//      10.0f);
+//
+//  ubo.proj[1][1] *= -1;
+//
+//  memcpy(buffer_.uniform_mapped_[current_image], &ubo, sizeof(ubo));
+//}
 
 void gbengine::Vulkan::CreateSurface(SDL_Window* window_) {
   if (SDL_Vulkan_CreateSurface(window_, instance_, &surface_)) {
@@ -1766,12 +1712,12 @@ gbengine::Vulkan::~Vulkan() {
   vkDestroyDescriptorSetLayout(logical_device_, descriptor_set_layout_,
                                nullptr);
   descriptor_set_layout_ = VK_NULL_HANDLE;
-  for (size_t i = 0; i < kMaxFramesInFlight; i++) { 
-    vkDestroyBuffer(logical_device_, buffer_.uniform_[i], nullptr); 
-    buffer_.uniform_[i] = VK_NULL_HANDLE;
-    vkFreeMemory(logical_device_, buffer_.uniform_memory_[i], nullptr);
-    buffer_.uniform_memory_[i] = VK_NULL_HANDLE;
-  }
+ // for (size_t i = 0; i < kMaxFramesInFlight; i++) { 
+ //   vkDestroyBuffer(logical_device_, buffer_.uniform_[i], nullptr); 
+ //   buffer_.uniform_[i] = VK_NULL_HANDLE;
+ //   vkFreeMemory(logical_device_, buffer_.uniform_memory_[i], nullptr);
+ //   buffer_.uniform_memory_[i] = VK_NULL_HANDLE;
+ // }
 
   vkDestroyDescriptorSetLayout(logical_device_, descriptor_set_layout_,
                                nullptr);

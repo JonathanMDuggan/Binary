@@ -92,7 +92,7 @@ foreach(FRAG_FILE ${FRAG_SHADERS})
 endforeach(FRAG_FILE)
 
 if(CMD_RESULT)
-    message(FATAL_ERROR "Failed to compile vertex shader!") 
+    message(FATAL_ERROR "Failed to compile frag shader!") 
 endif()
 
 add_executable(Gameboy_Engine 

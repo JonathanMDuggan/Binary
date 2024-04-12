@@ -34,7 +34,7 @@ extern inline void EndSingleTimeCommands(VkCommandBuffer command_buffer,
                                          VkDevice logical_device,
                                          VkQueue queue);
 struct Vertex {
-  glm::vec3 position_;
+  glm::vec2 position_;
   glm::vec3 color_;
   glm::vec2 texture_coordinates_;
   static VkVertexInputBindingDescription GetBindingDescription() {
@@ -50,7 +50,7 @@ struct Vertex {
     std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions{};
     attribute_descriptions[0].binding = 0;
     attribute_descriptions[0].location = 0;
-    attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
     attribute_descriptions[0].offset = offsetof(Vertex, position_);
 
     attribute_descriptions[1].binding = 0;
@@ -67,26 +67,21 @@ struct Vertex {
   }
 };
 const std::vector<Vertex> vertices_ = {
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+    {{-1.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{ 1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+    {{ 1.0f,  1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+    {{-1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
 };
 
-const std::vector<uint16_t> indices_ = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
+const std::vector<uint16_t> indices_ = {0, 1, 2, 2, 3, 0};
 extern std::vector<char> ReadFile(const std::string& file_name);
 extern std::string VkResultToString(VkResult result);
 enum VulkanConst { kFrameOverLap = 2, kMaxFramesInFlight = 2};
-struct UniformBufferObject {
-  glm::mat4 mode1;
-  glm::mat4 view;
-  glm::mat4 proj;
-};
+//struct UniformBufferObject {
+//  glm::mat4 mode1;
+//  glm::mat4 view;
+//  glm::mat4 proj;
+//};
 typedef struct QueueFamilyIndices {
   std::optional<uint32_t> graphics_family;
   std::optional<uint32_t> present_family;
@@ -167,7 +162,7 @@ class Vulkan {
   SwapChain swap_chain_{};
   uint32_t graphics_queue_family_{};
   FrameData frame_data_[kFrameOverLap] = {};
-  VkDescriptorSetLayout descriptor_set_layout_{};
+  VkDescriptorSetLayout descriptor_set_layout_{}; 
   VkPipelineLayout pipeline_layout_;
   VkRenderPass render_pass_;
   VkPipeline graphics_pipeline_;
@@ -186,14 +181,7 @@ class Vulkan {
   VkDeviceMemory texture_image_memory_;
   VkImageView texture_image_view_{};
   VkSampler texture_sampler_{};
-  VkImage depth_image_;
-  VkDeviceMemory depth_image_memory_;
-  VkImageView depth_image_view_;
 
-  void InitVulkanApplication();
-  void InitVulkanInfo();
-  void InitVulkanPhysicalDevice();
-  void InitVulkanValidationLayers();
   bool IsPhysicalDeviceSuitable(VkPhysicalDevice physical_device);
   void CreateImage(uint32_t width, uint32_t height, VkFormat format,
                    VkImageTiling tiling, VkImageUsageFlags usage,
@@ -219,12 +207,13 @@ class Vulkan {
   void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
   void CreateIndexBuffer();
   void CreateVertexBuffer();
-  void CreateDescriptorSetLayout();
+  void CreateDescriptorSetLayout(); 
   void CreateDescriptorSets();
   void CreateTextureImageView();
   void CreateTextureImage(SDL * sdl);
   void CreateTextureSampler();
-  void CreateDepthResources();
+  //void CreateDepthResources();
+ // void UpdateUniformBuffer(uint32_t current_image);
   void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                     VkMemoryPropertyFlags properties, VkBuffer& buffer,
                     VkDeviceMemory& buffer_memory);
@@ -243,7 +232,6 @@ class Vulkan {
       const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
       const VkAllocationCallbacks* pAllocator,
       VkDebugUtilsMessengerEXT* pDebugMessenger);
-  void UpdateUniformBuffer(uint32_t current_image);
   void DestroyDebugUtilsMessengerEXT(VkInstance instance_,
                                      VkDebugUtilsMessengerEXT debugMessenger,
                                      const VkAllocationCallbacks* pAllocator);
@@ -254,7 +242,7 @@ class Vulkan {
                          uint32_t height);
   QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physical_device);
   bool CheckDeviceExtensionSupport(VkPhysicalDevice physical_device);
-  void CreateUniformBuffers();
+  //void CreateUniformBuffers();
   SwapChainSupportDetails QuerySwapChainSupport(
       VkPhysicalDevice physical_device);
   VkSurfaceFormatKHR ChooseSwapSurfaceFormat(
@@ -267,8 +255,8 @@ class Vulkan {
   VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates,
                                VkImageTiling tiling,
                                VkFormatFeatureFlags features);
-  VkFormat FindDepthFormat(); 
-  bool HasStenceilComponent(VkFormat format);
+  //VkFormat FindDepthFormat(); 
+  //bool HasStenceilComponent(VkFormat format);
   std::vector<const char*> GetExtensions(SDL_Window* window_);
   void InitVulkan(gbengine::SDL* sdl, gbengine::Application app);
 };
