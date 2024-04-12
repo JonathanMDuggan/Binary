@@ -68,21 +68,17 @@ struct Vertex {
   }
 };
 const std::vector<Vertex> vertices_ = {
-    {{-1.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{ 1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-    {{ 1.0f,  1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-    {{-1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-1.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    {{ 1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{ 1.0f,  1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 };
 
 const std::vector<uint16_t> indices_ = {0, 1, 2, 2, 3, 0};
 extern std::vector<char> ReadFile(const std::string& file_name);
 extern std::string VkResultToString(VkResult result);
 enum VulkanConst { kFrameOverLap = 2, kMaxFramesInFlight = 2};
-//struct UniformBufferObject {
-//  glm::mat4 mode1;
-//  glm::mat4 view;
-//  glm::mat4 proj;
-//};
+
 typedef struct QueueFamilyIndices {
   std::optional<uint32_t> graphics_family;
   std::optional<uint32_t> present_family;
@@ -213,8 +209,6 @@ class Vulkan {
   void CreateTextureImageView();
   void CreateTextureImage(SDL * sdl);
   void CreateTextureSampler();
-  //void CreateDepthResources();
- // void UpdateUniformBuffer(uint32_t current_image);
   void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                     VkMemoryPropertyFlags properties, VkBuffer& buffer,
                     VkDeviceMemory& buffer_memory);
@@ -256,8 +250,6 @@ class Vulkan {
   VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates,
                                VkImageTiling tiling,
                                VkFormatFeatureFlags features);
-  //VkFormat FindDepthFormat(); 
-  //bool HasStenceilComponent(VkFormat format);
   std::vector<const char*> GetExtensions(SDL_Window* window_);
   void InitVulkan(gbengine::SDL* sdl, gbengine::Application app);
 };

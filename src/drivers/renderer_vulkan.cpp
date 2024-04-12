@@ -1218,8 +1218,15 @@ void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                staging_buffer, staging_buffer_memory);
-  
+  // Data is a pointer to VRAM in your graphics card, and if you
+  // don't have a graphics card then you DDRAM.
+  // 
+  // This whole setup is allocating space in whatever memory channel you're
+  // using and puting the image there
   vkMapMemory(logical_device_, staging_buffer_memory, 0, image_size, 0, &data);
+
+  // We got the pointer to the area free for us to use, lets put the surface
+  // pixels where the data address is pointing at
   memcpy(data, sdl->surface_->pixels, static_cast<size_t>(image_size));
   vkUnmapMemory(logical_device_, staging_buffer_memory);
 
