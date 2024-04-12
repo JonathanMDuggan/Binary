@@ -1223,20 +1223,19 @@ void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
   memcpy(data, sdl->surface_->pixels, static_cast<size_t>(image_size));
   vkUnmapMemory(logical_device_, staging_buffer_memory);
 
-  CreateImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, 
+  CreateImage(width, height, VK_FORMAT_R8G8B8A8_UNORM,  
     VK_IMAGE_TILING_OPTIMAL,         
     VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
     texture_image_,
     texture_image_memory_);
 
-  TransitionImageLayout(texture_image_, VK_FORMAT_R8G8B8A8_SRGB,
+  TransitionImageLayout(texture_image_, VK_FORMAT_R8G8B8A8_UNORM,
                         VK_IMAGE_LAYOUT_UNDEFINED,
                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
   CopyBufferToImage(staging_buffer, texture_image_, width, height);
 
-  TransitionImageLayout(
-      texture_image_, VK_FORMAT_R8G8B8A8_SRGB,
+  TransitionImageLayout(texture_image_, VK_FORMAT_R8G8B8A8_UNORM,
                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
@@ -1250,7 +1249,7 @@ void gbengine::Vulkan::CreateTextureSampler() {
   VkResult result;
   vkGetPhysicalDeviceProperties(physical_device_, &properties);
   sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-  sampler_info.magFilter = VK_FILTER_NEAREST; 
+  sampler_info.magFilter = VK_FILTER_NEAREST;
   sampler_info.minFilter = VK_FILTER_NEAREST;
   sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
   sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -1403,7 +1402,8 @@ uint32_t gbengine::Vulkan::FindMemoryType(uint32_t type_filter,
 }
 
 void gbengine::Vulkan::CreateTextureImageView() {
-  texture_image_view_ = CreateImageView(texture_image_, VK_FORMAT_R8G8B8A8_SRGB,
+  texture_image_view_ = CreateImageView(
+      texture_image_, VK_FORMAT_R8G8B8A8_UNORM,
                                         VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
