@@ -14,7 +14,15 @@
 #define VMA_VULKAN_VERSION 1002000
 #include "include/renderer_vulkan.h"
 #include "include/peripherals_sdl.h"
-
+static void IMGUI_CheckVkResult(VkResult result) { 
+  if (result == 0) {
+    return;
+  }
+  spdlog::error("IMGUI: VkResult {}\n", result);
+  if(result < 0) {
+    abort();
+  }
+}
 
 void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   if (ValidationLayersEnabled) spdlog::set_level(spdlog::level::trace);
@@ -58,6 +66,85 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   CreateSyncObjects();
 }
 
+void gbengine::Vulkan::InitIMGUI(SDL* sdl) {
+  int w, h;
+  VkBool32 support;
+  SDL_Vulkan_GetDrawableSize(sdl->window_, &w, &h);
+
+  const VkFormat request_surface_image_format[] = {
+      VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM,
+      VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM};
+
+  const VkColorSpaceKHR request_surface_color_space = 
+      VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+
+
+  ImGui_ImplVulkanH_Window* wd = &imgui_window_; 
+
+  wd->Surface = surface_;
+  vkGetPhysicalDeviceSurfaceSupportKHR(physical_device_, graphics_queue_family_,
+                                       wd->Surface, &support);
+  if (support != VK_TRUE) {
+    spdlog::critical("No WSI support on physical device \n");
+    throw std::runtime_error("No WSI support on physical device \n");
+  }
+
+  wd->SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(
+      physical_device_,
+      wd->Surface,
+      request_surface_image_format,
+      static_cast<size_t>(IM_ARRAYSIZE(request_surface_image_format)),
+      request_surface_color_space);
+
+  VkPresentModeKHR present_modes[] = {VK_PRESENT_MODE_FIFO_KHR};
+
+  wd->PresentMode = ImGui_ImplVulkanH_SelectPresentMode(
+      physical_device_, wd->Surface, &present_modes[0],
+      IM_ARRAYSIZE(present_modes));
+
+  ImGui_ImplVulkanH_CreateOrResizeWindow(
+      instance_, physical_device_, logical_device_, wd, graphics_queue_family_,
+      allocator_, w, h, k_MaxFramesInFlight);
+
+  IMGUI_CHECKVERSION(); 
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); 
+  (void)io; 
+
+  // Enables features like docking and taking the imgui windows outside the
+  // renderer itself
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; 
+  io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; 
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; 
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+  ImGui::StyleColorsDark();
+
+  ImGuiStyle& style = ImGui::GetStyle(); 
+  if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) { 
+    style.WindowRounding = 0.0f; 
+    style.Colors[ImGuiCol_WindowBg].w = 1.0f; 
+  }
+
+  ImGui_ImplSDL2_InitForVulkan(sdl->window_);
+  ImGui_ImplVulkan_InitInfo imgui_info; 
+  imgui_info.Instance = instance_; 
+  imgui_info.PhysicalDevice = physical_device_;
+  imgui_info.Device = logical_device_; 
+  imgui_info.QueueFamily = graphics_queue_family_;
+  imgui_info.Queue = graphics_queue_;
+  imgui_info.DescriptorPool = descriptor_pool_;
+  imgui_info.RenderPass = wd->RenderPass;
+  imgui_info.Subpass = 0;
+  imgui_info.PipelineCache = VK_NULL_HANDLE;
+  imgui_info.ImageCount = wd->ImageCount; 
+  imgui_info.MinImageCount = k_MaxFramesInFlight;
+  imgui_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+  imgui_info.Allocator = allocator_; 
+  imgui_info.CheckVkResultFn = IMGUI_CheckVkResult;
+  ImGui_ImplVulkan_Init(&imgui_info);
+}
+
 // Vulkan Debug functions
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL
@@ -93,7 +180,7 @@ void gbengine::Vulkan::SetupDebugMessenger() {
   VkDebugUtilsMessengerCreateInfoEXT debug_info;
   PopulateDebugMessengerCreateInfo(debug_info);
 
-  if (CreateDebugUtilsMessengerEXT(instance_, &debug_info, nullptr,
+  if (CreateDebugUtilsMessengerEXT(instance_, &debug_info, allocator_,
                                   &debug_messenger_) != VK_SUCCESS) {
     spdlog::critical("Failed to set up debug messenger!");
   }
@@ -186,11 +273,12 @@ void gbengine::Vulkan::InitVulkanInstance(SDL_Window* window_, Application app) 
   // features which allow Vulkan to do more things it otherwise cannot do.
   // In this line of code, we are calling the get extension function
   // which will get the extensions needed to use SDL for the windowing 
-  // and the debug extenstion for the validation layers
-  std::vector<const char*> sdl_extensions = GetExtensions(window_);
+  // and the debug extenstion for the validation layers 
+  
+  std::vector<const char*> sdl_extensions = GetExtensions(window_); 
   instance_info.enabledExtensionCount =
-      static_cast<uint32_t>(sdl_extensions.size());
-  instance_info.ppEnabledExtensionNames = sdl_extensions.data();
+      static_cast<uint32_t>(sdl_extensions.size()); 
+  instance_info.ppEnabledExtensionNames = sdl_extensions.data(); 
 
   // If Validation layers were enabled, populate the debug infomation struct
   // and add validation layer data to the instance info.
@@ -208,7 +296,7 @@ void gbengine::Vulkan::InitVulkanInstance(SDL_Window* window_, Application app) 
   }
 
   // Create the vulkan instance with all the infomation given above
-  result = vkCreateInstance(&instance_info, nullptr, &instance_);
+  result = vkCreateInstance(&instance_info, allocator_, &instance_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create Vulkan instance");
     std::runtime_error("Failed to create Vulkan instance");
@@ -405,8 +493,8 @@ void gbengine::Vulkan::CreateLogicalDevice() {
     device_info.enabledLayerCount = 0;
   }
 
-  VkResult result =
-      vkCreateDevice(physical_device_, &device_info, nullptr, &logical_device_);
+  VkResult result = vkCreateDevice(physical_device_, &device_info, allocator_,
+                                   &logical_device_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create logical device");
   } else {
@@ -648,7 +736,7 @@ void gbengine::Vulkan::CreateSwapChain(SDL_Window* window_) {
   // swap_chain_info.oldSwapchain   = VK_NULL_HANDLE;
 
   VkResult result = vkCreateSwapchainKHR(logical_device_, &swap_chain_info,
-                                         nullptr, &swap_chain_.KHR_);
+                                         allocator_, &swap_chain_.KHR_);
 
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create swap chain! {} on line {} in file {}",
@@ -684,27 +772,31 @@ void gbengine::Vulkan::CleanUpSwapChain() {
 
   for (uint32_t i = 0; i < swap_chain_.frame_buffer_.size(); i++) {
     vkDestroyFramebuffer(logical_device_, swap_chain_.frame_buffer_[i],
-                         nullptr);
+                         allocator_);
   }
   for (uint32_t i = 0; i < swap_chain_.image_views_.size(); i++) {
-    vkDestroyImageView(logical_device_, swap_chain_.image_views_[i], nullptr);
+    vkDestroyImageView(logical_device_, swap_chain_.image_views_[i],
+                       allocator_);
   }
-  vkDestroySwapchainKHR(logical_device_, swap_chain_.KHR_, nullptr);
+  vkDestroySwapchainKHR(logical_device_, swap_chain_.KHR_, allocator_);
 }
+
 void gbengine::Vulkan::CreateDescriptorPool() {
-  VkDescriptorPoolSize pool_size{};
+  VkDescriptorPoolSize pool_size[] = {
+      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, k_MaxFramesInFlight}
+  };
   VkDescriptorPoolCreateInfo pool_info{};
   VkResult result;
 
-  pool_size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  pool_size.descriptorCount = static_cast<uint32_t>(kMaxFramesInFlight);
-
   pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO; 
-  pool_info.poolSizeCount = 1;
-  pool_info.pPoolSizes = &pool_size;  
-  pool_info.maxSets = static_cast<uint32_t>(kMaxFramesInFlight);  
+  pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+  // ImGui needs space for its textures and stuff
+  // That's why were using IM_ARRAYSIZE for the pool size count
+  pool_info.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(pool_size));
+  pool_info.pPoolSizes = pool_size;
+  pool_info.maxSets = static_cast<uint32_t>(k_MaxFramesInFlight);  
 
-  result = vkCreateDescriptorPool(logical_device_, &pool_info, nullptr,
+  result = vkCreateDescriptorPool(logical_device_, &pool_info, allocator_,
                                   &descriptor_pool_);
   if (result != VK_SUCCESS) {
     spdlog::critical(
@@ -737,7 +829,7 @@ VkShaderModule gbengine::Vulkan::CreateShaderModule(
 
   VkShaderModule shader_module;
   VkResult result = vkCreateShaderModule(logical_device_, &shader_module_info,
-                                         nullptr, &shader_module);
+                                         allocator_, &shader_module);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create shader module: {}",
                      VkResultToString(result));
@@ -854,7 +946,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   pipeline_layout_info.pSetLayouts = &descriptor_set_layout_;
 
   VkResult result = vkCreatePipelineLayout(
-      logical_device_, &pipeline_layout_info, nullptr, &pipeline_layout_
+      logical_device_, &pipeline_layout_info, allocator_, &pipeline_layout_
   );
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create pipeline layout! {} ",
@@ -884,8 +976,8 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
                      VkResultToString(result));
     throw std::runtime_error("");
   }
-  vkDestroyShaderModule(logical_device_, vert_shader_module, nullptr);
-  vkDestroyShaderModule(logical_device_, frag_shader_module, nullptr);
+  vkDestroyShaderModule(logical_device_, vert_shader_module, allocator_);
+  vkDestroyShaderModule(logical_device_, frag_shader_module, allocator_);
 }
 
 // Vulkan Render Pass
@@ -930,7 +1022,7 @@ void gbengine::Vulkan::CreateRenderPass() {
   render_pass_info.pDependencies = &dependency;
 
   VkResult result = vkCreateRenderPass(logical_device_, &render_pass_info,
-                                       nullptr, &render_pass_);
+                                       allocator_, &render_pass_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create Render Pass!: {}",
                      VkResultToString(result));
@@ -956,7 +1048,8 @@ void gbengine::Vulkan::CreateFrameBuffer() {
     frame_buffer_info.height = swap_chain_.extent_.height;  
     frame_buffer_info.layers = 1; 
 
-    result = vkCreateFramebuffer(logical_device_, &frame_buffer_info, nullptr,
+    result = vkCreateFramebuffer(logical_device_, &frame_buffer_info,
+                                 allocator_,
                                  &swap_chain_.frame_buffer_[i]);
     if (result != VK_SUCCESS) {
       spdlog::critical("Failed to create Frame Buffer!: {}",
@@ -974,8 +1067,8 @@ void gbengine::Vulkan::CreateCommandPool() {
   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
   pool_info.queueFamilyIndex = queue_family_indices.graphics_family.value();
-  VkResult result =
-      vkCreateCommandPool(logical_device_, &pool_info, nullptr, &command_pool_);
+  VkResult result = vkCreateCommandPool(logical_device_, &pool_info, allocator_,
+                                        &command_pool_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create Command Pool! {}",
                      VkResultToString(result));
@@ -984,7 +1077,7 @@ void gbengine::Vulkan::CreateCommandPool() {
 }
 
 void gbengine::Vulkan::CreateCommandBuffer() {
-  command_buffers_.resize(kMaxFramesInFlight);
+  command_buffers_.resize(k_MaxFramesInFlight);
   VkCommandBufferAllocateInfo allocate_info{};
   VkResult result;
   allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -1097,8 +1190,8 @@ void gbengine::Vulkan::CreateIndexBuffer() {
       buffer_.index_memory_);
   CopyBuffer(staging_buffer, buffer_.index_, buffer_size);
 
-  vkDestroyBuffer(logical_device_, staging_buffer, nullptr);
-  vkFreeMemory(logical_device_, staging_buffer_memory, nullptr);
+  vkDestroyBuffer(logical_device_, staging_buffer, allocator_);
+  vkFreeMemory(logical_device_, staging_buffer_memory, allocator_);
 }
 
 void gbengine::Vulkan::CreateVertexBuffer() { 
@@ -1125,8 +1218,8 @@ void gbengine::Vulkan::CreateVertexBuffer() {
   );
 
   CopyBuffer(staging_buffer, buffer_.vertex_, buffer_size);
-  vkDestroyBuffer(logical_device_, staging_buffer, nullptr);
-  vkFreeMemory(logical_device_, staging_buffer_memory, nullptr);
+  vkDestroyBuffer(logical_device_, staging_buffer, allocator_);
+  vkFreeMemory(logical_device_, staging_buffer_memory, allocator_);
 }
 
 void gbengine::Vulkan::CreateDescriptorSetLayout() {
@@ -1148,7 +1241,8 @@ void gbengine::Vulkan::CreateDescriptorSetLayout() {
   layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
   layout_info.bindingCount = 1;
   layout_info.pBindings = &bindings;
-  result = vkCreateDescriptorSetLayout(logical_device_, &layout_info, nullptr,
+  result = vkCreateDescriptorSetLayout(logical_device_, &layout_info,
+                                       allocator_,
                                        &descriptor_set_layout_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create descriptor set layout! {}",
@@ -1161,16 +1255,16 @@ void gbengine::Vulkan::CreateDescriptorSetLayout() {
 }
 
 void gbengine::Vulkan::CreateDescriptorSets() {
-  std::vector<VkDescriptorSetLayout> layout(kMaxFramesInFlight,
+  std::vector<VkDescriptorSetLayout> layout(k_MaxFramesInFlight,
                                             descriptor_set_layout_);
   VkWriteDescriptorSet descriptor_writes{};
   VkDescriptorSetAllocateInfo allocate_info{};
   VkResult result;
   allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   allocate_info.descriptorPool = descriptor_pool_;
-  allocate_info.descriptorSetCount = static_cast<uint32_t>(kMaxFramesInFlight);
+  allocate_info.descriptorSetCount = static_cast<uint32_t>(k_MaxFramesInFlight);
   allocate_info.pSetLayouts = layout.data();
-  descriptor_sets_.resize(kMaxFramesInFlight);
+  descriptor_sets_.resize(k_MaxFramesInFlight);
 
   result = vkAllocateDescriptorSets(logical_device_, &allocate_info, 
                                     descriptor_sets_.data()); 
@@ -1181,7 +1275,7 @@ void gbengine::Vulkan::CreateDescriptorSets() {
                              VkResultToString(result)); 
   }
 
-  for (size_t i = 0; i < kMaxFramesInFlight; i++) {
+  for (size_t i = 0; i < k_MaxFramesInFlight; i++) {
     VkDescriptorImageInfo image_info{}; 
 
     image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -1246,8 +1340,8 @@ void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-  vkDestroyBuffer(logical_device_, staging_buffer, nullptr);
-  vkFreeMemory(logical_device_, staging_buffer_memory, nullptr);
+  vkDestroyBuffer(logical_device_, staging_buffer, allocator_);
+  vkFreeMemory(logical_device_, staging_buffer_memory, allocator_);
 }
 
 void gbengine::Vulkan::CreateTextureSampler() {
@@ -1272,7 +1366,7 @@ void gbengine::Vulkan::CreateTextureSampler() {
   sampler_info.minLod = 0.0f;
   sampler_info.maxLod = 0.0f;
 
-  result = vkCreateSampler(logical_device_, &sampler_info, nullptr,
+  result = vkCreateSampler(logical_device_, &sampler_info, allocator_,
                            &texture_sampler_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create texture sampler! {}",
@@ -1309,7 +1403,7 @@ void gbengine::Vulkan::CreateImage(uint32_t width, uint32_t height,
   image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   image_info.flags = 0;
 
-  result = vkCreateImage(logical_device_, &image_info, nullptr, &image);
+  result = vkCreateImage(logical_device_, &image_info, allocator_, &image);
 
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create image! {}", VkResultToString(result));
@@ -1325,8 +1419,8 @@ void gbengine::Vulkan::CreateImage(uint32_t width, uint32_t height,
   allocate_info.memoryTypeIndex =
       FindMemoryType(memory_requirements.memoryTypeBits, properties);
 
-  result =
-      vkAllocateMemory(logical_device_, &allocate_info, nullptr, &image_memory);
+  result = vkAllocateMemory(logical_device_, &allocate_info, allocator_,
+                            &image_memory);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to allocate image memory! {}",
                      VkResultToString(result));
@@ -1349,7 +1443,7 @@ void gbengine::Vulkan::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
   buffer_info.size = size;
   buffer_info.usage = usage;
   buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  result = vkCreateBuffer(logical_device_, &buffer_info, nullptr, &buffer); 
+  result = vkCreateBuffer(logical_device_, &buffer_info, allocator_, &buffer); 
   if (result != VK_SUCCESS) { 
     spdlog::critical("Failed to create buffer! {}", VkResultToString(result)); 
     throw std::runtime_error("Failed to create buffer" +
@@ -1364,7 +1458,7 @@ void gbengine::Vulkan::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
       FindMemoryType(memory_requirements.memoryTypeBits,        
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |      
                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT); 
-  result = vkAllocateMemory(logical_device_, &allocate_info, nullptr,
+  result = vkAllocateMemory(logical_device_, &allocate_info, allocator_,
                             &buffer_memory);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to allocate buffer memory {} ",
@@ -1429,7 +1523,8 @@ VkImageView gbengine::Vulkan::CreateImageView(VkImage image, VkFormat format,
   view_info.subresourceRange.baseArrayLayer = 0;
   view_info.subresourceRange.layerCount = 1;
 
-  result = vkCreateImageView(logical_device_, &view_info, nullptr,
+  result =
+      vkCreateImageView(logical_device_, &view_info, allocator_,
                              &image_view);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create texture image view {}",
@@ -1538,9 +1633,9 @@ void gbengine::Vulkan::CopyBufferToImage(VkBuffer buffer, VkImage image,
                         graphics_queue_); 
 }
 void gbengine::Vulkan::CreateSyncObjects() {
-  semaphore_.image_available_.resize(kMaxFramesInFlight);
-  semaphore_.render_finished_.resize(kMaxFramesInFlight);
-  in_flight_fence_.resize(kMaxFramesInFlight);
+  semaphore_.image_available_.resize(k_MaxFramesInFlight);
+  semaphore_.render_finished_.resize(k_MaxFramesInFlight);
+  in_flight_fence_.resize(k_MaxFramesInFlight);
   VkSemaphoreCreateInfo semaphore_info{};
   VkFenceCreateInfo fence_info{};
   std::array<VkResult,3> result;
@@ -1550,12 +1645,12 @@ void gbengine::Vulkan::CreateSyncObjects() {
   fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 
-  for (size_t i = 0; i < kMaxFramesInFlight; i++) {
-    result[0] = vkCreateSemaphore(logical_device_, &semaphore_info, nullptr,
+  for (size_t i = 0; i < k_MaxFramesInFlight; i++) {
+    result[0] = vkCreateSemaphore(logical_device_, &semaphore_info, allocator_,
                                   &semaphore_.image_available_[i]);
-    result[1] = vkCreateSemaphore(logical_device_, &semaphore_info, nullptr,
+    result[1] = vkCreateSemaphore(logical_device_, &semaphore_info, allocator_,
                                   &semaphore_.render_finished_[i]);
-    result[2] = vkCreateFence(logical_device_, &fence_info, nullptr,
+    result[2] = vkCreateFence(logical_device_, &fence_info, allocator_,
                               &in_flight_fence_[i]);
   }
 }
@@ -1628,7 +1723,7 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window_, SDL_Event *event) {
     throw std::runtime_error("Failed to present queue!" +
                              VkResultToString(result));
   }
-  current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
+  current_frame_ = (current_frame_ + 1) % k_MaxFramesInFlight;
 }
 
 void gbengine::Vulkan::CreateSurface(SDL_Window* window_) {
@@ -1639,63 +1734,67 @@ void gbengine::Vulkan::CreateSurface(SDL_Window* window_) {
 
 gbengine::Vulkan::Vulkan(SDL* sdl, Application app) {
   InitVulkan(sdl, app);
+  InitIMGUI(sdl);
 }
 
 gbengine::Vulkan::~Vulkan() {
   VkResult result;
   CleanUpSwapChain();
+  ImGui_ImplVulkan_Shutdown(); 
+  ImGui_ImplSDL2_Shutdown();
+  ImGui::DestroyContext();
 
-  vkDestroySampler(logical_device_, texture_sampler_, nullptr);
-  vkDestroyImageView(logical_device_, texture_image_view_, nullptr);
-  vkDestroyImage(logical_device_, texture_image_, nullptr);
-  vkFreeMemory(logical_device_, texture_image_memory_, nullptr);
+  vkDestroySampler(logical_device_, texture_sampler_, allocator_);
+  vkDestroyImageView(logical_device_, texture_image_view_, allocator_);
+  vkDestroyImage(logical_device_, texture_image_, allocator_);
+  vkFreeMemory(logical_device_, texture_image_memory_, allocator_);
 
-  vkDestroyDescriptorPool(logical_device_, descriptor_pool_, nullptr);
+  vkDestroyDescriptorPool(logical_device_, descriptor_pool_, allocator_);
   descriptor_pool_ = VK_NULL_HANDLE;
   vkDestroyDescriptorSetLayout(logical_device_, descriptor_set_layout_,
-                               nullptr);
+                               allocator_);
   descriptor_set_layout_ = VK_NULL_HANDLE;
  // for (size_t i = 0; i < kMaxFramesInFlight; i++) { 
- //   vkDestroyBuffer(logical_device_, buffer_.uniform_[i], nullptr); 
+ //   vkDestroyBuffer(logical_device_, buffer_.uniform_[i], allocator_); 
  //   buffer_.uniform_[i] = VK_NULL_HANDLE;
- //   vkFreeMemory(logical_device_, buffer_.uniform_memory_[i], nullptr);
+ //   vkFreeMemory(logical_device_, buffer_.uniform_memory_[i], allocator_);
  //   buffer_.uniform_memory_[i] = VK_NULL_HANDLE;
  // }
 
   vkDestroyDescriptorSetLayout(logical_device_, descriptor_set_layout_,
-                               nullptr);
+                               allocator_);
 
   descriptor_set_layout_ = VK_NULL_HANDLE;
-  for (size_t i = 0; i < kMaxFramesInFlight; i++) {
+  for (size_t i = 0; i < k_MaxFramesInFlight; i++) {
     vkDestroySemaphore(logical_device_, semaphore_.image_available_[i],
-                       nullptr);
+                       allocator_);
     semaphore_.image_available_[i] = VK_NULL_HANDLE;
     vkDestroySemaphore(logical_device_, semaphore_.render_finished_[i],
-                       nullptr);
+                       allocator_);
     semaphore_.render_finished_[i] = VK_NULL_HANDLE;
-    vkDestroyFence(logical_device_, in_flight_fence_[i], nullptr);
+    vkDestroyFence(logical_device_, in_flight_fence_[i], allocator_);
     in_flight_fence_[i] = VK_NULL_HANDLE;
   }
 
-  vkDestroyCommandPool(logical_device_, command_pool_, nullptr);
+  vkDestroyCommandPool(logical_device_, command_pool_, allocator_);
   command_pool_ = VK_NULL_HANDLE;
   // Destroy vertex buffer
   if (buffer_.vertex_ != VK_NULL_HANDLE) {
-    vkDestroyBuffer(logical_device_, buffer_.vertex_, nullptr);
+    vkDestroyBuffer(logical_device_, buffer_.vertex_, allocator_);
     buffer_.vertex_ = VK_NULL_HANDLE;
   }
   if (buffer_.vertex_memory_ != VK_NULL_HANDLE) {
-    vkFreeMemory(logical_device_, buffer_.vertex_memory_, nullptr);
+    vkFreeMemory(logical_device_, buffer_.vertex_memory_, allocator_);
     buffer_.vertex_memory_ = VK_NULL_HANDLE;
   }
 
   // Destroy index buffer
   if (buffer_.index_ != VK_NULL_HANDLE) {
-    vkDestroyBuffer(logical_device_, buffer_.index_, nullptr);
+    vkDestroyBuffer(logical_device_, buffer_.index_, allocator_);
     buffer_.index_ = VK_NULL_HANDLE; 
   }
   if (buffer_.index_memory_ != VK_NULL_HANDLE) {
-    vkFreeMemory(logical_device_, buffer_.index_memory_, nullptr);
+    vkFreeMemory(logical_device_, buffer_.index_memory_, allocator_);
     buffer_.index_memory_ = VK_NULL_HANDLE;
   }
 
@@ -1711,29 +1810,29 @@ gbengine::Vulkan::~Vulkan() {
   //  if (frame_buffer == VK_NULL_HANDLE) {
   //    continue;
   //  }
-  //  vkDestroyFramebuffer(logical_device_, frame_buffer, nullptr);
+  //  vkDestroyFramebuffer(logical_device_, frame_buffer, allocator_);
   //}
 
-  vkDestroyPipeline(logical_device_, graphics_pipeline_, nullptr);
+  vkDestroyPipeline(logical_device_, graphics_pipeline_, allocator_);
   graphics_pipeline_ = VK_NULL_HANDLE;
 
-  vkDestroyPipelineLayout(logical_device_, pipeline_layout_, nullptr);
+  vkDestroyPipelineLayout(logical_device_, pipeline_layout_, allocator_);
   pipeline_layout_ = VK_NULL_HANDLE;
 
-  vkDestroyRenderPass(logical_device_, render_pass_, nullptr);
+  vkDestroyRenderPass(logical_device_, render_pass_, allocator_);
   render_pass_ = VK_NULL_HANDLE;
 
-  vkDestroyDevice(logical_device_, nullptr);
+  vkDestroyDevice(logical_device_, allocator_);
   logical_device_ = VK_NULL_HANDLE;
 
-  vkDestroySurfaceKHR(instance_, surface_, nullptr);
+  vkDestroySurfaceKHR(instance_, surface_, allocator_);
   surface_ = VK_NULL_HANDLE;
 
   if (ValidationLayersEnabled && debug_messenger_ != VK_NULL_HANDLE) {
-    DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, nullptr);
+    DestroyDebugUtilsMessengerEXT(instance_, debug_messenger_, allocator_);
   }
 
-  vkDestroyInstance(instance_, nullptr);
+  vkDestroyInstance(instance_, allocator_);
   instance_ = VK_NULL_HANDLE;
   return;
 }

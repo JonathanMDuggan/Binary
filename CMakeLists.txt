@@ -42,8 +42,8 @@ set(IO_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/io/include")
 set(EMU_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/emulation")
 set(EMU_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/emulation/include")
 # Graphic user interface source directory
-#set(GUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/gui")
-#set(GUI_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/gui/gui")
+set(GUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/gui")
+set(GUI_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/gui/include")
 
 # Shader source directory
 set(SHADERS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
@@ -64,6 +64,10 @@ file(GLOB_RECURSE IO_HEADER_FILES ${IO_INCLUDE_DIR}/*.h)
 file(GLOB_RECURSE TYPE_SRC_FILES ${TYPE_DIR}/*.cpp)
 file(GLOB_RECURSE TYPE_HEADER_FILES ${TYPE_INCLUDE_DIR}/*.h)
 
+# Gui source files
+file(GLOB_RECURSE GUI_SRC_FILES ${GUI_DIR}/*.cpp)
+file(GLOB_RECURSE GUI_HEADER_FILES ${GUI_INCLUDE_DIR}/*.h)
+
 # Main source files
 file(GLOB_RECURSE MAIN_SRC_FILES ${MAIN_SRC_DIR}/*.cpp)
 file(GLOB_RECURSE MAIN_HEADER_FILES ${MAIN_INCLUDE_DIR}/*.h)
@@ -75,6 +79,7 @@ set(ALL_CPP_SRC_FILES
   ${TYPE_SRC_FILES}
   ${EMU_SRC_FILES}
   ${IO_SRC_FILES}
+  ${GUI_SRC_FILES}
 )
 set(ALL_CPP_HEADER_FILES 
   ${MAIN_HEADER_FILES} 
@@ -82,6 +87,7 @@ set(ALL_CPP_HEADER_FILES
   ${TYPE_HEADER_FILES}
   ${EMU_HEADER_FILES}
   ${IO_HEADER_FILES}
+  ${GUI_HEADER_FILES}
 )
 
 # CMake implementation for compiling GLSL shaders from the 

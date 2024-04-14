@@ -25,6 +25,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "spdlog/spdlog.h"
 #include "peripherals_sdl.h"
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_vulkan.h"
 namespace gbengine {
 // If I don't make these function inline the command buffer stops
 // recording when returning for no reason.
@@ -77,7 +80,7 @@ const std::vector<Vertex> vertices_ = {
 const std::vector<uint16_t> indices_ = {0, 1, 2, 2, 3, 0};
 extern std::vector<char> ReadFile(const std::string& file_name);
 extern std::string VkResultToString(VkResult result);
-enum VulkanConst { kFrameOverLap = 2, kMaxFramesInFlight = 2};
+enum VulkanConst { kFrameOverLap = 2, k_MaxFramesInFlight = 2};
 
 typedef struct QueueFamilyIndices {
   std::optional<uint32_t> graphics_family;
@@ -90,6 +93,12 @@ typedef struct QueueFamilyIndices {
 class Vulkan {
  public:
   VkDevice logical_device_{};
+  VkInstance instance_; 
+  VkPhysicalDevice physical_device_{};
+  VkRenderPass render_pass_;
+  VkDescriptorPool descriptor_pool_{};
+  VkAllocationCallbacks* allocator_ = VK_NULL_HANDLE;
+
   Vulkan(SDL* sdl, Application app);
   ~Vulkan();
   void DrawFrame(SDL_Window* window_, SDL_Event* event);
@@ -149,10 +158,9 @@ class Vulkan {
   const char* const* instance_validation_layers_{};
   uint32_t sdl_extenstion_count_{};
   const char** kSDLExtensions_{};
-  VkInstance instance_;
   VkQueueFamilyProperties* queue_props_{};
   VkDebugUtilsMessengerEXT debug_messenger_{};
-  VkPhysicalDevice physical_device_{};
+ 
   VkSurfaceKHR surface_{};
   VkQueue graphics_queue_{};
   VkQueue present_queue_{};
@@ -161,7 +169,7 @@ class Vulkan {
   FrameData frame_data_[kFrameOverLap] = {};
   VkDescriptorSetLayout descriptor_set_layout_{}; 
   VkPipelineLayout pipeline_layout_;
-  VkRenderPass render_pass_;
+
   VkPipeline graphics_pipeline_;
   VkCommandPool command_pool_{};
 
@@ -172,12 +180,15 @@ class Vulkan {
   VkFence in_flight_fences_{}; 
   bool frame_buffer_resized_ = false; 
   Buffer buffer_{};
-  VkDescriptorPool descriptor_pool_{};
+
   std::vector<VkDescriptorSet> descriptor_sets_;
   VkImage texture_image_;
   VkDeviceMemory texture_image_memory_;
   VkImageView texture_image_view_{};
   VkSampler texture_sampler_{};
+
+  // ImGui Hell
+  ImGui_ImplVulkanH_Window imgui_window_;
 
   bool IsPhysicalDeviceSuitable(VkPhysicalDevice physical_device);
   void CreateImage(uint32_t width, uint32_t height, VkFormat format,
@@ -252,5 +263,6 @@ class Vulkan {
                                VkFormatFeatureFlags features);
   std::vector<const char*> GetExtensions(SDL_Window* window_);
   void InitVulkan(gbengine::SDL* sdl, gbengine::Application app);
+  void InitIMGUI(SDL* sdl);
 };
 }

@@ -16,6 +16,7 @@ int main(int argc, char** argv) {
   app.width = 800;
   app.version = 0x00000001;
   test();
+ 
   gbengine::SDL sdl(app);
   gbengine::Vulkan vulkan(&sdl, app);
   while (running) {
