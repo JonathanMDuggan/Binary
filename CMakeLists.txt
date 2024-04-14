@@ -5,6 +5,23 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
+# Get the imgui stuff
+# ImGui stuff
+set(IMGUI_DIR "dep/imgui")
+include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends)
+file(GLOB IMGUI_SRC 
+${IMGUI_DIR}/imgui.h
+${IMGUI_DIR}/imgui.cpp
+${IMGUI_DIR}/imgui_draw.cpp
+${IMGUI_DIR}/imgui_demo.cpp
+${IMGUI_DIR}/imgui_tables.cpp
+${IMGUI_DIR}/imgui_widgets.cpp
+${IMGUI_DIR}/backends/imgui_impl_vulkan.h
+${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
+${IMGUI_DIR}/backends/imgui_impl_sdl2.h
+${IMGUI_DIR}/backends/imgui_impl_sdl2.cpp
+)
+
 # Main source directory
 set(MAIN_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/main")
 set(MAIN_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/main/include")
@@ -56,14 +73,14 @@ set(ALL_CPP_SRC_FILES
   ${MAIN_SRC_FILES} 
   ${DRIVER_SRC_FILES}
   ${TYPE_SRC_FILES}
- # ${EMU_SRC_FILES}
+  ${EMU_SRC_FILES}
   ${IO_SRC_FILES}
 )
 set(ALL_CPP_HEADER_FILES 
   ${MAIN_HEADER_FILES} 
   ${DRIVER_HEADER_FILES}
   ${TYPE_HEADER_FILES}
-  #${EMU_HEADER_FILES}
+  ${EMU_HEADER_FILES}
   ${IO_HEADER_FILES}
 )
 
@@ -107,6 +124,7 @@ endif()
 add_executable(Gameboy_Engine 
   ${ALL_CPP_SRC_FILES} 
   ${ALL_CPP_HEADER_FILES}
+  ${IMGUI_SRC}
 )
 
 # The programmer must install SDL2 and Vulkan on their own computer
@@ -118,6 +136,8 @@ find_package(Vulkan REQUIRED)
 #add_subdirectory(dep/fmt)
 add_subdirectory(dep/spdlog)
 add_subdirectory(dep/VulkanMemoryAllocator)
+
+
 
 target_include_directories(Gameboy_Engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -158,4 +178,7 @@ foreach(HEADER_FILE ${ALL_CPP_HEADER_FILES})
   message("${HEADER_FILE}")
 endforeach(HEADER_FILE)
 message("
-============================================================================")
+================================== IMGUI ===================================")
+foreach(IMGUI_FILE ${IMGUI_SRC})
+  message("${IMGUI_FILE}")
+endforeach(IMGUI_FILE)

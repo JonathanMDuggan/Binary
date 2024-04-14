@@ -1,6 +1,6 @@
 #pragma once
-#include "../main/include/gbengine.h"
-#include "../types/include/enums.h"
+#include "../../main/include/gbengine.h"
+#include "../../types/include/enums.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include <SDL_image.h>

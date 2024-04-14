@@ -6,6 +6,7 @@
 #include "include/gbengine.h"
 #include "../drivers/include/peripherals_sdl.h"
 #include "../drivers/include/renderer_vulkan.h"
+#include "../emulation/include/gb_emulator.h"
 using namespace gbengine;
 int main(int argc, char** argv) { 
   gbengine::Application app = {};
@@ -14,7 +15,7 @@ int main(int argc, char** argv) {
   app.height = 600;
   app.width = 800;
   app.version = 0x00000001;
-  
+  test();
   gbengine::SDL sdl(app);
   gbengine::Vulkan vulkan(&sdl, app);
   while (running) {
