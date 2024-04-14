@@ -1,16 +1,19 @@
+#pragma once
+#include "gb_emulator.h"
 #include <vector>
 #include <array>
+#include <string>
 #include <cstdint>
+namespace gbengine {
 class Memory {
  public:
-  Memory();
+  Memory(std::string rom_file_path, SM83* sm83);
   ~Memory();
-
+  uint8_t ReadMemory();
  private:
-  std::array<uint8_t, 0x4000> VRAM;
-  std::array<uint8_t, 0x8000> RAM;
+  SM83* sm83_;
+  std::array<uint8_t, 0x4000> VRAM_;
+  std::array<uint8_t, 0x8000> RAM_;
 };
+}
 
-Memory::Memory() {}
-
-Memory::~Memory() {}

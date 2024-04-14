@@ -1,3 +1,5 @@
+#pragma once
+#include "gb_emulator.h"
 #include <array>
 #include <cstdint>
 namespace gbengine {
@@ -6,5 +8,13 @@ typedef enum PeripheralConstants {
   kGBScreenLength = 160
 };
 
-std::array<std::array<uint8_t, kGBScreenLength>, kGBScreenHeight> screen;
+typedef struct Color {
+  uint32_t lightest;
+  uint32_t light;
+  uint32_t dark;
+  uint32_t darkest;
+}Color;
+typedef struct ScreenConfig {
+  Color color;
+}ScreenConfig;
 }  // namespace gbengine

@@ -8,7 +8,7 @@
 #include "../drivers/include/renderer_vulkan.h"
 using namespace gbengine;
 int main(int argc, char** argv) { 
-  gbengine::Application app;
+  gbengine::Application app = {};
   bool running = true;
   app.name = "GameBoy_Engine";
   app.height = 600;
