@@ -29,12 +29,12 @@ void gbengine::SDL::PoolEvents(bool* running) {
         std::cout << "Key was pressed down\n";
         break;
       case SDL_QUIT:
+        std::cout << "Bazinga!";
         *running = false;
         return;
       default:
         break;
     }
-    ImGui_ImplSDL2_ProcessEvent(&event_);
   }
 }
 

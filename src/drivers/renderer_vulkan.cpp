@@ -1123,16 +1123,16 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplSDL2_NewFrame(); 
     ImGui::NewFrame(); 
-
+    
     ImGui::ShowDemoWindow(); 
-
+    
     ImGui::Render(); 
-
+    
     if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
       ImGui::UpdatePlatformWindows(); 
       ImGui::RenderPlatformWindowsDefault(); 
     }
-
+    
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer,
                                     graphics_pipeline_); 
     
