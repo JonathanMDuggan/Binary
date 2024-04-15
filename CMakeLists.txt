@@ -5,6 +5,11 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
+# SDL
+set(SDL2_DIR "dep/SDL/SDL2-2.30.0/cmake")
+set(SDL2_image_DIR "dep/SDL/SDL2_image-2.8.2/cmake")
+set(SDL2_mixer_DIR "dep/SDL/SDL2_mixer-2.8.0/cmake")
+
 # Get the imgui stuff
 # ImGui stuff
 set(IMGUI_DIR "dep/imgui")
