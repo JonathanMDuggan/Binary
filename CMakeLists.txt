@@ -10,6 +10,7 @@ endif()
 set(IMGUI_DIR "dep/imgui")
 include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends)
 file(GLOB IMGUI_SRC 
+${IMGUI_DIR}/imgui_internal.h
 ${IMGUI_DIR}/imgui.h
 ${IMGUI_DIR}/imgui.cpp
 ${IMGUI_DIR}/imgui_draw.cpp
@@ -20,6 +21,7 @@ ${IMGUI_DIR}/backends/imgui_impl_vulkan.h
 ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
 ${IMGUI_DIR}/backends/imgui_impl_sdl2.h
 ${IMGUI_DIR}/backends/imgui_impl_sdl2.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_tables.cpp
 )
 
 # Main source directory

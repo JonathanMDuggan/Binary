@@ -44,6 +44,7 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   spdlog::info("Laying out the Vulkan descriptor sets");
   CreateDescriptorSetLayout();
   spdlog::info("Creating Vulkan Graphics Pipeline"); 
+  CreatePipelineCache();
   CreateGraphicsPipeline();
   spdlog::info("Creating Vulkan Command Pools ");
   CreateCommandPool();
@@ -67,77 +68,36 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
 }
 
 void gbengine::Vulkan::InitIMGUI(SDL* sdl) {
-  int w, h;
-  VkBool32 support;
-  SDL_Vulkan_GetDrawableSize(sdl->window_, &w, &h);
-
-  const VkFormat request_surface_image_format[] = {
-      VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM,
-      VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM};
-
-  const VkColorSpaceKHR request_surface_color_space = 
-      VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-
-
-  ImGui_ImplVulkanH_Window* wd = &imgui_window_; 
-
-  wd->Surface = surface_;
-  vkGetPhysicalDeviceSurfaceSupportKHR(physical_device_, graphics_queue_family_,
-                                       wd->Surface, &support);
-  if (support != VK_TRUE) {
-    spdlog::critical("No WSI support on physical device \n");
-    throw std::runtime_error("No WSI support on physical device \n");
-  }
-
-  wd->SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(
-      physical_device_,
-      wd->Surface,
-      request_surface_image_format,
-      static_cast<size_t>(IM_ARRAYSIZE(request_surface_image_format)),
-      request_surface_color_space);
-
-  VkPresentModeKHR present_modes[] = {VK_PRESENT_MODE_FIFO_KHR};
-
-  wd->PresentMode = ImGui_ImplVulkanH_SelectPresentMode(
-      physical_device_, wd->Surface, &present_modes[0],
-      IM_ARRAYSIZE(present_modes));
-
-  ImGui_ImplVulkanH_CreateOrResizeWindow(
-      instance_, physical_device_, logical_device_, wd, graphics_queue_family_,
-      allocator_, w, h, k_MaxFramesInFlight);
-
-  IMGUI_CHECKVERSION(); 
   ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO(); 
-  (void)io; 
+  ImGuiIO& io = ImGui::GetIO();
 
   // Enables features like docking and taking the imgui windows outside the
   // renderer itself
-  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; 
-  io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; 
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; 
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
   ImGui::StyleColorsDark();
 
-  ImGuiStyle& style = ImGui::GetStyle(); 
-  if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) { 
-    style.WindowRounding = 0.0f; 
-    style.Colors[ImGuiCol_WindowBg].w = 1.0f; 
+  ImGuiStyle& style = ImGui::GetStyle();
+  if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+    style.WindowRounding = 0.0f;
+    style.Colors[ImGuiCol_WindowBg].w = 1.0f;
   }
 
   ImGui_ImplSDL2_InitForVulkan(sdl->window_);
-  ImGui_ImplVulkan_InitInfo imgui_info; 
+  ImGui_ImplVulkan_InitInfo imgui_info{};
   imgui_info.Instance = instance_; 
   imgui_info.PhysicalDevice = physical_device_;
   imgui_info.Device = logical_device_; 
   imgui_info.QueueFamily = graphics_queue_family_;
   imgui_info.Queue = graphics_queue_;
-  imgui_info.DescriptorPool = descriptor_pool_;
-  imgui_info.RenderPass = wd->RenderPass;
+  imgui_info.DescriptorPool = descriptor_pool_; 
+  imgui_info.RenderPass = render_pass_; 
+  imgui_info.PipelineCache = pipeline_cache_;
   imgui_info.Subpass = 0;
-  imgui_info.PipelineCache = VK_NULL_HANDLE;
-  imgui_info.ImageCount = wd->ImageCount; 
+  imgui_info.ImageCount = k_MaxFramesInFlight;
   imgui_info.MinImageCount = k_MaxFramesInFlight;
   imgui_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
   imgui_info.Allocator = allocator_; 
@@ -783,7 +743,7 @@ void gbengine::Vulkan::CleanUpSwapChain() {
 
 void gbengine::Vulkan::CreateDescriptorPool() {
   VkDescriptorPoolSize pool_size[] = {
-      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, k_MaxFramesInFlight}
+      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, k_MaxFramesInFlight * 2}
   };
   VkDescriptorPoolCreateInfo pool_info{};
   VkResult result;
@@ -794,7 +754,7 @@ void gbengine::Vulkan::CreateDescriptorPool() {
   // That's why were using IM_ARRAYSIZE for the pool size count
   pool_info.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(pool_size));
   pool_info.pPoolSizes = pool_size;
-  pool_info.maxSets = static_cast<uint32_t>(k_MaxFramesInFlight);  
+  pool_info.maxSets = static_cast<uint32_t>(k_MaxFramesInFlight * 2);  
 
   result = vkCreateDescriptorPool(logical_device_, &pool_info, allocator_,
                                   &descriptor_pool_);
@@ -969,7 +929,8 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   pipeline_info.subpass = 0;
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 
-  result = vkCreateGraphicsPipelines(logical_device_, VK_NULL_HANDLE, 1,
+  result =
+      vkCreateGraphicsPipelines(logical_device_, pipeline_cache_, 1,
                                 &pipeline_info, nullptr, &graphics_pipeline_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create graphics pipeline {}",
@@ -1107,7 +1068,7 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   VkClearValue clear_values{}; 
   VkPipelineDepthStencilStateCreateInfo depth_stencil{};
   begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  begin_info.flags = 0;
+  begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   begin_info.pInheritanceInfo = nullptr;
   result = vkBeginCommandBuffer(command_buffer, &begin_info);
 
@@ -1156,7 +1117,7 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
                             pipeline_layout_, 0, 1,
                             &descriptor_sets_[current_frame_], 0, nullptr);
     // Draw Indexed
-     vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(indices_.size()), 1,
+    vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(indices_.size()), 1,
                     0, 0, 0);
     //vkCmdDraw(command_buffer, static_cast<uint32_t>(vertices_.size()), 1, 0, 0); 
   vkCmdEndRenderPass(command_buffer);
@@ -1292,6 +1253,19 @@ void gbengine::Vulkan::CreateDescriptorSets() {
     descriptor_writes.pImageInfo = &image_info; 
 
     vkUpdateDescriptorSets(logical_device_, 1, &descriptor_writes, 0, nullptr);
+  }
+}
+
+void gbengine::Vulkan::CreatePipelineCache() {
+  VkPipelineCacheCreateInfo pipeline_cache_info{};
+  VkResult result;
+  pipeline_cache_info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+  pipeline_cache_info.initialDataSize = 0;
+  pipeline_cache_info.pInitialData = nullptr;
+  result = vkCreatePipelineCache(logical_device_, &pipeline_cache_info,
+                                 allocator_, &pipeline_cache_);
+  if (result != VK_SUCCESS) {
+    spdlog::critical("IMGUI REALLY NEEDS THIS {}", VkResultToString(result));
   }
 }
 
@@ -1673,9 +1647,9 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window_, SDL_Event *event) {
   }
   
   //UpdateUniformBuffer(current_frame_);
+  RecordCommandBuffer(command_buffers_[current_frame_], image_index); 
   vkResetFences(logical_device_, 1, &in_flight_fence_[current_frame_]);
-  vkResetCommandBuffer(command_buffers_[current_frame_], 0);
-  RecordCommandBuffer(command_buffers_[current_frame_], image_index);
+  //vkResetCommandBuffer(command_buffers_[current_frame_], 0);
 
   VkSubmitInfo submit_info{};
   VkSemaphore wait_semaphores[] = {semaphore_.image_available_[current_frame_]};
@@ -1812,8 +1786,11 @@ gbengine::Vulkan::~Vulkan() {
   //  }
   //  vkDestroyFramebuffer(logical_device_, frame_buffer, allocator_);
   //}
+  vkDestroyPipelineCache(logical_device_, pipeline_cache_, allocator_);
+  pipeline_cache_ = VK_NULL_HANDLE;
 
   vkDestroyPipeline(logical_device_, graphics_pipeline_, allocator_);
+
   graphics_pipeline_ = VK_NULL_HANDLE;
 
   vkDestroyPipelineLayout(logical_device_, pipeline_layout_, allocator_);

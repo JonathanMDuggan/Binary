@@ -25,9 +25,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "spdlog/spdlog.h"
 #include "peripherals_sdl.h"
+
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
+#include "imgui_internal.h"
 namespace gbengine {
 // If I don't make these function inline the command buffer stops
 // recording when returning for no reason.
@@ -105,7 +107,7 @@ class Vulkan {
 
  private:
   const std::vector<const char*> validation_layers = {
-      "VK_LAYER_KHRONOS_validation",
+      "VK_LAYER_KHRONOS_validation"
   };
   const std::vector<const char*> device_extensions = {
       VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -169,7 +171,7 @@ class Vulkan {
   FrameData frame_data_[kFrameOverLap] = {};
   VkDescriptorSetLayout descriptor_set_layout_{}; 
   VkPipelineLayout pipeline_layout_;
-
+  VkPipelineCache pipeline_cache_; 
   VkPipeline graphics_pipeline_;
   VkCommandPool command_pool_{};
 
@@ -189,6 +191,9 @@ class Vulkan {
 
   // ImGui Hell
   ImGui_ImplVulkanH_Window imgui_window_;
+  VkFence imgui_fence_;
+  VkCommandBuffer imgui_command_buffer_;
+  VkCommandPool imgui_command_pool_;
 
   bool IsPhysicalDeviceSuitable(VkPhysicalDevice physical_device);
   void CreateImage(uint32_t width, uint32_t height, VkFormat format,
@@ -216,6 +221,7 @@ class Vulkan {
   void CreateIndexBuffer();
   void CreateVertexBuffer();
   void CreateDescriptorSetLayout(); 
+  void CreatePipelineCache();
   void CreateDescriptorSets();
   void CreateTextureImageView();
   void CreateTextureImage(SDL * sdl);
