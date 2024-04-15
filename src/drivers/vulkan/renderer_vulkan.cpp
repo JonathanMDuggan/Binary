@@ -12,8 +12,8 @@
 #define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
 #define _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS
 #define VMA_VULKAN_VERSION 1002000
-#include "include/renderer_vulkan.h"
-#include "include/peripherals_sdl.h"
+#include "../include/renderer_vulkan.h"
+#include "../include/peripherals_sdl.h"
 
 void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   if (ValidationLayersEnabled) spdlog::set_level(spdlog::level::trace);
