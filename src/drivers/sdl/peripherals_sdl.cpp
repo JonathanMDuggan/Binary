@@ -1,7 +1,7 @@
 
 #pragma once
-#include "include/peripherals_sdl.h"
-#include "../main/include/gbengine.h"
+#include "../include/peripherals_sdl.h"
+#include "../../main/include/gbengine.h"
 #include <iostream>
 // SDL Stuff
 

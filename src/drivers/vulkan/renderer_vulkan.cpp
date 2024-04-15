@@ -1,12 +1,4 @@
 // File: renderer_vulkan.cpp
-// Programmer: Jonathan M Duggan
-// Date: 2024-03-14
-// Purpose: Gameboy Engine start up file
-// Version: 0.0.
-//
-// NOTE: This file is heavliy commented becasue I don't know what im writing
-//       I'm following a guide online called https://vkguide.dev/. Vulkan is
-//       Complex, I need explanation.
 
 #pragma once
 #define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
