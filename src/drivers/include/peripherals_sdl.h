@@ -29,7 +29,6 @@ class SDL {
   void Init(Application app);
   void PoolEvents(bool* running);
   SDL(Application app);
-  void DestorySurface();
   void InitTextureFromPath(const char* path_to_texture);
   void GetTextureDimensions(uint32_t* width,uint32_t* height);
   void GetTextureInfo(uint32_t* width, uint32_t* height, uint32_t* channels,

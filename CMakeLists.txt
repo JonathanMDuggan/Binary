@@ -31,6 +31,7 @@ set(MAIN_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/main/include")
 # Driver source directory
 set(DRIVER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/drivers")
 set(DRIVER_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/drivers/include")
+set(VULKAN_IMPLEMENTATION_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/drivers/vulkan")
 
 # Types source directory
 set(TYPE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/types")
@@ -135,17 +136,21 @@ add_executable(Gameboy_Engine
   ${IMGUI_SRC}
 )
 
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
 # The programmer must install SDL2 and Vulkan on their own computer
+#add_subdirectory(dep/fmt)
+add_subdirectory(dep/spdlog)
+add_subdirectory(dep/VulkanMemoryAllocator)
+add_subdirectory(dep/GLFW)
+
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
 find_package(SDL2_mixer REQUIRED)
 find_package(Vulkan REQUIRED)
-
-#add_subdirectory(dep/fmt)
-add_subdirectory(dep/spdlog)
-add_subdirectory(dep/VulkanMemoryAllocator)
-
-
+find_package(OpenGL REQUIRED)
 
 target_include_directories(Gameboy_Engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -156,6 +161,8 @@ target_link_libraries(Gameboy_Engine PRIVATE
   Vulkan::Vulkan Vulkan::Headers
   GPUOpen::VulkanMemoryAllocator 
   spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>
+  glfw
+  OpenGL::GL
   #fmt::fmt-header-only
 )
 find_path(SDL2_IMAGE_INCLUDE_DIR NAMES SDL2_image.h)
