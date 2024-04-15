@@ -34,6 +34,7 @@ void gbengine::SDL::PoolEvents(bool* running) {
       default:
         break;
     }
+    ImGui_ImplSDL2_ProcessEvent(&event_);
   }
 }
 

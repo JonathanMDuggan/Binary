@@ -1,4 +1,8 @@
 #pragma once
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_vulkan.h"
+#include "imgui_internal.h"
 #include "../../main/include/gbengine.h"
 #include "../../types/include/enums.h"
 #include <SDL.h>
