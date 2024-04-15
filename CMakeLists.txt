@@ -39,6 +39,7 @@ set(DRIVER_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/drivers/include")
 set(VULKAN_IMPLEMENTATION_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/drivers/vulkan")
 set(OPENGL_IMPLEMENTATION_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/drivers/opengl")
 set(SDL_IMPLEMENTATION_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/drivers/sdl")
+
 # Types source directory
 set(TYPE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/types")
 set(TYPE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/types/include")
@@ -182,7 +183,7 @@ set_property(TARGET Gameboy_Engine PROPERTY CXX_STANDARD 20)
 
 # Move the resource folder where the executable is 
 file(COPY resources DESTINATION ${DST_DIR}/)
-#file(COPY ${_sdl2image_dll} DESTINATION ${DST_DIR})
+
 # Debuging messages
 # Tells me where CMake found the vulkan lib
 message("
