@@ -4,5 +4,6 @@ namespace gbengine {
 class Renderer {
  public:
   virtual void DrawFrame();
+  virtual ~Renderer();
 };
 }

@@ -16,11 +16,11 @@ using namespace gbengine;
 int main(int argc, char** argv) {
   bool running = true;
   gbengine::Application app = {};
-  app.name = "Vintage";
+  app.name = "Computer Simulator";
   app.height = 600;
   app.width = 800;
   app.version = 0x00000001;
-  app.renderer = k_OpenGL;
+  app.renderer = k_Vulkan;
   // When the user starts the program SDL, Renederer, and ImGui begin 
   // its initialization phase. If this phase fails the program crashes
   // and returns an error.
@@ -33,13 +33,12 @@ int main(int argc, char** argv) {
     render = new Vulkan(&sdl, app);
   }
 
-
   while (running) {
     // After SDL, Renederer, and ImGui have finshed the initialization phase,
     // The program is stuck in this main loop until the user closes the program
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-     // ImGui_ImplSDL2_ProcessEvent(&event);
+     ImGui_ImplSDL2_ProcessEvent(&event); 
       if (event.type == SDL_QUIT) {
         running = false;
       }
@@ -48,10 +47,9 @@ int main(int argc, char** argv) {
         running = false;
       }
     }
-    render->DrawFrame(); 
-   // vulkan.DrawFrame(sdl.window_, &sdl.event_); 
-   // ImGui_ImplSDL2_ProcessEvent(&sdl.event_);
+    render->DrawFrame();
   }
-  //vkDeviceWaitIdle(vulkan.logical_device_);
+
+  render->~Renderer();
   return EXIT_SUCCESS;
 }

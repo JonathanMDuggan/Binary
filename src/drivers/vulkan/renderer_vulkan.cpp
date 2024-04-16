@@ -134,6 +134,9 @@ gbengine::Vulkan::Vulkan(SDL* sdl, Application app) {
 }
 
 gbengine::Vulkan::~Vulkan() {
+  // Do not destory any objects until the device is idle
+  // (do when vulkan isn't renderering anything)
+  vkDeviceWaitIdle(logical_device_);
   VkResult result;
   CleanUpSwapChain();
   ImGui_ImplVulkan_Shutdown(); 

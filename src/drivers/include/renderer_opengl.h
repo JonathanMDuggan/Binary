@@ -11,6 +11,7 @@ class OpenGL: public Renderer{
   SDL_GLContext context_{};
   int width_;
   int height_;
+  SDL* sdl_;
   SDL_Window* window_;
 };
 }
