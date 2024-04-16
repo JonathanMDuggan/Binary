@@ -7,10 +7,33 @@
 
 void gbengine::SDL::Init(Application app) {
   // We're using SDL for the window creation and inputs
+  //
+  // On startup the application checks the configuration files
+  // and init the options listed.
+  SDL_WindowFlags renderer;
+  switch (app.renderer) {
+    case k_OpenGL:
+      renderer = SDL_WINDOW_OPENGL;
+      break;
+    case k_Vulkan:
+      renderer = SDL_WINDOW_VULKAN;
+      break;
+    default:
+      renderer = SDL_WINDOW_HIDDEN; // place holder
+
+      spdlog::critical(
+          "No renderer in configuration file, cannot display"
+          "anything to the screen");
+
+      throw std::runtime_error(
+          "no renderer in configuration file,"
+          "cannot display anything to the screen");
+  }
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO);
   window_ = SDL_CreateWindow(app.name, SDL_WINDOWPOS_CENTERED, 
                             SDL_WINDOWPOS_CENTERED, app.width,
-                            app.height, SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN);
+                            app.height, SDL_WINDOW_SHOWN | renderer
+                            );
   // SDL Image
   int img_flags = IMG_INIT_PNG | IMG_INIT_JPG | IMG_INIT_TIF | IMG_INIT_WEBP;
   img_flags |= IMG_INIT_AVIF | IMG_INIT_JXL;

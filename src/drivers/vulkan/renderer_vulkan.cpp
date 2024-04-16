@@ -50,7 +50,7 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   CreateSyncObjects();
 }
 
-void gbengine::Vulkan::DrawFrame(SDL_Window* window_, SDL_Event *event) {
+void gbengine::Vulkan::DrawFrame() {
   vkWaitForFences(logical_device_, 1, &in_flight_fence_[current_frame_],
                   VK_TRUE, UINT64_MAX);
   uint32_t image_index = 0;
@@ -59,7 +59,7 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window_, SDL_Event *event) {
                             semaphore_.image_available_[current_frame_],
                             VK_NULL_HANDLE, &image_index);
   if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-    RecreateSwapChain(window_, event);
+    RecreateSwapChain(sdl_->window_, &sdl_->event_);
     return;
   } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
     spdlog::critical("Failed to acquire swap chain image! {}",
@@ -112,7 +112,7 @@ void gbengine::Vulkan::DrawFrame(SDL_Window* window_, SDL_Event *event) {
   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
       frame_buffer_resized_) {
     frame_buffer_resized_ = false;
-    RecreateSwapChain(window_, event);
+    RecreateSwapChain(sdl_->window_, &sdl_->event_);
   } else if (result != VK_SUCCESS) {
     spdlog::critical("Failed to present queue! {}", VkResultToString(result));
     throw std::runtime_error("Failed to present queue!" +
@@ -128,6 +128,7 @@ void gbengine::Vulkan::CreateSurface(SDL_Window* window_) {
 }
 
 gbengine::Vulkan::Vulkan(SDL* sdl, Application app) {
+  sdl_ = sdl;
   InitVulkan(sdl, app);
   InitIMGUI(sdl);
 }

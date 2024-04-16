@@ -7,33 +7,39 @@
 #include "../drivers/include/peripherals_sdl.h"
 #include "../drivers/include/renderer_vulkan.h"
 #include "../emulation/include/gb_emulator.h"
+#include "../drivers/include/renderer_opengl.h"
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h" 
 using namespace gbengine;
 int main(int argc, char** argv) {
-  gbengine::Application app = {};
   bool running = true;
-  app.name = "GameBoy_Engine";
+  gbengine::Application app = {};
+  app.name = "Vintage";
   app.height = 600;
   app.width = 800;
   app.version = 0x00000001;
-
-  // When the user starts the program SDL, Vulkan, and ImGui begin its
-  // initialization phase. If this phase fails the program crashes
+  app.renderer = k_OpenGL;
+  // When the user starts the program SDL, Renederer, and ImGui begin 
+  // its initialization phase. If this phase fails the program crashes
   // and returns an error.
   gbengine::SDL sdl(app);
+  gbengine::Renderer* render;
 
-  // The Vulkan Object also Inits ImGui
-  gbengine::Vulkan vulkan(&sdl, app);
+  if (app.renderer == k_OpenGL) {
+    render = new OpenGL(&sdl);
+  } else {
+    render = new Vulkan(&sdl, app);
+  }
+
 
   while (running) {
-    // After SDL, Vulkan, and ImGui have finshed the initialization phase,
+    // After SDL, Renederer, and ImGui have finshed the initialization phase,
     // The program is stuck in this main loop until the user closes the program
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-      ImGui_ImplSDL2_ProcessEvent(&event);
+     // ImGui_ImplSDL2_ProcessEvent(&event);
       if (event.type == SDL_QUIT) {
         running = false;
       }
@@ -42,10 +48,10 @@ int main(int argc, char** argv) {
         running = false;
       }
     }
-
-    vulkan.DrawFrame(sdl.window_, &sdl.event_); 
-    ImGui_ImplSDL2_ProcessEvent(&sdl.event_);
+    render->DrawFrame(); 
+   // vulkan.DrawFrame(sdl.window_, &sdl.event_); 
+   // ImGui_ImplSDL2_ProcessEvent(&sdl.event_);
   }
-  vkDeviceWaitIdle(vulkan.logical_device_);
+  //vkDeviceWaitIdle(vulkan.logical_device_);
   return EXIT_SUCCESS;
 }

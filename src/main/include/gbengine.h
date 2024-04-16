@@ -26,10 +26,16 @@
 #define GB_ENGINE_NAME "GameBoy Engine"
 #define GB_VERSION 0
 namespace gbengine{
+typedef enum RendererType  { 
+  k_None = 0,
+  k_Vulkan = 1,
+  k_OpenGL = 2
+};
 typedef struct Application {
   const char* name;
   uint32_t version;
   uint32_t width;
   uint32_t height;
+  RendererType renderer;
 } Application; 
 }  // namespace gbengine

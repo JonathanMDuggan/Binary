@@ -7,6 +7,7 @@
 #include "../../types/include/enums.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
+#include <SDL_opengl.h>
 #include <SDL_image.h>
 namespace gbengine {
 class SDL {

@@ -25,6 +25,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "spdlog/spdlog.h"
 #include "peripherals_sdl.h"
+#include "renderer.h"
 
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
@@ -92,7 +93,7 @@ typedef struct QueueFamilyIndices {
   }
 } QueueFamilyIndices;
 
-class Vulkan {
+class Vulkan : public Renderer{
  public:
   VkDevice logical_device_{};
   VkInstance instance_; 
@@ -103,7 +104,7 @@ class Vulkan {
 
   Vulkan(SDL* sdl, Application app);
   ~Vulkan();
-  void DrawFrame(SDL_Window* window_, SDL_Event* event);
+  void DrawFrame();
 
  private:
   const std::vector<const char*> validation_layers = {
@@ -195,6 +196,7 @@ class Vulkan {
   VkCommandBuffer imgui_command_buffer_;
   VkCommandPool imgui_command_pool_;
 
+  SDL* sdl_;
   bool IsPhysicalDeviceSuitable(VkPhysicalDevice physical_device);
   void CreateImage(uint32_t width, uint32_t height, VkFormat format,
                    VkImageTiling tiling, VkImageUsageFlags usage,
