@@ -67,7 +67,7 @@ void gbengine::Vulkan::DrawFrame() {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
   
-  UpdateUniformBuffer(current_frame_); 
+  //UpdateUniformBuffer(current_frame_); 
   RecordCommandBuffer(command_buffers_[current_frame_], image_index); 
   vkResetFences(logical_device_, 1, &in_flight_fence_[current_frame_]);
   //vkResetCommandBuffer(command_buffers_[current_frame_], 0);
@@ -128,7 +128,8 @@ void gbengine::Vulkan::CreateSurface(SDL_Window* window_) {
 }
 
 gbengine::Vulkan::Vulkan(SDL* sdl, Application app) {
-  sdl_ = sdl;
+  sdl_ = sdl; // TODO: remove all the functions that take sdl as a parameter
+              // we now have a member pointer c++ to SDL.
   InitVulkan(sdl, app);
   InitIMGUI(sdl);
 }

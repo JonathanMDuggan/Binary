@@ -63,6 +63,7 @@ void gbengine::SDL::PoolEvents(bool* running) {
 
 gbengine::SDL::SDL(Application app) { 
   Init(app);
+  LoadApplicationIcon();
   return;
 }
 
@@ -161,4 +162,13 @@ gbengine::SDL::~SDL() {
   if (surface_ != nullptr) SDL_FreeSurface(surface_);
   if (window_ != nullptr) SDL_DestroyWindow(window_);
   SDL_Quit();
+}
+void gbengine::SDL::LoadApplicationIcon() { 
+  read_write_ = SDL_RWFromFile("resources/logo/logo.png", "rb");
+  
+  if (read_write_ == NULL) { 
+    spdlog::error("Failed to load application logo");
+  }
+  surface_ = IMG_LoadPNG_RW(read_write_);
+  SDL_SetWindowIcon(window_, surface_);
 }

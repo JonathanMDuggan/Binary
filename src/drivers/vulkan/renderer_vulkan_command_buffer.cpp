@@ -97,25 +97,9 @@ void gbengine::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   // Draw Indexed
   vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(indices_.size()), 1, 0,
                    0, 0);
+  // Draw ImGui
+  ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer);
 
-  ImGui_ImplVulkan_NewFrame();
-  ImGui_ImplSDL2_NewFrame();
-  ImGui::NewFrame();
-
-  ImGui::ShowDemoWindow();
-
-  ImGui::Render();
-
-  if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-    ImGui::UpdatePlatformWindows();
-    ImGui::RenderPlatformWindowsDefault();
-  }
-
-  ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer,
-                                  graphics_pipeline_);
-
-  // vkCmdDraw(command_buffer, static_cast<uint32_t>(vertices_.size()), 1, 0,
-  // 0);
   vkCmdEndRenderPass(command_buffer);
   result = vkEndCommandBuffer(command_buffer);
   if (result != VK_SUCCESS) {

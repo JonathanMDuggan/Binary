@@ -34,7 +34,7 @@ void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
   void* data;
   VkResult result;
 
-  sdl->InitSurfaceFromPath("resources/textures/sunshine.jpg", File::JPEG);
+  sdl->InitSurfaceFromPath("resources/textures/main_menu.png", File::PNG);
   width = sdl->surface_->w;
   height = sdl->surface_->h;
   image_size = sdl->surface_->format->BytesPerPixel * width * height;

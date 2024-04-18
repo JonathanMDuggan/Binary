@@ -27,6 +27,7 @@ class SDL {
   SDL_Surface* surface_{};
   SDL_Texture* texture_{};
   SDL_Renderer* renderer_{};
+  void LoadApplicationIcon();
   void Init(Application app);
   void PoolEvents(bool* running);
   SDL(Application app);
