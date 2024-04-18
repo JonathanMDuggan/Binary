@@ -39,7 +39,7 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   CreateTextureSampler();
   CreateVertexBuffer(); 
   CreateIndexBuffer();
-  //CreateUniformBuffers();
+  CreateUniformBuffers();
   spdlog::info("Creating Vulkan Descriptor Pools ");
   CreateDescriptorPool();
   spdlog::info("Creating Vulkan Descriptor Sets ");
@@ -67,7 +67,7 @@ void gbengine::Vulkan::DrawFrame() {
     throw std::runtime_error("failed to acquire swap chain image!");
   }
   
-  //UpdateUniformBuffer(current_frame_);
+  UpdateUniformBuffer(current_frame_); 
   RecordCommandBuffer(command_buffers_[current_frame_], image_index); 
   vkResetFences(logical_device_, 1, &in_flight_fence_[current_frame_]);
   //vkResetCommandBuffer(command_buffers_[current_frame_], 0);
@@ -153,12 +153,13 @@ gbengine::Vulkan::~Vulkan() {
   vkDestroyDescriptorSetLayout(logical_device_, descriptor_set_layout_,
                                allocator_);
   descriptor_set_layout_ = VK_NULL_HANDLE;
- // for (size_t i = 0; i < kMaxFramesInFlight; i++) { 
- //   vkDestroyBuffer(logical_device_, buffer_.uniform_[i], allocator_); 
- //   buffer_.uniform_[i] = VK_NULL_HANDLE;
- //   vkFreeMemory(logical_device_, buffer_.uniform_memory_[i], allocator_);
- //   buffer_.uniform_memory_[i] = VK_NULL_HANDLE;
- // }
+
+  for (size_t i = 0; i < k_MaxFramesInFlight; i++) { 
+    vkDestroyBuffer(logical_device_, uniform_buffer_[i], allocator_); 
+    uniform_buffer_[i] = VK_NULL_HANDLE;
+    vkFreeMemory(logical_device_, uniform_buffer_memory_[i], allocator_);
+    uniform_buffer_memory_[i] = VK_NULL_HANDLE;
+  }
 
   vkDestroyDescriptorSetLayout(logical_device_, descriptor_set_layout_,
                                allocator_);

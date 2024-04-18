@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     // The program is stuck in this main loop until the user closes the program
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-     ImGui_ImplSDL2_ProcessEvent(&event); 
+      ImGui_ImplSDL2_ProcessEvent(&event); 
       if (event.type == SDL_QUIT) {
         running = false;
       }
@@ -49,7 +49,6 @@ int main(int argc, char** argv) {
     }
     render->DrawFrame();
   }
-
   render->~Renderer();
   return EXIT_SUCCESS;
 }
