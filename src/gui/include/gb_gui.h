@@ -4,7 +4,8 @@ namespace gbengine {
 class GUI {
  public: 
   virtual void StartGUI();
-  virtual void DrawMenuBar();
+
+  virtual void MainMenu();
 };
 class VulkanGUI : public GUI {
   void StartGUI();
@@ -13,4 +14,10 @@ class VulkanGUI : public GUI {
 class OpenGLGUI : public GUI {
   void StartGUI();
 };
+extern void DefaultImGuiStyle();
+}  // namespace gbengine
+
+namespace gbengine::gui::mainmenu {
+extern void Start(); 
+extern void DrawMenuBar();
 }

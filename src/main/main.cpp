@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
       }
     }
     gui->StartGUI();
-    gui->DrawMenuBar();
+    gui::mainmenu::Start();
     render->DrawFrame();
   }
   render->~Renderer();
