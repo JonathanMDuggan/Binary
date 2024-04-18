@@ -173,7 +173,7 @@ target_link_libraries(Gameboy_Engine PRIVATE
   SDL2_mixer::SDL2_mixer 
   Vulkan::Vulkan Vulkan::Headers
   GPUOpen::VulkanMemoryAllocator 
-  spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>
+  spdlog::spdlog spdlog::spdlog_header_only
   glfw
   OpenGL::GL
   #fmt::fmt-header-only

@@ -12,6 +12,16 @@ void DrawMenuBar() {
       }
       ImGui::EndMenu(); 
     }
+    if (ImGui::BeginMenu("Edit")) {
+      if (ImGui::MenuItem("Bazinga", "CTRL O")) {
+      }
+      ImGui::EndMenu(); 
+    }
+    if (ImGui::BeginMenu("Options")) {
+      if (ImGui::MenuItem("Bazinga", "CTRL O")) {
+      }
+      ImGui::EndMenu(); 
+    }
   }
   ImGui::EndMainMenuBar(); 
   ImGui::Render(); 
