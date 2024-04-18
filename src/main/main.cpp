@@ -6,21 +6,55 @@
 #include "include/gbengine.h"
 #include "../drivers/include/peripherals_sdl.h"
 #include "../drivers/include/renderer_vulkan.h"
+#include "../emulation/include/gb_emulator.h"
+#include "../drivers/include/renderer_opengl.h"
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_vulkan.h"
+#include "imgui_internal.h" 
+#include "../gui/include/gb_gui.h"
 using namespace gbengine;
-int main(int argc, char** argv) { 
-  gbengine::Application app;
+int main(int argc, char** argv) {
   bool running = true;
-  app.name = "GameBoy_Engine";
+  gbengine::Application app = {};
+  app.name = "Reverse Studio";
   app.height = 600;
   app.width = 800;
   app.version = 0x00000001;
-  
+  app.renderer = k_Vulkan;
+  // When the user starts the program SDL, Renederer, and ImGui begin 
+  // its initialization phase. If this phase fails the program crashes
+  // and returns an error.
   gbengine::SDL sdl(app);
-  gbengine::Vulkan vulkan(&sdl, app);
-  while (running) {
-    sdl.PoolEvents(&running);
-    vulkan.DrawFrame(sdl.window_, &sdl.event_);
+  gbengine::Renderer* render;
+  gbengine::GUI* gui;
+
+  if (app.renderer == k_OpenGL) {
+    render = new OpenGL(&sdl);
+    gui = new OpenGLGUI;
+  } else {
+    render = new Vulkan(&sdl, app);
+    gui = new VulkanGUI;
   }
-  vkDeviceWaitIdle(vulkan.logical_device_);
+
+  while (running) {
+    // After SDL, Renederer, and ImGui have finshed the initialization phase,
+    // The program is stuck in this main loop until the user closes the program
+    SDL_Event event; 
+    while (SDL_PollEvent(&event)) { 
+      ImGui_ImplSDL2_ProcessEvent(&event);  
+      if (event.type == SDL_QUIT) { 
+        running = false;
+      }
+      if (event.window.event == SDL_WINDOWEVENT_CLOSE && 
+          event.window.windowID == SDL_GetWindowID(sdl.window_)){
+        running = false;
+      }
+    }
+    gui->StartGUI();
+    gui->DrawMenuBar();
+    render->DrawFrame();
+  }
+  render->~Renderer();
   return EXIT_SUCCESS;
 }

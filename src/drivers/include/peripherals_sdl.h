@@ -1,8 +1,13 @@
 #pragma once
-#include "../main/include/gbengine.h"
-#include "../types/include/enums.h"
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_vulkan.h"
+#include "imgui_internal.h"
+#include "../../main/include/gbengine.h"
+#include "../../types/include/enums.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
+#include <SDL_opengl.h>
 #include <SDL_image.h>
 namespace gbengine {
 class SDL {
@@ -22,10 +27,10 @@ class SDL {
   SDL_Surface* surface_{};
   SDL_Texture* texture_{};
   SDL_Renderer* renderer_{};
+  void LoadApplicationIcon();
   void Init(Application app);
   void PoolEvents(bool* running);
   SDL(Application app);
-  void DestorySurface();
   void InitTextureFromPath(const char* path_to_texture);
   void GetTextureDimensions(uint32_t* width,uint32_t* height);
   void GetTextureInfo(uint32_t* width, uint32_t* height, uint32_t* channels,

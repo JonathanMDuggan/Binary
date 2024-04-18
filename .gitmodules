@@ -12,3 +12,9 @@
 [submodule "dep/VulkanMemoryAllocator"]
 	path = dep/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+[submodule "dep/fmt"]
+	path = dep/fmt
+	url = https://github.com/fmtlib/fmt
+[submodule "dep/glfw"]
+	path = dep/glfw
+	url = https://github.com/glfw/glfw
