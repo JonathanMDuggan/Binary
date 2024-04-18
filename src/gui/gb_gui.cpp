@@ -15,15 +15,12 @@ void gbengine::GUI::StartGUI() {
   spdlog::critical("GUI class is not pointing to a graphics API");
 }
 
-void gbengine::GUI::DrawMenuBar() {
-  ImGui::NewFrame(); 
-  ImGui::ShowDemoWindow(); 
-  ImGui::Render(); 
 
-  if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) { 
-    ImGui::UpdatePlatformWindows(); 
-    ImGui::RenderPlatformWindowsDefault(); 
-  }
+
+void gbengine::GUI::MainMenu() { 
+  using namespace gbengine::gui::mainmenu;
+  DrawMenuBar();
+
 }
 
 void gbengine::VulkanGUI::StartGUI() {
@@ -70,4 +67,15 @@ void gbengine::Vulkan::InitIMGUI(SDL* sdl) {
   imgui_info.Allocator = allocator_; 
   imgui_info.CheckVkResultFn = IMGUI_CheckVkResult;
   ImGui_ImplVulkan_Init(&imgui_info);
+  DefaultImGuiStyle();
+}
+
+void gbengine::DefaultImGuiStyle() {
+  using namespace ImGui;
+  ImGuiIO& io = GetIO(); 
+  io.Fonts->AddFontFromFileTTF("resources/fonts/Roboto-Regular.ttf", 16.0f);
+  PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+  PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0.0f);
+  PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 7.0f));
+
 }
