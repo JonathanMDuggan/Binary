@@ -22,13 +22,13 @@ int main(int argc, char** argv) {
   app.width = 1280;
   app.version = 0x00000001;
   app.renderer = k_Vulkan;
+
   // When the user starts the program SDL, Renederer, and ImGui begin 
   // its initialization phase. If this phase fails the program crashes
   // and returns an error.
   gbengine::SDL sdl(app);
   gbengine::Renderer* render;
   gbengine::GUI* gui;
-
   if (app.renderer == k_OpenGL) {
     render = new OpenGL(&sdl);
     gui = new OpenGLGUI;
@@ -38,23 +38,33 @@ int main(int argc, char** argv) {
   }
 
   while (running) {
+    bool window_is_minimized = true;
     // After SDL, Renederer, and ImGui have finshed the initialization phase,
     // The program is stuck in this main loop until the user closes the program
-    SDL_Event event; 
-    while (SDL_PollEvent(&event)) { 
-      ImGui_ImplSDL2_ProcessEvent(&event);  
-      if (event.type == SDL_QUIT) { 
+
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+      ImGui_ImplSDL2_ProcessEvent(&event);
+      if (event.type == SDL_QUIT) {
         running = false;
       }
-      if (event.window.event == SDL_WINDOWEVENT_CLOSE && 
-          event.window.windowID == SDL_GetWindowID(sdl.window_)){
+      if (event.window.event == SDL_WINDOWEVENT_CLOSE &&
+          event.window.windowID == SDL_GetWindowID(sdl.window_)) {
         running = false;
       }
     }
-    gui->StartGUI();
-    gui::mainmenu::Start();
-    render->DrawFrame();
+
+    // When we minimize the window this casues vulkan to send validation
+    // errors because the window size is less than 1. To fix this, we do not
+    // draw new frames until the user opens the application.
+    if (!(SDL_GetWindowFlags(sdl.window_) & SDL_WINDOW_MINIMIZED)) {
+      gui->StartGUI(); 
+      gui::mainmenu::Start(); 
+      render->DrawFrame(); 
+    }
+
   }
+
   render->~Renderer();
   return EXIT_SUCCESS;
 }

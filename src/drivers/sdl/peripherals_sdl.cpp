@@ -32,7 +32,8 @@ void gbengine::SDL::Init(Application app) {
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO);
   window_ = SDL_CreateWindow(app.name, SDL_WINDOWPOS_CENTERED, 
                             SDL_WINDOWPOS_CENTERED, app.width, app.height,
-      SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE |  renderer
+                            SDL_WINDOW_SHOWN | 
+                            SDL_WINDOW_RESIZABLE | renderer
                             );
   // SDL Image
   int img_flags = IMG_INIT_PNG | IMG_INIT_JPG | IMG_INIT_TIF | IMG_INIT_WEBP;
