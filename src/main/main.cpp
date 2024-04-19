@@ -18,8 +18,8 @@ int main(int argc, char** argv) {
   bool running = true;
   gbengine::Application app = {};
   app.name = "Reverse Studio";
-  app.height = 800;
-  app.width = 1280;
+  app.height = 600;
+  app.width = 700;
   app.version = 0x00000001;
   app.renderer = k_Vulkan;
 

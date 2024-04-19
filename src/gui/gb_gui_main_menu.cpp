@@ -1,11 +1,23 @@
 #include "include/gb_gui.h"
 namespace gbengine::gui::mainmenu {
 void Start() {
+  //
+  ImGui::NewFrame(); 
+  ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(),
+                               ImGuiDockNodeFlags_PassthruCentralNode);
   DrawMenuBar(); 
+  Titles(); 
+
+  ImGui::Render(); 
+  if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+    ImGui::UpdatePlatformWindows();
+    ImGui::RenderPlatformWindowsDefault();
+  }
+
 }
 
 void DrawMenuBar() { 
-  ImGui::NewFrame(); 
+
   if (ImGui::BeginMainMenuBar()) { 
     if (ImGui::BeginMenu("File")) { 
       if (ImGui::MenuItem("Open", "CTRL O")) { 
@@ -24,12 +36,16 @@ void DrawMenuBar() {
     }
   }
   ImGui::EndMainMenuBar(); 
-  ImGui::Render(); 
+}
 
-  if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) { 
-    ImGui::UpdatePlatformWindows(); 
-    ImGui::RenderPlatformWindowsDefault(); 
+void Titles() { 
+   ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | 
+                                   !ImGuiWindowFlags_NoDocking;
+  if (ImGui::Begin("Start Window", nullptr, window_flags)) { 
+    ImGui::Text("This is the Start window content."); 
+    // Add more GUI elements here as needed
   }
+  ImGui::End();
 }
 
 }

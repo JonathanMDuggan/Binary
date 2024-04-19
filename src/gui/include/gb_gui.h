@@ -20,4 +20,5 @@ extern void DefaultImGuiStyle();
 namespace gbengine::gui::mainmenu {
 extern void Start(); 
 extern void DrawMenuBar();
+extern void Titles();
 }

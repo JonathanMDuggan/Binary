@@ -68,6 +68,7 @@ void gbengine::Vulkan::InitIMGUI(SDL* sdl) {
   imgui_info.CheckVkResultFn = IMGUI_CheckVkResult;
   ImGui_ImplVulkan_Init(&imgui_info);
   DefaultImGuiStyle();
+
 }
 
 void gbengine::DefaultImGuiStyle() {
