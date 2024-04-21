@@ -1,4 +1,5 @@
 #include "../../drivers/include/renderer_vulkan.h"
+#include "../../drivers/include/renderer_opengl.h"
 #include "../../drivers/include/peripherals_sdl.h"
 namespace gbengine {
 class GUI {

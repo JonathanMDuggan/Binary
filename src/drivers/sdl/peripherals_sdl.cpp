@@ -118,15 +118,15 @@ void gbengine::SDL::InitSurfaceFromPath(const char* path_to_texture,
     case File::JPEG: surface_ = IMG_LoadJPG_RW(read_write_);    
       surface_ = SDL_ConvertSurfaceFormat(surface_, SDL_PIXELFORMAT_RGBA32, 0);
       break;
-    case File::BMP:  surface_ = SDL_LoadBMP_RW(read_write_, 1); break;
-    case File::GIF:  surface_ = IMG_LoadGIF_RW(read_write_);    break;
-    case File::TIF:  surface_ = IMG_LoadTIF_RW(read_write_);    break;
-    case File::XPM:  surface_ = IMG_LoadXPM_RW(read_write_);    break;
-    case File::TGA:  surface_ = IMG_LoadTGA_RW(read_write_);    break;
-    case File::LBM:  surface_ = IMG_LoadLBM_RW(read_write_);    break;
-    case File::PCX:  surface_ = IMG_LoadPCX_RW(read_write_);    break;
-    case File::PNM:  surface_ = IMG_LoadPNM_RW(read_write_);    break;
-    case File::SVG:  surface_ = IMG_LoadSVG_RW(read_write_);    break;
+    case File::BMP:  surface_ = SDL_LoadBMP_RW(read_write_, 1); break; 
+    case File::GIF:  surface_ = IMG_LoadGIF_RW(read_write_);    break; 
+    case File::TIF:  surface_ = IMG_LoadTIF_RW(read_write_);    break; 
+    case File::XPM:  surface_ = IMG_LoadXPM_RW(read_write_);    break; 
+    case File::TGA:  surface_ = IMG_LoadTGA_RW(read_write_);    break; 
+    case File::LBM:  surface_ = IMG_LoadLBM_RW(read_write_);    break; 
+    case File::PCX:  surface_ = IMG_LoadPCX_RW(read_write_);    break; 
+    case File::PNM:  surface_ = IMG_LoadPNM_RW(read_write_);    break; 
+    case File::SVG:  surface_ = IMG_LoadSVG_RW(read_write_);    break; 
     case File::WEBP: surface_ = IMG_LoadWEBP_RW(read_write_);   break;
   }
 

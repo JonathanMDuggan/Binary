@@ -101,13 +101,10 @@ typedef struct QueueFamilyIndices {
 
 class Vulkan : public Renderer{
  public:
-  VkRenderPass render_pass_;
-  VkDescriptorPool descriptor_pool_{};
-  VkAllocationCallbacks* allocator_ = VK_NULL_HANDLE;
-
   Vulkan(SDL* sdl, Application app);
   ~Vulkan();
   void DrawFrame();
+
 
  private:
   const std::vector<const char*> validation_layers = {
@@ -165,7 +162,7 @@ class Vulkan : public Renderer{
   VkPipelineLayout pipeline_layout_;
   VkPipelineCache pipeline_cache_;
   VkPipeline graphics_pipeline_;
-
+  VkRenderPass render_pass_;
   // Extensions and validation layers 
   const char* const* instance_validation_layers_{};
   uint32_t sdl_extenstion_count_{};
@@ -177,9 +174,8 @@ class Vulkan : public Renderer{
 
   // Graphic device allocation and pointers
   VkInstance instance_;
-  VkDevice logical_device_{};
+  
   VkPhysicalDevice physical_device_{};
-  VkQueue graphics_queue_{};
   VkQueue present_queue_{};
   uint32_t graphics_queue_family_{};
 
@@ -197,7 +193,6 @@ class Vulkan : public Renderer{
 
   // Descriptor Sets
   std::vector<VkDescriptorSet> descriptor_sets_;
-  VkDescriptorSetLayout descriptor_set_layout_{}; 
 
   // Textures
   VkImage texture_image_;
@@ -210,14 +205,15 @@ class Vulkan : public Renderer{
   std::vector<VkDeviceMemory> uniform_buffer_memory_;
   std::vector<void*> uniform_buffer_mapped_;
 
-  // ImGui Hell
-  ImGui_ImplVulkanH_Window imgui_window_;
-  VkFence imgui_fence_;
-  VkCommandBuffer imgui_command_buffer_;
-  VkCommandPool imgui_command_pool_;
-
   // Class pointers
   SDL* sdl_;
+
+ // Important stuff 
+  VkDescriptorPool descriptor_pool_{};
+  VkDevice logical_device_{};
+  VkAllocationCallbacks* allocator_ = VK_NULL_HANDLE;
+  VkDescriptorSetLayout descriptor_set_layout_{};
+  VkQueue graphics_queue_{}; 
 
   bool IsPhysicalDeviceSuitable(VkPhysicalDevice physical_device);
 
@@ -297,5 +293,10 @@ class Vulkan : public Renderer{
   std::vector<const char*> GetExtensions(SDL_Window* window_);
   void InitVulkan(gbengine::SDL* sdl, gbengine::Application app);
   void InitIMGUI(SDL* sdl);
+
+  class Image { 
+    void Test();
+   public:
+  };
 };
 }

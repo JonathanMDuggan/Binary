@@ -1,13 +1,16 @@
-#include "../include/peripherals_sdl.h"
+#pragma once
 #include "../include/renderer.h"
+#include "imgui_impl_opengl3.h"
 #include <gl/GL.h>
 namespace gbengine {
-class OpenGL: public Renderer{
+class OpenGL : public Renderer{ 
  public:
   OpenGL(SDL* sdl);
   void DrawFrame();
+
  private:
   void Init(SDL* sdl);
+  void InitIMGUI();
   SDL_GLContext context_{};
   int width_;
   int height_;

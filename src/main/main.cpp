@@ -17,11 +17,11 @@ using namespace gbengine;
 int main(int argc, char** argv) {
   bool running = true;
   gbengine::Application app = {};
-  app.name = "Reverse Studio";
-  app.height = 600;
-  app.width = 700;
+  app.name = "Reverse Engine";
+  app.height = 720;
+  app.width = 1280;
   app.version = 0x00000001;
-  app.renderer = k_Vulkan;
+  app.renderer = k_OpenGL;
 
   // When the user starts the program SDL, Renederer, and ImGui begin 
   // its initialization phase. If this phase fails the program crashes
@@ -30,10 +30,10 @@ int main(int argc, char** argv) {
   gbengine::Renderer* render;
   gbengine::GUI* gui;
   if (app.renderer == k_OpenGL) {
-    render = new OpenGL(&sdl);
+    render = new gbengine::OpenGL(&sdl);
     gui = new OpenGLGUI;
   } else {
-    render = new Vulkan(&sdl, app);
+    render = new gbengine::Vulkan(&sdl, app);
     gui = new VulkanGUI;
   }
 

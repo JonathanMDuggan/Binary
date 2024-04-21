@@ -240,3 +240,5 @@ gbengine::Vulkan::~Vulkan() {
   instance_ = VK_NULL_HANDLE;
   return;
 }
+
+

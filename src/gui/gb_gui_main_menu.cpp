@@ -20,7 +20,11 @@ void DrawMenuBar() {
 
   if (ImGui::BeginMainMenuBar()) { 
     if (ImGui::BeginMenu("File")) { 
-      if (ImGui::MenuItem("Open", "CTRL O")) { 
+      if (ImGui::MenuItem("New", "CTRL O")) {
+      }
+      if (ImGui::MenuItem("Open", "CTRL O")) {
+      }
+      if (ImGui::MenuItem("Export", "CTRL O")) {
       }
       ImGui::EndMenu(); 
     }
@@ -41,9 +45,7 @@ void DrawMenuBar() {
 void Titles() { 
    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | 
                                    !ImGuiWindowFlags_NoDocking;
-  if (ImGui::Begin("Start Window", nullptr, window_flags)) { 
-    ImGui::Text("This is the Start window content."); 
-    // Add more GUI elements here as needed
+  if (ImGui::Begin("Start Window", nullptr, window_flags)) {
   }
   ImGui::End();
 }

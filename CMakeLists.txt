@@ -22,6 +22,8 @@ ${IMGUI_DIR}/imgui_draw.cpp
 ${IMGUI_DIR}/imgui_demo.cpp
 ${IMGUI_DIR}/imgui_tables.cpp
 ${IMGUI_DIR}/imgui_widgets.cpp
+${IMGUI_DIR}/backends/imgui_impl_opengl3.h
+${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
 ${IMGUI_DIR}/backends/imgui_impl_vulkan.h
 ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
 ${IMGUI_DIR}/backends/imgui_impl_sdl2.h
@@ -176,7 +178,7 @@ target_link_libraries(Gameboy_Engine PRIVATE
   spdlog::spdlog spdlog::spdlog_header_only
   glfw
   OpenGL::GL
-  #fmt::fmt-header-only
+  #fmt::fmt
 )
 find_path(SDL2_IMAGE_INCLUDE_DIR NAMES SDL2_image.h)
 set_property(TARGET Gameboy_Engine PROPERTY CXX_STANDARD 20)
