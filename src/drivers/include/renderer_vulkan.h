@@ -293,15 +293,12 @@ class Vulkan : public Renderer {
   void InitIMGUI(SDL* sdl);
 
   VkDescriptorSet descriptor_set;
-  void _LoadImage(const char* image_path);
+  void LoadImageFromPath(const char* image_path); 
   void _FreeImage();
   void _DestoryImage();
   void CreateTextureDescriptorSet();
-
-  void Chip8_Screen(std::array<std::array<uint32_t, 64>, 32>& screen);
-  void GB_Screen(std::array<std::array<uint32_t, 160>, 144>& screen);
-
-  void NES_Screen(std::array<std::array<uint32_t, 256>, 240>& screen);
+  void LoadImageFromArray(void* image_data, VkDeviceSize image_size, uint32_t w,
+                          uint32_t h);
 };
 
 }  // namespace gbengine
