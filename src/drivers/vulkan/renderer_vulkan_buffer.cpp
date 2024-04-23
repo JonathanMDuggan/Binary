@@ -7,6 +7,9 @@ void gbengine::Vulkan::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
   VkMemoryRequirements memory_requirements;
   VkMemoryAllocateInfo allocate_info{};
   VkResult result;
+  // Graphic devices have specialized areas in its memory for certain buffers,
+  // for us to store our buffer. We are defineing our buffer then asking
+  // our graphic device, what are the requirements for this buffer.
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info.size = size;
   buffer_info.usage = usage;
@@ -17,14 +20,27 @@ void gbengine::Vulkan::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
     throw std::runtime_error("Failed to create buffer" +
                              VkResultToString(result));
   }
+  // We tell the graphic device what our buffer needs and it outputs the memory
+  // requirements for our buffer
   vkGetBufferMemoryRequirements(logical_device_, buffer, &memory_requirements);
 
+  // Even though we know what our memory requirements are, we don't know where
+  // to store the buffer in the graphic device. This is where we write the
+  // allocate info
   allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocate_info.allocationSize = memory_requirements.size;
-  allocate_info.memoryTypeIndex =
-      FindMemoryType(memory_requirements.memoryTypeBits,
+  // Graphic devices have memory storage for specialize task, the data is
+  // store in a way for the graphics device to process it easily.
+  // But we don't know if the graphic device has the specialize type of
+  // memory for our buffer, so we pass infomation to this function to find
+  // the memory location.
+  allocate_info.memoryTypeIndex = FindMemoryType(
+                     memory_requirements.memoryTypeBits,
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+  // Now we pass the infomation to the vulkan function that allocates memory to
+  // the device. However we don't know where the grahpic device stored the data
   result = vkAllocateMemory(logical_device_, &allocate_info, allocator_,
                             &buffer_memory);
   if (result != VK_SUCCESS) {
@@ -33,6 +49,9 @@ void gbengine::Vulkan::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
     throw std::runtime_error("Failed to allocate buffer memory " +
                              VkResultToString(result));
   }
+  
+  // This is where this function comes along and binds our buffer to the memory
+  // location, that way we know where our buffer is in the memory location.
   vkBindBufferMemory(logical_device_, buffer, buffer_memory, 0);
 }
 

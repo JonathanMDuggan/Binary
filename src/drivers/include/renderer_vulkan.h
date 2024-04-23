@@ -37,7 +37,7 @@ namespace gbengine {
 extern inline VkCommandBuffer BeginSingleTimeCommands(
     VkCommandPool command_pool, VkDevice logical_device);
 extern inline void EndSingleTimeCommands(VkCommandBuffer command_buffer,
-                                         VkCommandPool command_pool, 
+                                         VkCommandPool command_pool,
                                          VkDevice logical_device,
                                          VkQueue queue);
 typedef struct UniformBufferObject {
@@ -81,15 +81,15 @@ struct Vertex {
 };
 const std::vector<Vertex> vertices_ = {
     {{-1.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{ 1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{ 1.0f,  1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-1.0f,  1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+    {{1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 };
 
 const std::vector<uint16_t> indices_ = {0, 1, 2, 2, 3, 0};
 extern std::vector<char> ReadFile(const std::string& file_name);
 extern std::string VkResultToString(VkResult result);
-enum VulkanConst { kFrameOverLap = 2, k_MaxFramesInFlight = 2};
+enum VulkanConst { kFrameOverLap = 2, k_MaxFramesInFlight = 2 };
 
 typedef struct QueueFamilyIndices {
   std::optional<uint32_t> graphics_family;
@@ -99,17 +99,15 @@ typedef struct QueueFamilyIndices {
   }
 } QueueFamilyIndices;
 
-class Vulkan : public Renderer{
+class Vulkan : public Renderer {
  public:
   Vulkan(SDL* sdl, Application app);
   ~Vulkan();
   void DrawFrame();
 
-
  private:
   const std::vector<const char*> validation_layers = {
-      "VK_LAYER_KHRONOS_validation"
-  };
+      "VK_LAYER_KHRONOS_validation"};
   const std::vector<const char*> device_extensions = {
       VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 #ifdef NDEBUG
@@ -163,18 +161,18 @@ class Vulkan : public Renderer{
   VkPipelineCache pipeline_cache_;
   VkPipeline graphics_pipeline_;
   VkRenderPass render_pass_;
-  // Extensions and validation layers 
+  // Extensions and validation layers
   const char* const* instance_validation_layers_{};
   uint32_t sdl_extenstion_count_{};
   const char** kSDLExtensions_{};
   VkQueueFamilyProperties* queue_props_{};
   VkDebugUtilsMessengerEXT debug_messenger_{};
- 
+
   VkSurfaceKHR surface_{};
 
   // Graphic device allocation and pointers
   VkInstance instance_;
-  
+
   VkPhysicalDevice physical_device_{};
   VkQueue present_queue_{};
   uint32_t graphics_queue_family_{};
@@ -183,12 +181,12 @@ class Vulkan : public Renderer{
   FrameData frame_data_[kFrameOverLap] = {};
 
   // Sync Objects
-  std::vector<VkFence>in_flight_fence_;
+  std::vector<VkFence> in_flight_fence_;
   Semaphore semaphore_;
   uint32_t current_frame_ = 0;
-  VkFence in_flight_fences_{}; 
+  VkFence in_flight_fences_{};
 
-  bool frame_buffer_resized_ = false; 
+  bool frame_buffer_resized_ = false;
   Buffer buffer_{};
 
   // Descriptor Sets
@@ -208,12 +206,12 @@ class Vulkan : public Renderer{
   // Class pointers
   SDL* sdl_;
 
- // Important stuff 
+  // Important stuff
   VkDescriptorPool descriptor_pool_{};
   VkDevice logical_device_{};
   VkAllocationCallbacks* allocator_ = VK_NULL_HANDLE;
   VkDescriptorSetLayout descriptor_set_layout_{};
-  VkQueue graphics_queue_{}; 
+  VkQueue graphics_queue_{};
 
   bool IsPhysicalDeviceSuitable(VkPhysicalDevice physical_device);
 
@@ -241,12 +239,12 @@ class Vulkan : public Renderer{
   void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
   void CreateIndexBuffer();
   void CreateVertexBuffer();
-  void CreateDescriptorSetLayout(); 
+  void CreateDescriptorSetLayout();
   void CreateUniformBuffers();
   void CreatePipelineCache();
   void CreateDescriptorSets();
   void CreateTextureImageView();
-  void CreateTextureImage(SDL * sdl);
+  void CreateTextureImage(const char* image_path);
   void CreateTextureSampler();
   void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                     VkMemoryPropertyFlags properties, VkBuffer& buffer,
@@ -276,13 +274,13 @@ class Vulkan : public Renderer{
                          uint32_t height);
   QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physical_device);
   bool CheckDeviceExtensionSupport(VkPhysicalDevice physical_device);
-  
+
   SwapChainSupportDetails QuerySwapChainSupport(
       VkPhysicalDevice physical_device);
   VkSurfaceFormatKHR ChooseSwapSurfaceFormat(
       const std::vector<VkSurfaceFormatKHR>& available_formats);
   VkPresentModeKHR ChooseSwapPresentMode(
-      const std::vector<VkPresentModeKHR>& available_present_modes); 
+      const std::vector<VkPresentModeKHR>& available_present_modes);
   VkShaderModule CreateShaderModule(const std::vector<char>& code);
   VkExtent2D ChooseSwapExtent(SDL_Window* window_,
                               const VkSurfaceCapabilitiesKHR& capabilities);
@@ -294,9 +292,16 @@ class Vulkan : public Renderer{
   void InitVulkan(gbengine::SDL* sdl, gbengine::Application app);
   void InitIMGUI(SDL* sdl);
 
-  class Image { 
-    void Test();
-   public:
-  };
+  VkDescriptorSet descriptor_set;
+  void _LoadImage(const char* image_path);
+  void _FreeImage();
+  void _DestoryImage();
+  void CreateTextureDescriptorSet();
+
+  void Chip8_Screen(std::array<std::array<uint32_t, 64>, 32>& screen);
+  void GB_Screen(std::array<std::array<uint32_t, 160>, 144>& screen);
+
+  void NES_Screen(std::array<std::array<uint32_t, 256>, 240>& screen);
 };
-}
+
+}  // namespace gbengine

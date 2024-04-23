@@ -26,7 +26,7 @@ VkImageView gbengine::Vulkan::CreateImageView(VkImage image, VkFormat format,
   return image_view;
 }
 
-void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
+void gbengine::Vulkan::CreateTextureImage(const char* image_path) {
   VkBuffer staging_buffer;
   VkDeviceSize image_size;
   VkDeviceMemory staging_buffer_memory;
@@ -34,14 +34,15 @@ void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
   void* data;
   VkResult result;
 
-  sdl->InitSurfaceFromPath("resources/textures/main_menu.png", File::PNG);
-  width = sdl->surface_->w;
-  height = sdl->surface_->h;
-  image_size = sdl->surface_->format->BytesPerPixel * width * height;
-  CreateBuffer(image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-               staging_buffer, staging_buffer_memory);
+  sdl_->InitSurfaceFromPath(image_path, File::PNG); 
+  width = sdl_->surface_->w; 
+  height = sdl_->surface_->h; 
+  image_size = sdl_->surface_->format->BytesPerPixel * width * height; 
+
+  CreateBuffer(image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | 
+                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,  
+               staging_buffer, staging_buffer_memory); 
   // Data is a pointer to VRAM in your graphics card, and if you
   // don't have a graphics card then it's DDRAM.
   //
@@ -51,7 +52,7 @@ void gbengine::Vulkan::CreateTextureImage(SDL* sdl) {
 
   // We got the pointer to the memory free for us to use, lets put the surface
   // pixels where the data address is pointing at
-  memcpy(data, sdl->surface_->pixels, static_cast<size_t>(image_size));
+  memcpy(data, sdl_->surface_->pixels, static_cast<size_t>(image_size));
   vkUnmapMemory(logical_device_, staging_buffer_memory);
 
   CreateImage(width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
@@ -268,3 +269,74 @@ VkFormat gbengine::Vulkan::FindSupportedFormat(
   spdlog::critical("Failed to find supported format for tiling");
   throw std::runtime_error("Failed to find supported format for tiling");
 }
+
+void gbengine::Vulkan::Chip8_Screen(
+  std::array<std::array<uint32_t, 64>, 32>& screen) {
+  VkBuffer staging_buffer;
+  VkDeviceSize image_size;
+  VkDeviceMemory staging_buffer_memory;
+  uint32_t width, height, format;
+  void* data;
+  VkResult result;
+
+  width = 64;
+  height = 32;
+  image_size = width * height * 4;
+  CreateBuffer(image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+               staging_buffer, staging_buffer_memory);
+
+  // Data is a pointer to VRAM in your graphics card, and if you
+  // don't have a graphics card then it's DDRAM.
+  //
+  // This whole setup is allocating space in whatever memory channel you're
+  // using and puting the image there
+  vkMapMemory(logical_device_, staging_buffer_memory, 0, image_size, 0, &data);
+
+  // We got the pointer to the memory free for us to use, lets put the surface
+  // pixels where the data address is pointing at
+  memcpy(data, screen.data(), static_cast<size_t>(image_size));
+  vkUnmapMemory(logical_device_, staging_buffer_memory);
+
+  CreateImage(width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+              VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture_image_,
+              texture_image_memory_);
+
+  TransitionImageLayout(texture_image_, VK_FORMAT_R8G8B8A8_UNORM,
+                        VK_IMAGE_LAYOUT_UNDEFINED,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+  CopyBufferToImage(staging_buffer, texture_image_, width, height);
+
+  TransitionImageLayout(texture_image_, VK_FORMAT_R8G8B8A8_UNORM,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+  vkDestroyBuffer(logical_device_, staging_buffer, allocator_);
+  vkFreeMemory(logical_device_, staging_buffer_memory, allocator_);
+
+  CreateTextureImageView();
+  CreateTextureSampler();
+  CreateTextureDescriptorSet();
+}
+
+void gbengine::Vulkan::_LoadImage(const char* image_path) {
+  CreateTextureImage(image_path);
+  CreateTextureImageView();
+  CreateTextureSampler();
+  CreateTextureDescriptorSet();
+}
+
+void gbengine::Vulkan::_FreeImage() {
+  vkFreeDescriptorSets(logical_device_, descriptor_pool_, 1, &descriptor_set);
+}
+
+void gbengine::Vulkan::_DestoryImage() {
+  vkDestroySampler(logical_device_, texture_sampler_, allocator_);
+  vkDestroyImageView(logical_device_, texture_image_view_, allocator_);
+  vkDestroyImage(logical_device_, texture_image_, allocator_);
+  vkFreeMemory(logical_device_, texture_image_memory_, allocator_);
+}
+
+void gbengine::Vulkan::CreateTextureDescriptorSet() { std::cout << "Bazinga!"; }

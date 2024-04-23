@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
   app.height = 720;
   app.width = 1280;
   app.version = 0x00000001;
-  app.renderer = k_OpenGL;
+  app.renderer = k_Vulkan;
 
   // When the user starts the program SDL, Renederer, and ImGui begin 
   // its initialization phase. If this phase fails the program crashes

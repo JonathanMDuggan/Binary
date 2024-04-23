@@ -34,7 +34,7 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   //CreateDepthResources();
   CreateFrameBuffer(); 
   spdlog::info("Fetching texture resources to Vulkan");
-  CreateTextureImage(sdl);
+  CreateTextureImage("resources/textures/main_menu.png");
   CreateTextureImageView();
   CreateTextureSampler();
   CreateVertexBuffer(); 
