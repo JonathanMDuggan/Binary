@@ -45,9 +45,7 @@ void gbengine::OpenGL::InitIMGUI() {
   ImGuiStyle& style = ImGui::GetStyle();
   if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
     style.WindowRounding = 0.0f;
-    style.Colors[ImGuiCol_WindowBg].w = 0.0f;
-    style.Colors[ImGuiCol_MenuBarBg].w = 0.0f;
-    style.Colors[ImGuiCol_Tab].w = 0.0f;
+
   }
   auto sdl_gl_context = SDL_GL_CreateContext(sdl_->window_);
   ImGui_ImplSDL2_InitForOpenGL(sdl_->window_, sdl_gl_context);
@@ -71,9 +69,6 @@ void gbengine::Vulkan::InitIMGUI(SDL* sdl) {
   ImGuiStyle& style = ImGui::GetStyle();
   if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
     style.WindowRounding = 0.0f;
-    style.Colors[ImGuiCol_WindowBg].w = 0.0f;
-    style.Colors[ImGuiCol_MenuBarBg].w = 0.0f;
-    style.Colors[ImGuiCol_Tab].w = 0.0f;
     
   }
 

@@ -34,6 +34,17 @@
 namespace gbengine {
 // If I don't make these function inline the command buffer stops
 // recording when returning for no reason.
+
+
+// Vulkan graphic device commuication struct
+struct gbVulkanGraphicsHandler {
+  VkDevice* device;
+  VkQueue* graphics_queue;
+  VkCommandPool* command_pool;
+  VkDescriptorPool* descriptor_pool;
+  VkDescriptorSetLayout* descriptor_set_layout; 
+};
+
 extern inline VkCommandBuffer BeginSingleTimeCommands(
     VkCommandPool command_pool, VkDevice logical_device);
 extern inline void EndSingleTimeCommands(VkCommandBuffer command_buffer,
@@ -299,6 +310,6 @@ class Vulkan : public Renderer {
   void CreateTextureDescriptorSet();
   void LoadImageFromArray(void* image_data, VkDeviceSize image_size, uint32_t w,
                           uint32_t h);
-};
 
+};
 }  // namespace gbengine

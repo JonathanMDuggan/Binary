@@ -16,6 +16,17 @@ class OpenGLGUI : public GUI {
   void StartGUI();
 };
 extern void DefaultImGuiStyle();
+
+class VulkanViewport {
+ public:
+  VulkanViewport(gbVulkanGraphicsHandler vulkan);
+ private:
+  VkDevice* logical_device_;
+  VkQueue* graphics_queue_;
+  VkCommandPool* command_pool_;
+  VkDescriptorPool* descriptor_pool_;
+  VkDescriptorSetLayout* descriptor_set_layout_;
+};
 }  // namespace gbengine
 
 namespace gbengine::gui::mainmenu {

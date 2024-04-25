@@ -251,7 +251,9 @@ void gbengine::Vulkan::_DestoryImage() {
   vkFreeMemory(logical_device_, texture_image_memory_, allocator_);
 }
 
-void gbengine::Vulkan::CreateTextureDescriptorSet() { std::cout << "Bazinga!"; }
+void gbengine::Vulkan::CreateTextureDescriptorSet() { 
+
+}
 
 void gbengine::Vulkan::LoadImageFromArray(
     void* image_data, VkDeviceSize image_size, uint32_t w,
