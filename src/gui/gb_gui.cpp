@@ -4,7 +4,7 @@ static void IMGUI_CheckVkResult(VkResult result) {
   if (result == 0) {
     return;
   }
-  spdlog::error("IMGUI: VkResult {}\n", result);
+  //spdlog::error("IMGUI: VkResult {}\n", result);
   if (result < 0) {
     abort();
   }

@@ -225,7 +225,6 @@ VkFormat gbengine::Vulkan::FindSupportedFormat(
       return format;
     } else if (tiling == VK_IMAGE_TILING_OPTIMAL &&
                (properties.optimalTilingFeatures & features) == features)
-      ;
     return format;
   }
   spdlog::critical("Failed to find supported format for tiling");

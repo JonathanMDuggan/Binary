@@ -56,7 +56,7 @@ void gbengine::Vulkan::CreateDescriptorSetLayout() {
   bindings = {uniform_buffer_object_layout_binding, sampler_layout_binding};
 
   layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  layout_info.bindingCount = bindings.size();
+  layout_info.bindingCount = static_cast<uint32_t>(bindings.size());
   layout_info.pBindings = bindings.data();
   result = vkCreateDescriptorSetLayout(logical_device_, &layout_info,
                                        allocator_, &descriptor_set_layout_);

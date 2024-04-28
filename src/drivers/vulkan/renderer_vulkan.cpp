@@ -134,11 +134,21 @@ gbengine::Vulkan::Vulkan(SDL* sdl, Application app) {
   InitIMGUI(sdl);
 }
 
+gbengine::gbVulkanGraphicsHandler 
+gbengine::Vulkan::GetGraphicsHandler() {
+  gbVulkanGraphicsHandler graphics_handler{};
+  graphics_handler.command_pool = &command_pool_;
+  graphics_handler.descriptor_pool = &descriptor_pool_;
+  graphics_handler.descriptor_set_layout = &descriptor_set_layout_; 
+  graphics_handler.device = &logical_device_;
+  graphics_handler.graphics_queue = &graphics_queue_;
+  return graphics_handler;
+}
+
 gbengine::Vulkan::~Vulkan() {
   // Do not destory any objects until the device is idle
   // (do when vulkan isn't renderering anything)
   vkDeviceWaitIdle(logical_device_);
-  VkResult result;
   CleanUpSwapChain();
   ImGui_ImplVulkan_Shutdown(); 
   ImGui_ImplSDL2_Shutdown();

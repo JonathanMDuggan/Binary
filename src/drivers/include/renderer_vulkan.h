@@ -37,13 +37,13 @@ namespace gbengine {
 
 
 // Vulkan graphic device commuication struct
-struct gbVulkanGraphicsHandler {
+typedef struct gbVulkanGraphicsHandler {
   VkDevice* device;
   VkQueue* graphics_queue;
   VkCommandPool* command_pool;
   VkDescriptorPool* descriptor_pool;
   VkDescriptorSetLayout* descriptor_set_layout; 
-};
+}gbVulkanGraphicsHandler;
 
 extern inline VkCommandBuffer BeginSingleTimeCommands(
     VkCommandPool command_pool, VkDevice logical_device);
@@ -55,7 +55,7 @@ typedef struct UniformBufferObject {
   glm::mat4 model;
   glm::mat4 view;
   glm::mat4 proj;
-};
+}UniformBufferObject;
 
 struct Vertex {
   glm::vec2 position_;
@@ -115,7 +115,7 @@ class Vulkan : public Renderer {
   Vulkan(SDL* sdl, Application app);
   ~Vulkan();
   void DrawFrame();
-
+  gbVulkanGraphicsHandler GetGraphicsHandler(); 
  private:
   const std::vector<const char*> validation_layers = {
       "VK_LAYER_KHRONOS_validation"};
@@ -154,14 +154,14 @@ class Vulkan : public Renderer {
   typedef struct Semaphore {
     std::vector<VkSemaphore> image_available_;
     std::vector<VkSemaphore> render_finished_;
-  };
+  } Semaphore;
 
   typedef struct Buffer {
     VkBuffer vertex_;
     VkBuffer index_;
     VkDeviceMemory vertex_memory_;
     VkDeviceMemory index_memory_;
-  };
+  } Buffer;
 
   // Command Buffers
   VkCommandPool command_pool_{};
@@ -304,6 +304,7 @@ class Vulkan : public Renderer {
   void InitIMGUI(SDL* sdl);
 
   VkDescriptorSet descriptor_set;
+
   void LoadImageFromPath(const char* image_path); 
   void _FreeImage();
   void _DestoryImage();

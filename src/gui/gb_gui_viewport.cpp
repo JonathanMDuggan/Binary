@@ -7,5 +7,11 @@ gbengine::VulkanViewport::VulkanViewport(gbVulkanGraphicsHandler vulkan) {
   descriptor_pool_ = vulkan.descriptor_pool;
   descriptor_set_layout_ = vulkan.descriptor_set_layout;
 
+}
 
+void gbengine::VulkanViewport::Destory() {
+  vkDestroySampler(*logical_device_, texture_sampler_, allocator_);
+  vkDestroyImageView(*logical_device_, texture_image_view_, allocator_);
+  vkDestroyImage(*logical_device_, texture_image_, allocator_);
+  vkFreeMemory(*logical_device_, texture_image_memory_, allocator_);
 }

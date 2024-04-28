@@ -23,7 +23,8 @@ void gbengine::Vulkan::CreateCommandBuffer() {
   allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocate_info.commandPool = command_pool_;
   allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocate_info.commandBufferCount = command_buffers_.size();
+  allocate_info.commandBufferCount =
+      static_cast<uint32_t>(command_buffers_.size());
   result = vkAllocateCommandBuffers(logical_device_, &allocate_info,
                                     command_buffers_.data());
   if (result != VK_SUCCESS) {

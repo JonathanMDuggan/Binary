@@ -30,7 +30,7 @@ typedef enum RendererType  {
   k_None = 0,
   k_Vulkan = 1,
   k_OpenGL = 2
-};
+} RendererType;
 typedef struct Application {
   const char* name;
   uint32_t version;

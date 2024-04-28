@@ -25,7 +25,7 @@ typedef struct Flags {
   bool subtract_;
   bool half_carry_;
   bool carry_;
-};
+}Flags;
 Register register_;
 SM83();
 void PrintCurrentProgramCounterValue();
