@@ -1,7 +1,3 @@
-[submodule "dep/spdlog"]
-	path = dep/spdlog
-	url = https://github.com/gabime/spdlog
-	branch = v1.x
 [submodule "dep/yaml-cpp"]
 	path = dep/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp
@@ -18,3 +14,10 @@
 [submodule "dep/glfw"]
 	path = dep/glfw
 	url = https://github.com/glfw/glfw
+[submodule "dep/spdlog"]
+	path = dep/spdlog
+	url = https://github.com/gabime/spdlog
+	branch = v2.x
+[submodule "dep/folly"]
+	path = dep/folly
+	url = https://github.com/facebook/folly
