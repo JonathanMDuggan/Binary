@@ -158,7 +158,7 @@ gbengine::Vulkan::~Vulkan() {
   vkDestroyImageView(logical_device_, texture_image_view_, allocator_);
   vkDestroyImage(logical_device_, texture_image_, allocator_);
   vkFreeMemory(logical_device_, texture_image_memory_, allocator_);
-
+  
   vkDestroyDescriptorPool(logical_device_, descriptor_pool_, allocator_);
   descriptor_pool_ = VK_NULL_HANDLE;
   vkDestroyDescriptorSetLayout(logical_device_, descriptor_set_layout_,
@@ -209,20 +209,6 @@ gbengine::Vulkan::~Vulkan() {
     buffer_.index_memory_ = VK_NULL_HANDLE;
   }
 
-
-  // FIXME!: Your suppose to destory the framebuffer once the vulkan
-  // instance goes out of scope, However when we do this here, the
-  // frame buffer somehow doesn't exist. Find out where the frame buffer
-  // is deallocating itself.
-  //                         
-  //for (VkFramebuffer frame_buffer : swap_chain_.frame_buffer_) {  
-  //  
-  // // Tried fixing it by checking if it's null, doesn't work.
-  //  if (frame_buffer == VK_NULL_HANDLE) {
-  //    continue;
-  //  }
-  //  vkDestroyFramebuffer(logical_device_, frame_buffer, allocator_);
-  //}
   vkDestroyPipelineCache(logical_device_, pipeline_cache_, allocator_);
   pipeline_cache_ = VK_NULL_HANDLE;
 

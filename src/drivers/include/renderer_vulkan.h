@@ -204,8 +204,8 @@ class Vulkan : public Renderer {
   std::vector<VkDescriptorSet> descriptor_sets_;
 
   // Textures
-  VkImage texture_image_;
-  VkDeviceMemory texture_image_memory_;
+  VkImage texture_image_{};
+  VkDeviceMemory texture_image_memory_{};
   VkImageView texture_image_view_{};
   VkSampler texture_sampler_{};
 
@@ -218,6 +218,7 @@ class Vulkan : public Renderer {
   SDL* sdl_;
 
   // Important stuff
+  VkDescriptorSet descriptor_set;
   VkDescriptorPool descriptor_pool_{};
   VkDevice logical_device_{};
   VkAllocationCallbacks* allocator_ = VK_NULL_HANDLE;
@@ -303,7 +304,7 @@ class Vulkan : public Renderer {
   void InitVulkan(gbengine::SDL* sdl, gbengine::Application app);
   void InitIMGUI(SDL* sdl);
 
-  VkDescriptorSet descriptor_set;
+
 
   void LoadImageFromPath(const char* image_path); 
   void _FreeImage();
