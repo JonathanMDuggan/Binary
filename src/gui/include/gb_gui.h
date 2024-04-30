@@ -25,11 +25,11 @@ class VulkanViewport {
   void LoadFromArray(void* array_data, VkDeviceSize array_size, uint32_t w,
                      uint32_t h);
  private:
-  uint32_t mips_levels_;
-  VkSampler texture_sampler_;
-  VkImageView texture_image_view_;
-  VkDeviceMemory texture_image_memory_;
-  VkImage texture_image_;
+  uint32_t mips_levels_{};
+  VkSampler texture_sampler_{};
+  VkImageView texture_image_view_{};
+  VkDeviceMemory texture_image_memory_{};
+  VkImage texture_image_{};
 
   // Pointers to vulkan logical device and its dependencies
   VkAllocationCallbacks* allocator_ = VK_NULL_HANDLE;
