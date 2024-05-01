@@ -1,5 +1,5 @@
-# Gameboy-Engine
-Personal project for emulating the gameboy 
+# Retro
+Personal project for reverse engineering retro hardware/software
 
 # Building the Project
 
