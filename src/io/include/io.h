@@ -3,6 +3,6 @@
 #include <array>
 #include <vector>
 #include "spdlog/spdlog.h"
-namespace gbengine {
+namespace retro {
 extern std::vector<char> LoadRom(std::string file_path);
 }

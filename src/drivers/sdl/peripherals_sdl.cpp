@@ -5,7 +5,7 @@
 #include <iostream>
 // SDL Stuff
 
-void gbengine::SDL::Init(Application app) {
+void retro::SDL::Init(Application app) {
   // We're using SDL for the window creation and inputs
   //
   // On startup the application checks the configuration files
@@ -46,7 +46,7 @@ void gbengine::SDL::Init(Application app) {
   }
 }
 
-void gbengine::SDL::PoolEvents(bool* running) {
+void retro::SDL::PoolEvents(bool* running) {
   while (SDL_PollEvent(&event_)) {
     switch (event_.type) {
       case SDL_KEYDOWN:
@@ -62,13 +62,13 @@ void gbengine::SDL::PoolEvents(bool* running) {
   }
 }
 
-gbengine::SDL::SDL(Application app) { 
+retro::SDL::SDL(Application app) { 
   Init(app);
   LoadApplicationIcon();
   return;
 }
 
-void gbengine::SDL::InitTextureFromPath(const char* path_to_texture) {
+void retro::SDL::InitTextureFromPath(const char* path_to_texture) {
   texture_ = IMG_LoadTexture(renderer_, path_to_texture);
   if (texture_ == nullptr) {
     spdlog::critical("Failed to create sdl texture {}", SDL_GetError());
@@ -81,7 +81,7 @@ void gbengine::SDL::InitTextureFromPath(const char* path_to_texture) {
                    &texture_info_.height_);
 }
 
-void gbengine::SDL::GetTextureDimensions(uint32_t* width, uint32_t* height) {
+void retro::SDL::GetTextureDimensions(uint32_t* width, uint32_t* height) {
   if (texture_ == nullptr) {
     spdlog::error(
         "Get Texture Dimension was called, yet texture isn't initialized");
@@ -92,14 +92,14 @@ void gbengine::SDL::GetTextureDimensions(uint32_t* width, uint32_t* height) {
   return;
 }
 
-SDL_Texture* gbengine::SDL::GetTexture() {
+SDL_Texture* retro::SDL::GetTexture() {
   if (texture_ == nullptr) {
     spdlog::error("Get Texture was called, yet texture isn't initialized");
     return nullptr;
   }
   return texture_;
 }
-void gbengine::SDL::InitSurfaceFromPath(const char* path_to_texture,
+void retro::SDL::InitSurfaceFromPath(const char* path_to_texture,
                                         File file_type) {
   if (surface_ != nullptr) {
     spdlog::warn(
@@ -137,7 +137,7 @@ void gbengine::SDL::InitSurfaceFromPath(const char* path_to_texture,
   SDL_RWclose(read_write_);
 }
 
-void gbengine::SDL::GetTextureInfo(uint32_t* width, uint32_t* height,
+void retro::SDL::GetTextureInfo(uint32_t* width, uint32_t* height,
                                    uint32_t* access, uint32_t* format) {
   if (texture_ == nullptr) { 
     spdlog::error( 
@@ -149,7 +149,7 @@ void gbengine::SDL::GetTextureInfo(uint32_t* width, uint32_t* height,
   if (format != nullptr) *format = texture_info_.format_;
   if (access != nullptr) *access = static_cast<uint32_t>(texture_info_.access_);
 }
-void gbengine::SDL::ClearTexture() {
+void retro::SDL::ClearTexture() {
   if (texture_ == nullptr) {
     spdlog::error("Clear Texture was called, yet texture isn't initialized");
   }
@@ -157,14 +157,14 @@ void gbengine::SDL::ClearTexture() {
   texture_info_ = {};
   SDL_DestroyTexture(texture_);
 }
-gbengine::SDL::~SDL() {
+retro::SDL::~SDL() {
   if (texture_ != nullptr) SDL_DestroyTexture(texture_);
   if (renderer_ != nullptr) SDL_DestroyRenderer(renderer_);
   if (surface_ != nullptr) SDL_FreeSurface(surface_);
   if (window_ != nullptr) SDL_DestroyWindow(window_);
   SDL_Quit();
 }
-void gbengine::SDL::LoadApplicationIcon() { 
+void retro::SDL::LoadApplicationIcon() { 
   read_write_ = SDL_RWFromFile("resources/logo/logo.png", "rb");
   
   if (read_write_ == NULL) { 

@@ -1,5 +1,5 @@
 #include <cstdint>
-namespace gbengine {
+namespace retro::gb {
 class SM83 {
 public:
 typedef struct Register {

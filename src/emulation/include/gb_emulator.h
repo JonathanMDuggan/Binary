@@ -1,4 +1,4 @@
 #include <iostream>
-namespace gbengine {
+namespace retro::gb {
 extern void test();
 }

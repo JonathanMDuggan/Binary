@@ -36,14 +36,14 @@ find_package(SDL2_mixer REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(OpenGL REQUIRED)
 
-add_executable(Gameboy_Engine 
+add_executable(Retro 
 ${IMGUI_SRC} 
-${ALL_CPP_HEADER_FILES} 
+${ALL_CPP_HEADER_FILES}
 ${ALL_CPP_SRC_FILES})
 
-target_include_directories(Gameboy_Engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(Retro PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(Gameboy_Engine PRIVATE 
+target_link_libraries(Retro PRIVATE 
   SDL2::SDL2 SDL2::SDL2main
   SDL2_image::SDL2_image 
   SDL2_mixer::SDL2_mixer
@@ -55,7 +55,7 @@ target_link_libraries(Gameboy_Engine PRIVATE
   #fmt::fmt
 )
 find_path(SDL2_IMAGE_INCLUDE_DIR NAMES SDL2_image.h)
-set_property(TARGET Gameboy_Engine PROPERTY CXX_STANDARD 20)
+set_property(TARGET Retro PROPERTY CXX_STANDARD 20)
 
 # Move the resource folder where the executable is 
 file(COPY resources DESTINATION ${DST_DIR}/)

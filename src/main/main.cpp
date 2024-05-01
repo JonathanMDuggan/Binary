@@ -13,11 +13,11 @@
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h" 
 #include "../gui/include/gb_gui.h"
-using namespace gbengine;
+using namespace retro;
 int main(int argc, char** argv) {
   bool running = true;
-  gbengine::Application app = {};
-  app.name = "Reverse Engine";
+  retro::Application app = {};
+  app.name = "Retro";
   app.height = 720;
   app.width = 1280;
   app.version = 0x00000001;
@@ -26,14 +26,14 @@ int main(int argc, char** argv) {
   // When the user starts the program SDL, Renederer, and ImGui begin 
   // its initialization phase. If this phase fails the program crashes
   // and returns an error.
-  gbengine::SDL sdl(app);
-  gbengine::Renderer* render;
-  gbengine::GUI* gui;
+  retro::SDL sdl(app);
+  retro::Renderer* render;
+  retro::GUI* gui;
   if (app.renderer == k_OpenGL) {
-    render = new gbengine::OpenGL(&sdl);
+    render = new retro::OpenGL(&sdl);
     gui = new OpenGLGUI;
   } else {
-    render = new gbengine::Vulkan(&sdl, app);
+    render = new retro::Vulkan(&sdl, app);
     gui = new VulkanGUI;
   }
 

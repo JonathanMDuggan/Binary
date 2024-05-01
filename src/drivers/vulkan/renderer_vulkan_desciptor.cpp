@@ -1,6 +1,6 @@
 #include "../include/renderer_vulkan.h"
 
-void gbengine::Vulkan::CreateDescriptorPool() {
+void retro::Vulkan::CreateDescriptorPool() {
   std::array<VkDescriptorPoolSize, 2> pool_size;
   VkDescriptorPoolCreateInfo pool_info{};
   VkResult result;
@@ -30,7 +30,7 @@ void gbengine::Vulkan::CreateDescriptorPool() {
   }
 }
 
-void gbengine::Vulkan::CreateDescriptorSetLayout() {
+void retro::Vulkan::CreateDescriptorSetLayout() {
   VkDescriptorSetLayoutCreateInfo layout_info{};
   VkDescriptorSetLayoutBinding uniform_buffer_object_layout_binding{};
   VkDescriptorSetLayoutBinding sampler_layout_binding{};
@@ -68,7 +68,7 @@ void gbengine::Vulkan::CreateDescriptorSetLayout() {
   }
 }
 
-void gbengine::Vulkan::CreateDescriptorSets() {
+void retro::Vulkan::CreateDescriptorSets() {
   std::vector<VkDescriptorSetLayout> layout(k_MaxFramesInFlight,
                                             descriptor_set_layout_);
   std::array<VkWriteDescriptorSet, 2> descriptor_writes{};

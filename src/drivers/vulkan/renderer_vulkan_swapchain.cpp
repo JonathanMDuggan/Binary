@@ -1,6 +1,6 @@
 #include "../include/renderer_vulkan.h"
 
-void gbengine::Vulkan::CleanUpSwapChain() {
+void retro::Vulkan::CleanUpSwapChain() {
   for (uint32_t i = 0; i < swap_chain_.frame_buffer_.size(); i++) {
     vkDestroyFramebuffer(logical_device_, swap_chain_.frame_buffer_[i],
                          allocator_);
@@ -13,7 +13,7 @@ void gbengine::Vulkan::CleanUpSwapChain() {
 }
 
 
-void gbengine::Vulkan::RecreateSwapChain(SDL_Window* window_,
+void retro::Vulkan::RecreateSwapChain(SDL_Window* window_,
                                          SDL_Event* event) {
   int width = 0;
   int height = 0;
@@ -29,7 +29,7 @@ void gbengine::Vulkan::RecreateSwapChain(SDL_Window* window_,
   CreateFrameBuffer();
 }
 
-void gbengine::Vulkan::CreateSwapChain(SDL_Window* window_) {
+void retro::Vulkan::CreateSwapChain(SDL_Window* window_) {
   uint32_t image_count = 0;
   SwapChainSupportDetails swap_chain_support =
       QuerySwapChainSupport(physical_device_);
@@ -95,7 +95,7 @@ void gbengine::Vulkan::CreateSwapChain(SDL_Window* window_) {
 }
 
 // Returns the supported image format for the swap chain
-VkSurfaceFormatKHR gbengine::Vulkan::ChooseSwapSurfaceFormat(
+VkSurfaceFormatKHR retro::Vulkan::ChooseSwapSurfaceFormat(
     const std::vector<VkSurfaceFormatKHR>& available_formats) {
   for (const auto& available_format : available_formats) {
     if (available_format.format == VK_FORMAT_R8G8B8_SRGB &&
@@ -106,7 +106,7 @@ VkSurfaceFormatKHR gbengine::Vulkan::ChooseSwapSurfaceFormat(
   return available_formats[0];
 }
 
-VkPresentModeKHR gbengine::Vulkan::ChooseSwapPresentMode(
+VkPresentModeKHR retro::Vulkan::ChooseSwapPresentMode(
     const std::vector<VkPresentModeKHR>& available_present_modes) {
   for (const VkPresentModeKHR& available_present_mode :
        available_present_modes) {
@@ -119,7 +119,7 @@ VkPresentModeKHR gbengine::Vulkan::ChooseSwapPresentMode(
 
 // Vulkan Frame Buffer
 
-void gbengine::Vulkan::CreateFrameBuffer() {
+void retro::Vulkan::CreateFrameBuffer() {
   VkResult result;
   swap_chain_.frame_buffer_.resize(swap_chain_.image_views_.size());
   for (size_t i = 0; i < swap_chain_.image_views_.size(); i++) {
@@ -144,7 +144,7 @@ void gbengine::Vulkan::CreateFrameBuffer() {
 }
 
 
-VkExtent2D gbengine::Vulkan::ChooseSwapExtent(
+VkExtent2D retro::Vulkan::ChooseSwapExtent(
     SDL_Window* window_, const VkSurfaceCapabilitiesKHR& capabilities) {
   int width, height = 0;
 

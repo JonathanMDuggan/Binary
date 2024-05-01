@@ -1,4 +1,4 @@
-namespace gbengine {
+namespace retro {
 enum class File {
   PNG,
   JPEG,

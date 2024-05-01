@@ -31,7 +31,7 @@
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h"
-namespace gbengine {
+namespace retro {
 // If I don't make these function inline the command buffer stops
 // recording when returning for no reason.
 
@@ -301,7 +301,7 @@ class Vulkan : public Renderer {
                                VkFormatFeatureFlags features);
   void UpdateUniformBuffer(uint32_t current_frame);
   std::vector<const char*> GetExtensions(SDL_Window* window_);
-  void InitVulkan(gbengine::SDL* sdl, gbengine::Application app);
+  void InitVulkan(retro::SDL* sdl, retro::Application app);
   void InitIMGUI(SDL* sdl);
 
 
@@ -314,4 +314,4 @@ class Vulkan : public Renderer {
                           uint32_t h);
 
 };
-}  // namespace gbengine
+}  // namespace retro

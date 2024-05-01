@@ -7,7 +7,7 @@
 #include "../include/renderer_vulkan.h"
 #include "../include/peripherals_sdl.h"
 
-void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
+void retro::Vulkan::InitVulkan(SDL* sdl, Application app) {
   if (ValidationLayersEnabled) spdlog::set_level(spdlog::level::trace);
   spdlog::info("Initializing Vulkan Instance");
   InitVulkanInstance(sdl->window_, app);
@@ -50,7 +50,7 @@ void gbengine::Vulkan::InitVulkan(SDL* sdl, Application app) {
   CreateSyncObjects();
 }
 
-void gbengine::Vulkan::DrawFrame() {
+void retro::Vulkan::DrawFrame() {
   vkWaitForFences(logical_device_, 1, &in_flight_fence_[current_frame_],
                   VK_TRUE, UINT64_MAX);
   uint32_t image_index = 0;
@@ -121,21 +121,21 @@ void gbengine::Vulkan::DrawFrame() {
   current_frame_ = (current_frame_ + 1) % k_MaxFramesInFlight;
 }
 
-void gbengine::Vulkan::CreateSurface(SDL_Window* window_) {
+void retro::Vulkan::CreateSurface(SDL_Window* window_) {
   if (SDL_Vulkan_CreateSurface(window_, instance_, &surface_)) {
     return;
   }
 }
 
-gbengine::Vulkan::Vulkan(SDL* sdl, Application app) {
+retro::Vulkan::Vulkan(SDL* sdl, Application app) {
   sdl_ = sdl; // TODO: remove all the functions that take sdl as a parameter
               // we now have a member pointer c++ to SDL.
   InitVulkan(sdl, app);
   InitIMGUI(sdl);
 }
 
-gbengine::gbVulkanGraphicsHandler 
-gbengine::Vulkan::GetGraphicsHandler() {
+retro::gbVulkanGraphicsHandler 
+retro::Vulkan::GetGraphicsHandler() {
   gbVulkanGraphicsHandler graphics_handler{};
   graphics_handler.command_pool = &command_pool_;
   graphics_handler.descriptor_pool = &descriptor_pool_;
@@ -145,7 +145,7 @@ gbengine::Vulkan::GetGraphicsHandler() {
   return graphics_handler;
 }
 
-gbengine::Vulkan::~Vulkan() {
+retro::Vulkan::~Vulkan() {
   // Do not destory any objects until the device is idle
   // (do when vulkan isn't renderering anything)
   vkDeviceWaitIdle(logical_device_);

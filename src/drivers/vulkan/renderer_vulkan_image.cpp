@@ -1,6 +1,6 @@
 #include "../include/renderer_vulkan.h"
 
-VkImageView gbengine::Vulkan::CreateImageView(VkImage image, VkFormat format,
+VkImageView retro::Vulkan::CreateImageView(VkImage image, VkFormat format,
                                               VkImageAspectFlags aspect_flag) {
   VkImageViewCreateInfo view_info{};
   VkImageView image_view;
@@ -26,7 +26,7 @@ VkImageView gbengine::Vulkan::CreateImageView(VkImage image, VkFormat format,
   return image_view;
 }
 
-void gbengine::Vulkan::CreateTextureImage(const char* image_path) {
+void retro::Vulkan::CreateTextureImage(const char* image_path) {
   VkDeviceSize image_size;
   sdl_->InitSurfaceFromPath(image_path, File::PNG); 
   image_size = sdl_->surface_->format->BytesPerPixel * sdl_->surface_->w *
@@ -35,7 +35,7 @@ void gbengine::Vulkan::CreateTextureImage(const char* image_path) {
                      sdl_->surface_->h);
 }
 
-void gbengine::Vulkan::CreateTextureSampler() {
+void retro::Vulkan::CreateTextureSampler() {
   VkPhysicalDeviceProperties properties{};
   VkSamplerCreateInfo sampler_info{};
   VkResult result;
@@ -66,7 +66,7 @@ void gbengine::Vulkan::CreateTextureSampler() {
   }
 }
 
-void gbengine::Vulkan::CreateImage(uint32_t width, uint32_t height,
+void retro::Vulkan::CreateImage(uint32_t width, uint32_t height,
                                    VkFormat format, VkImageTiling tiling,
                                    VkImageUsageFlags usage,
                                    VkMemoryPropertyFlags properties,
@@ -118,7 +118,7 @@ void gbengine::Vulkan::CreateImage(uint32_t width, uint32_t height,
   vkBindImageMemory(logical_device_, image, image_memory, 0);
 }
 
-void gbengine::Vulkan::CopyBufferToImage(VkBuffer buffer, VkImage image,
+void retro::Vulkan::CopyBufferToImage(VkBuffer buffer, VkImage image,
                                          uint32_t width, uint32_t height) {
   VkCommandBuffer command_buffer =
       BeginSingleTimeCommands(command_pool_, logical_device_);
@@ -138,7 +138,7 @@ void gbengine::Vulkan::CopyBufferToImage(VkBuffer buffer, VkImage image,
                         graphics_queue_);
 }
 
-void gbengine::Vulkan::TransitionImageLayout(VkImage image, VkFormat format,
+void retro::Vulkan::TransitionImageLayout(VkImage image, VkFormat format,
                                              VkImageLayout old_layout,
                                              VkImageLayout new_layout) {
   VkImageMemoryBarrier barrier{};
@@ -183,7 +183,7 @@ void gbengine::Vulkan::TransitionImageLayout(VkImage image, VkFormat format,
                         graphics_queue_);
 }
 
-uint32_t gbengine::Vulkan::FindMemoryType(uint32_t type_filter,
+uint32_t retro::Vulkan::FindMemoryType(uint32_t type_filter,
                                           VkMemoryPropertyFlags properties) {
   VkPhysicalDeviceMemoryProperties memory_properties;
   vkGetPhysicalDeviceMemoryProperties(physical_device_, &memory_properties);
@@ -198,14 +198,14 @@ uint32_t gbengine::Vulkan::FindMemoryType(uint32_t type_filter,
   throw std::runtime_error("failed to find suitable memory type!");
 }
 
-void gbengine::Vulkan::CreateTextureImageView() {
+void retro::Vulkan::CreateTextureImageView() {
   texture_image_view_ = CreateImageView(
       texture_image_, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 // Vulkan Image Views
 
-void gbengine::Vulkan::CreateImageViews() {
+void retro::Vulkan::CreateImageViews() {
   swap_chain_.image_views_.resize(swap_chain_.images_.size());
   for (size_t i = 0; i < swap_chain_.images_.size(); i++) {
     swap_chain_.image_views_[i] =
@@ -214,7 +214,7 @@ void gbengine::Vulkan::CreateImageViews() {
   }
 }
 
-VkFormat gbengine::Vulkan::FindSupportedFormat(
+VkFormat retro::Vulkan::FindSupportedFormat(
     const std::vector<VkFormat>& candidates, VkImageTiling tiling,
     VkFormatFeatureFlags features) {
   for (VkFormat format : candidates) {
@@ -232,29 +232,29 @@ VkFormat gbengine::Vulkan::FindSupportedFormat(
 }
 
 
-void gbengine::Vulkan::LoadImageFromPath(const char* image_path) {
+void retro::Vulkan::LoadImageFromPath(const char* image_path) {
   CreateTextureImage(image_path);
   CreateTextureImageView();
   CreateTextureSampler();
   CreateTextureDescriptorSet();
 }
 
-void gbengine::Vulkan::_FreeImage() {
+void retro::Vulkan::_FreeImage() {
   vkFreeDescriptorSets(logical_device_, descriptor_pool_, 1, &descriptor_set);
 }
 
-void gbengine::Vulkan::_DestoryImage() {
+void retro::Vulkan::_DestoryImage() {
   vkDestroySampler(logical_device_, texture_sampler_, allocator_);
   vkDestroyImageView(logical_device_, texture_image_view_, allocator_);
   vkDestroyImage(logical_device_, texture_image_, allocator_);
   vkFreeMemory(logical_device_, texture_image_memory_, allocator_);
 }
 
-void gbengine::Vulkan::CreateTextureDescriptorSet() { 
+void retro::Vulkan::CreateTextureDescriptorSet() { 
 
 }
 
-void gbengine::Vulkan::LoadImageFromArray(
+void retro::Vulkan::LoadImageFromArray(
     void* image_data, VkDeviceSize image_size, uint32_t w,
                           uint32_t h) {
   void* data; 

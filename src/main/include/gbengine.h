@@ -25,7 +25,7 @@
 
 #define GB_ENGINE_NAME "GameBoy Engine"
 #define GB_VERSION 0
-namespace gbengine{
+namespace retro{
 typedef enum RendererType  { 
   k_None = 0,
   k_Vulkan = 1,
@@ -38,4 +38,4 @@ typedef struct Application {
   uint32_t height;
   RendererType renderer;
 } Application; 
-}  // namespace gbengine
+}  // namespace retro

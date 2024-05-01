@@ -1,7 +1,7 @@
 #include "../include/renderer_vulkan.h"
 
 
-std::vector<char> gbengine::ReadFile(const std::string& filename) {
+std::vector<char> retro::ReadFile(const std::string& filename) {
   size_t file_size;
   std::vector<char> buffer;
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -19,7 +19,7 @@ std::vector<char> gbengine::ReadFile(const std::string& filename) {
 
 // Vulkan Graphics Pipeline
 
-VkShaderModule gbengine::Vulkan::CreateShaderModule(
+VkShaderModule retro::Vulkan::CreateShaderModule(
     const std::vector<char>& code) {
   VkShaderModuleCreateInfo shader_module_info{};
   shader_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -38,7 +38,7 @@ VkShaderModule gbengine::Vulkan::CreateShaderModule(
   return shader_module;
 }
 
-void gbengine::Vulkan::CreateGraphicsPipeline() {
+void retro::Vulkan::CreateGraphicsPipeline() {
   VkPipelineShaderStageCreateInfo vert_shader_stage_info{};
   VkPipelineShaderStageCreateInfo frag_shader_stage_info{};
   VkPipelineShaderStageCreateInfo shader_stages[2];
@@ -176,7 +176,7 @@ void gbengine::Vulkan::CreateGraphicsPipeline() {
   vkDestroyShaderModule(logical_device_, frag_shader_module, allocator_);
 }
 
-void gbengine::Vulkan::CreatePipelineCache() {
+void retro::Vulkan::CreatePipelineCache() {
   VkPipelineCacheCreateInfo pipeline_cache_info{};
   VkResult result;
   pipeline_cache_info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;

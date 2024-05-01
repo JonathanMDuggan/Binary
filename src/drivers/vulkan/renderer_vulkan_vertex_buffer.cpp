@@ -1,6 +1,6 @@
 #include "../include/renderer_vulkan.h"
 
-void gbengine::Vulkan::CreateVertexBuffer() {
+void retro::Vulkan::CreateVertexBuffer() {
   VkDeviceSize buffer_size = sizeof(vertices_[0]) * vertices_.size();
   VkBuffer staging_buffer;
   VkDeviceMemory staging_buffer_memory;

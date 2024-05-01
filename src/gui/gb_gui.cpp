@@ -10,27 +10,27 @@ static void IMGUI_CheckVkResult(VkResult result) {
   }
 }
 
-void gbengine::GUI::StartGUI() { 
+void retro::GUI::StartGUI() { 
   spdlog::critical("GUI class is not pointing to a graphics API");
 }
 
-void gbengine::GUI::MainMenu() { 
-  using namespace gbengine::gui::mainmenu;
+void retro::GUI::MainMenu() { 
+  using namespace retro::gui::mainmenu;
   DrawMenuBar();
 
 }
 
-void gbengine::VulkanGUI::StartGUI() {
+void retro::VulkanGUI::StartGUI() {
   ImGui_ImplVulkan_NewFrame(); 
   ImGui_ImplSDL2_NewFrame();  
 }
 
-void gbengine::OpenGLGUI::StartGUI() { 
+void retro::OpenGLGUI::StartGUI() { 
   ImGui_ImplSDL2_NewFrame();
   ImGui_ImplOpenGL3_NewFrame();
 }
  
-void gbengine::OpenGL::InitIMGUI() {
+void retro::OpenGL::InitIMGUI() {
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
   // Enables features like docking and taking the imgui windows outside the
@@ -53,7 +53,7 @@ void gbengine::OpenGL::InitIMGUI() {
   DefaultImGuiStyle();
 }
 
-void gbengine::Vulkan::InitIMGUI(SDL* sdl) {
+void retro::Vulkan::InitIMGUI(SDL* sdl) {
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
 
@@ -92,7 +92,7 @@ void gbengine::Vulkan::InitIMGUI(SDL* sdl) {
 
 }
 
-void gbengine::DefaultImGuiStyle() {
+void retro::DefaultImGuiStyle() {
   using namespace ImGui;
   ImGuiIO& io = GetIO(); 
   io.Fonts->AddFontFromFileTTF("resources/fonts/Roboto-Regular.ttf", 16.0f);

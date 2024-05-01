@@ -1,7 +1,7 @@
 #include "../../drivers/include/renderer_vulkan.h"
 #include "../../drivers/include/renderer_opengl.h"
 #include "../../drivers/include/peripherals_sdl.h"
-namespace gbengine {
+namespace retro {
 class GUI {
  public: 
   virtual void StartGUI();
@@ -46,9 +46,9 @@ class VulkanViewport {
   std::unique_ptr<VkDescriptorSetLayout> descriptor_set_layout_;
   std::unique_ptr<VkDescriptorSetLayout> texture_descriptor_set_layout;
 };
-}  // namespace gbengine
+}  // namespace retro
 
-namespace gbengine::gui::mainmenu {
+namespace retro::gui::mainmenu {
 extern void Start(); 
 extern void DrawMenuBar();
 extern void Titles();

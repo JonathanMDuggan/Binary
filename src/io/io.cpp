@@ -1,6 +1,6 @@
 #pragma once
 #include "include/io.h"
-namespace gbengine {
+namespace retro {
 std::vector<char> LoadRom(std::string file_path) {
   size_t rom_size;
   std::vector<char> ROM; 
@@ -17,4 +17,4 @@ std::vector<char> LoadRom(std::string file_path) {
   file.close();
   return ROM;
 }
-}  // namespace gbengine
+}  // namespace retro

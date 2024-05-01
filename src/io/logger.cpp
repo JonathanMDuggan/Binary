@@ -1,7 +1,7 @@
 #pragma once
 #include "include/logger.h"
 
-const char* gbengine::GbErrorToString(Error error) {
+const char* retro::GbErrorToString(Error error) {
   switch (error) {
     case GB_SUCCESS:
       return "GB_SUCCESS";

@@ -1,6 +1,6 @@
 #pragma once
 #include "spdlog/spdlog.h"
-namespace gbengine {
+namespace retro {
 enum Error {
   GB_SUCCESS = 1,
   GB_FAILURE = 1,
