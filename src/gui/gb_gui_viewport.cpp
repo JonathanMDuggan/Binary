@@ -21,13 +21,17 @@ void retro::VulkanViewport::Free() {
 }
 
 void retro::VulkanViewport::Update(void* array_data) {
+
 }
 
 void retro::VulkanViewport::LoadFromPath(const char* file_path) {
+  CreateTextureImage(file_path);
+  CreateTextureImageView(); 
+  CreateTextureSampler();
+  CreateTextureDescriptorSet();
 }
 
 void retro::VulkanViewport::LoadFromArray(void* array_data,
                                              VkDeviceSize array_size,
                                              uint32_t w, uint32_t h){
-  
 }

@@ -7,7 +7,7 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-# The programmer must install SDL2 and Vulkan on their own computer
+
 #add_subdirectory(dep/fmt)
 add_subdirectory(dep)
 set(IMGUI_DIR "dep/imgui")
@@ -30,11 +30,15 @@ get_directory_property(ALL_CPP_SRC_FILES
                        DIRECTORY ${CMAKE_SOURCE_DIR}/src
                        DEFINITION ALL_CPP_SRC_FILES)
 
+# The programmer must install SDL2 binaries and Vulkan on their own computer
+# and link the external cmake variables to the path of those libraries
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
 find_package(SDL2_mixer REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(OpenGL REQUIRED)
+
+enable_testing()
 
 add_executable(Retro 
 ${IMGUI_SRC} 

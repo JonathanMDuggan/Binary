@@ -1,5 +1,5 @@
 #include <cstdint>
-namespace retro::gb {
+namespace retro::gb{
 class SM83 {
 public:
 typedef struct Register {
@@ -13,7 +13,7 @@ typedef struct Register {
   uint8_t H_{};
   uint8_t L_{};
   
-  uint16_t program_counter_;
+  uint16_t program_counter_{};
   uint8_t instruction_{};
   uint16_t stack_pointer_{};
   uint8_t accumulator_{};

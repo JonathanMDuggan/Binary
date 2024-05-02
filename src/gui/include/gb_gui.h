@@ -25,7 +25,7 @@ class VulkanViewport {
   void LoadFromPath(const char* file_path);
   void LoadFromArray(void* array_data, VkDeviceSize array_size, uint32_t w,
                      uint32_t h);
-
+  
   VkDescriptorSet descriptor_set_;  
  private:
   uint32_t mips_levels_{};
@@ -45,6 +45,12 @@ class VulkanViewport {
   std::unique_ptr<VkDescriptorPool> descriptor_pool_;
   std::unique_ptr<VkDescriptorSetLayout> descriptor_set_layout_;
   std::unique_ptr<VkDescriptorSetLayout> texture_descriptor_set_layout;
+
+  // Texture Function
+  void CreateTextureImage(const char* image_path);
+  void CreateTextureImageView();
+  void CreateTextureSampler();
+  void CreateTextureDescriptorSet();
 };
 }  // namespace retro
 
@@ -53,3 +59,4 @@ extern void Start();
 extern void DrawMenuBar();
 extern void Titles();
 }
+

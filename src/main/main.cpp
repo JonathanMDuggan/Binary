@@ -6,7 +6,6 @@
 #include "include/gbengine.h"
 #include "../drivers/include/peripherals_sdl.h"
 #include "../drivers/include/renderer_vulkan.h"
-#include "../emulation/include/gb_emulator.h"
 #include "../drivers/include/renderer_opengl.h"
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
