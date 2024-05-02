@@ -21,3 +21,6 @@
 [submodule "dep/folly"]
 	path = dep/folly
 	url = https://github.com/facebook/folly
+[submodule "dep/googletest"]
+	path = dep/googletest
+	url = https://github.com/google/googletest
