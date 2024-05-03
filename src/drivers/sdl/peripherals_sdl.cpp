@@ -103,7 +103,7 @@ void retro::SDL::InitSurfaceFromPath(const char* path_to_texture,
                                         File file_type) {
   if (surface_ != nullptr) {
     spdlog::warn(
-        "Surface was init when Init Surface From Path function was "
+        "Surface wasn't null when function 'InitSurfaceFromPath' was "
         "called. You should destory the surface before using it again");
   }
   read_write_ = SDL_RWFromFile(path_to_texture, "rb");

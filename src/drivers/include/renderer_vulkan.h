@@ -38,11 +38,13 @@ namespace retro {
 
 // Vulkan graphic device commuication struct
 typedef struct gbVulkanGraphicsHandler {
-  VkDevice* device;
-  VkQueue* graphics_queue;
-  VkCommandPool* command_pool;
-  VkDescriptorPool* descriptor_pool;
-  VkDescriptorSetLayout* descriptor_set_layout; 
+  std::unique_ptr<VkPhysicalDevice> physical_device;
+  std::unique_ptr<VkDevice> logical_device;
+  std::unique_ptr<VkQueue> graphics_queue;
+  std::unique_ptr<VkCommandPool> command_pool;
+  std::unique_ptr<VkDescriptorPool> descriptor_pool;
+  std::unique_ptr<VkDescriptorSetLayout> descriptor_set_layout;
+
 }gbVulkanGraphicsHandler;
 
 extern inline VkCommandBuffer BeginSingleTimeCommands(

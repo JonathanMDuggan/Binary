@@ -256,7 +256,7 @@ void retro::Vulkan::CreateTextureDescriptorSet() {
 
 void retro::Vulkan::LoadImageFromArray(
     void* image_data, VkDeviceSize image_size, uint32_t w,
-                          uint32_t h) {
+                          uint32_t h) { 
   void* data; 
   VkDeviceMemory staging_buffer_memory;
   VkBuffer staging_buffer; 

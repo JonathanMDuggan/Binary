@@ -137,11 +137,11 @@ retro::Vulkan::Vulkan(SDL* sdl, Application app) {
 retro::gbVulkanGraphicsHandler 
 retro::Vulkan::GetGraphicsHandler() {
   gbVulkanGraphicsHandler graphics_handler{};
-  graphics_handler.command_pool = &command_pool_;
-  graphics_handler.descriptor_pool = &descriptor_pool_;
-  graphics_handler.descriptor_set_layout = &descriptor_set_layout_; 
-  graphics_handler.device = &logical_device_;
-  graphics_handler.graphics_queue = &graphics_queue_;
+  //graphics_handler.command_pool(&command_pool_);
+  //graphics_handler.descriptor_pool = &descriptor_pool_;
+  //graphics_handler.descriptor_set_layout = &descriptor_set_layout_; 
+  //graphics_handler.logical_device = &logical_device_;
+  //graphics_handler.graphics_queue = &graphics_queue_;
   return graphics_handler;
 }
 
