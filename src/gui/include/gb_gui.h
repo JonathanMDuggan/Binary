@@ -52,7 +52,7 @@ class VulkanViewport {
 
   // Texture Function
   void ViewPortCreateTextureImage(const char* image_path);
-  //void ViewPortCreateTextureImageView();
+  //void CreateTextureImageView();
   //void ViewPortCreateTextureSampler();
   //void ViewPortCreateTextureDescriptorSet();
   //void ViewPortLoadImageFromArray(void* image_data, VkDeviceSize image_size,
@@ -78,6 +78,9 @@ class VulkanViewport {
                          uint32_t height);
   void CreateTextureImageView();
   void CreateImageViews();
+  void CreateTextureSampler();
+  VkImageView CreateImageView(VkImage image, VkFormat format,
+                       VkImageAspectFlags aspect_flag); 
 };
 }  // namespace retro
 

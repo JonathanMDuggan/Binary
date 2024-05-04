@@ -1,12 +1,12 @@
 #include"include/gb_gui.h"
 retro::VulkanViewport::VulkanViewport(gbVulkanGraphicsHandler vulkan,
                                       std::unique_ptr<SDL> sdl): 
-  physical_device_(vulkan.physical_device.get()),
-  logical_device_(vulkan.logical_device.get()),
-  graphics_queue_(vulkan.graphics_queue.get()),
-  command_pool_(vulkan.command_pool.get()),
-  descriptor_pool_(vulkan.descriptor_pool.get()),
-  descriptor_set_layout_(vulkan.descriptor_set_layout.get()),
+  physical_device_(vulkan.physical_device),
+  logical_device_(vulkan.logical_device),
+  graphics_queue_(vulkan.graphics_queue),
+  command_pool_(vulkan.command_pool),
+  descriptor_pool_(vulkan.descriptor_pool),
+  descriptor_set_layout_(vulkan.descriptor_set_layout),
   sdl_(sdl.get()){
 }
 
@@ -28,8 +28,8 @@ void retro::VulkanViewport::Update(void* array_data) {
 
 void retro::VulkanViewport::LoadFromPath(const char* file_path) {
   ViewPortCreateTextureImage(file_path);
-  //ViewPortCreateTextureImageView();
-  //ViewPortCreateTextureSampler();
+  CreateTextureImageView();
+  CreateTextureSampler();
   //ViewPortCreateTextureDescriptorSet();
 }
 
@@ -189,7 +189,7 @@ void retro::VulkanViewport::CreateImage(uint32_t width, uint32_t height,
   allocate_info.allocationSize = memory_requirements.size;
   allocate_info.memoryTypeIndex =
       FindMemoryType(memory_requirements.memoryTypeBits, properties);
-
+  
   result = vkAllocateMemory(*logical_device_, &allocate_info, allocator_.get(),
                             &image_memory);
   if (result != VK_SUCCESS) {
@@ -236,7 +236,7 @@ void retro::VulkanViewport::TransitionImageLayout(VkImage image,
   barrier.subresourceRange.baseMipLevel = 0; 
   barrier.subresourceRange.levelCount = 1; 
   barrier.subresourceRange.baseArrayLayer = 0; 
-  barrier.subresourceRange.layerCount = 1; 
+  barrier.subresourceRange.layerCount = 1;
 
   if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && 
       new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) { 
@@ -284,17 +284,63 @@ void retro::VulkanViewport::CopyBufferToImage(VkBuffer buffer, VkImage image,
 }
 
 void retro::VulkanViewport::CreateTextureImageView() {
-//  texture_image_view_ = CreateImageView(
-//      texture_image_, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT); 
+  texture_image_view_ = CreateImageView(
+     texture_image_, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT); 
 }
-// how would I get the swapchain??
-//void retro::VulkanViewport::CreateImageViews() {
-//  swap_chain_.image_views_.resize(swap_chain_.images_.size());
-//  for (size_t i = 0; i < swap_chain_.images_.size(); i++) {
-//    swap_chain_.image_views_[i] =
-//        CreateImageView(swap_chain_.images_[i], swap_chain_.image_format_,
-//                        VK_IMAGE_ASPECT_COLOR_BIT);
-//  }
-//}
 
+void retro::VulkanViewport::CreateTextureSampler() {
+  VkPhysicalDeviceProperties properties{};
+  VkSamplerCreateInfo sampler_info{};
+  VkResult result;
+  vkGetPhysicalDeviceProperties(*physical_device_, &properties);
+  sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+  sampler_info.magFilter = VK_FILTER_NEAREST;
+  sampler_info.minFilter = VK_FILTER_NEAREST;
+  sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+  sampler_info.anisotropyEnable = VK_FALSE;
+  sampler_info.maxAnisotropy = 1.0f;
+  sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+  sampler_info.unnormalizedCoordinates = VK_FALSE;
+  sampler_info.compareEnable = VK_FALSE;
+  sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
+  sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+  sampler_info.mipLodBias = 0.0f;
+  sampler_info.minLod = 0.0f;
+  sampler_info.maxLod = 0.0f;
 
+  result = vkCreateSampler(*logical_device_, &sampler_info, allocator_.get(),
+                           &texture_sampler_);
+  if (result != VK_SUCCESS) {
+    spdlog::critical("Failed to create texture sampler! {}",
+                     VkResultToString(result));
+    throw std::runtime_error("failed to create texture sampler!");
+  }
+}
+
+VkImageView retro::VulkanViewport::CreateImageView(
+  VkImage image, VkFormat format, VkImageAspectFlags aspect_flag) {
+  VkImageViewCreateInfo view_info{};
+  VkImageView image_view;
+  VkResult result;
+  view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  view_info.image = image;
+  view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  view_info.format = format;
+  view_info.subresourceRange.aspectMask = aspect_flag;
+  view_info.subresourceRange.baseMipLevel = 0;
+  view_info.subresourceRange.levelCount = 1;
+  view_info.subresourceRange.baseArrayLayer = 0;
+  view_info.subresourceRange.layerCount = 1;
+
+  result = vkCreateImageView(*logical_device_, &view_info, allocator_.get(),
+                             &image_view);
+  if (result != VK_SUCCESS) {
+    spdlog::critical("Failed to create texture image view {}",
+                     VkResultToString(result));
+    throw std::runtime_error("Failed to create texture image view " +
+                             VkResultToString(result));
+  }
+  return image_view;
+}
