@@ -30,13 +30,13 @@ void retro::VulkanViewport::LoadFromPath(const char* file_path) {
   ViewPortCreateTextureImage(file_path);
   CreateTextureImageView();
   CreateTextureSampler();
-  //ViewPortCreateTextureDescriptorSet();
+  CreateTextureDescriptorSet();
 }
 
 void retro::VulkanViewport::LoadFromArray(void* array_data,
                                              VkDeviceSize array_size,
                                              uint32_t w, uint32_t h){
-  //ViewPortLoadImageFromArray(array_data, array_size, w, h);
+  LoadImageFromArray(array_data, array_size, w, h);
 }
 
 void retro::VulkanViewport::ViewPortCreateTextureImage(const char* image_path) {
@@ -285,7 +285,7 @@ void retro::VulkanViewport::CopyBufferToImage(VkBuffer buffer, VkImage image,
 
 void retro::VulkanViewport::CreateTextureImageView() {
   texture_image_view_ = CreateImageView(
-     texture_image_, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT); 
+     texture_image_, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);  
 }
 
 void retro::VulkanViewport::CreateTextureSampler() {
@@ -343,4 +343,8 @@ VkImageView retro::VulkanViewport::CreateImageView(
                              VkResultToString(result));
   }
   return image_view;
+}
+
+void retro::VulkanViewport::CreateTextureDescriptorSet() {
+
 }

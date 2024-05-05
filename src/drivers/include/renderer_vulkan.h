@@ -311,6 +311,5 @@ class Vulkan : public Renderer {
   void CreateTextureDescriptorSet();
   void LoadImageFromArray(void* image_data, VkDeviceSize image_size, uint32_t w,
                           uint32_t h);
-
 };
 }  // namespace retro
