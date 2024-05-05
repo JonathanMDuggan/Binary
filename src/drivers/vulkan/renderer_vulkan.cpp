@@ -142,6 +142,7 @@ retro::Vulkan::GetGraphicsHandler() {
   graphics_handler.descriptor_set_layout = &descriptor_set_layout_; 
   graphics_handler.logical_device = &logical_device_;
   graphics_handler.graphics_queue = &graphics_queue_;
+  graphics_handler.physical_device = &physical_device_;
   return graphics_handler;
 }
 

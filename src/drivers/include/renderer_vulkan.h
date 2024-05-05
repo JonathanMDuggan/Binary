@@ -15,8 +15,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_vulkan.h>
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
+
 #include <vulkan/vk_enum_string_helper.h>
 #include "vk_mem_alloc.h"
 #include <glm/mat4x4.hpp>
@@ -34,18 +33,6 @@
 namespace retro {
 // If I don't make these function inline the command buffer stops
 // recording when returning for no reason.
-
-
-// Vulkan graphic device commuication struct
-typedef struct gbVulkanGraphicsHandler {
-  VkPhysicalDevice* physical_device;
-  VkDevice* logical_device;
-  VkQueue* graphics_queue; 
-  VkCommandPool* command_pool;
-  VkDescriptorPool* descriptor_pool; 
-  VkDescriptorSetLayout* descriptor_set_layout; 
-
-}gbVulkanGraphicsHandler;
 
 extern inline VkCommandBuffer BeginSingleTimeCommands(
     VkCommandPool command_pool, VkDevice logical_device);
@@ -117,7 +104,7 @@ class Vulkan : public Renderer {
   Vulkan(SDL* sdl, Application app);
   ~Vulkan();
   void DrawFrame();
-  gbVulkanGraphicsHandler GetGraphicsHandler(); 
+  gbVulkanGraphicsHandler GetGraphicsHandler();
  private:
   const std::vector<const char*> validation_layers = {
       "VK_LAYER_KHRONOS_validation"};

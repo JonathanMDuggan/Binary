@@ -1,12 +1,12 @@
 #include "include/gb_gui.h"
 namespace retro::gui::mainmenu {
-void Start() {
+void Start(VulkanViewportInfo* texture) { 
   //
   ImGui::NewFrame(); 
   ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(),
                                ImGuiDockNodeFlags_PassthruCentralNode);
-  DrawMenuBar(); 
-  Titles(); 
+  DrawMenuBar(texture);
+  Titles(texture); 
 
   ImGui::Render(); 
   if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
@@ -16,13 +16,14 @@ void Start() {
 
 }
 
-void DrawMenuBar() { 
+void DrawMenuBar(VulkanViewportInfo* texture) { 
 
   if (ImGui::BeginMainMenuBar()) { 
     if (ImGui::BeginMenu("File")) { 
       if (ImGui::MenuItem("New", "CTRL O")) {
       }
       if (ImGui::MenuItem("Open", "CTRL O")) {
+
       }
       if (ImGui::MenuItem("Export", "CTRL O")) {
       }
@@ -42,10 +43,19 @@ void DrawMenuBar() {
   ImGui::EndMainMenuBar(); 
 }
 
-void Titles() { 
+void Titles(VulkanViewportInfo* texture) { 
    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | 
-                                   !ImGuiWindowFlags_NoDocking;
+                                   !ImGuiWindowFlags_NoDocking;\
+
+
+
   if (ImGui::Begin("Start Window", nullptr, window_flags)) {
+    VkDescriptorSet texture_descriptor_set;
+    texture_descriptor_set = (*texture->texture_descriptor_set);
+    ImGui::Text("pointer = %p", texture);
+    ImGui::Text("size = %d x %d", texture->w, texture->h);
+    ImGui::Image((ImTextureID)texture_descriptor_set,
+                 ImVec2(texture->w, texture->h));
   }
   ImGui::End();
 }

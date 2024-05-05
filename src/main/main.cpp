@@ -36,6 +36,9 @@ int main(int argc, char** argv) {
     gui = new VulkanGUI;
   }
 
+  retro::gbVulkanGraphicsHandler vulkan = render->GetGraphicsHandler();
+  VulkanViewport texture(vulkan, &sdl);
+  texture.LoadFromPath("resources/textures/sunshine.png");
   while (running) {
     bool window_is_minimized = true;
     // After SDL, Renederer, and ImGui have finshed the initialization phase,
@@ -58,12 +61,13 @@ int main(int argc, char** argv) {
     // draw new frames until the user opens the application.
     if (!(SDL_GetWindowFlags(sdl.window_) & SDL_WINDOW_MINIMIZED)) {
       gui->StartGUI(); 
-      gui::mainmenu::Start(); 
+      VulkanViewportInfo vulkan_viewport_info = texture.GetViewportInfo();
+      gui::mainmenu::Start(&vulkan_viewport_info); 
       render->DrawFrame(); 
     }
 
   }
-
+  texture.Destory();
   render->~Renderer();
   return EXIT_SUCCESS;
 }

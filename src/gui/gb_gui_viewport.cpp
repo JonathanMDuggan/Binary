@@ -1,25 +1,25 @@
 #include"include/gb_gui.h"
 retro::VulkanViewport::VulkanViewport(gbVulkanGraphicsHandler vulkan,
-                                      std::unique_ptr<SDL> sdl): 
+                                      SDL* sdl): 
   physical_device_(vulkan.physical_device),
   logical_device_(vulkan.logical_device),
   graphics_queue_(vulkan.graphics_queue),
   command_pool_(vulkan.command_pool),
   descriptor_pool_(vulkan.descriptor_pool),
-  descriptor_set_layout_(vulkan.descriptor_set_layout),
-  sdl_(sdl.get()){
+  sdl_(sdl){
 }
 
 void retro::VulkanViewport::Destory() {
-  vkDestroySampler(*logical_device_, texture_sampler_, allocator_.get());
-  vkDestroyImageView(*logical_device_, texture_image_view_, allocator_.get());
-  vkDestroyImage(*logical_device_, texture_image_, allocator_.get());
-  vkFreeMemory(*logical_device_, texture_image_memory_, allocator_.get());
+  vkDestroySampler(*logical_device_, texture_sampler_, allocator_);
+  vkDestroyImageView(*logical_device_, texture_image_view_, allocator_);
+  vkDestroyImage(*logical_device_, texture_image_, allocator_);
+  vkFreeMemory(*logical_device_, texture_image_memory_, allocator_);
+  ImGui_ImplVulkan_RemoveTexture(texture_descriptor_set_);
 }
 
 void retro::VulkanViewport::Free() {
   vkFreeDescriptorSets(*logical_device_, *descriptor_pool_, 1,
-                       &descriptor_set_);
+                       &texture_descriptor_set_);
 }
 
 void retro::VulkanViewport::Update(void* array_data) {
@@ -39,12 +39,32 @@ void retro::VulkanViewport::LoadFromArray(void* array_data,
   LoadImageFromArray(array_data, array_size, w, h);
 }
 
-void retro::VulkanViewport::ViewPortCreateTextureImage(const char* image_path) {
-  VkDeviceSize image_size = 0; 
+retro::VulkanViewportInfo retro::VulkanViewport::GetViewportInfo() { 
+  if (texture_descriptor_set_ == nullptr) {
+    spdlog::critical("No texture has been loaded in vulkan viewport!");
+    throw std::runtime_error("No texture has been loaded in vulkan viewport!");
+  }
+  VulkanViewportInfo viewport_info{};
+  viewport_info.mips_levels = &mips_levels_; // TODO: THERE IS NO MIPS_LEVELS!
+                                             // THIS IS BAD, FIX THIS!    
+  viewport_info.texture_sampler = &texture_sampler_; 
+  viewport_info.texture_image_view = &texture_image_view_; 
+  viewport_info.texture_image_memory = &texture_image_memory_; 
+  viewport_info.texture_image = &texture_image_; 
+  viewport_info.array_size = &array_size_;
+  viewport_info.texture_descriptor_set = &texture_descriptor_set_;
+  viewport_info.h = h_;
+  viewport_info.w = w_;
+  return viewport_info; 
+}
+
+void retro::VulkanViewport::ViewPortCreateTextureImage(const char* image_path){
   sdl_->InitSurfaceFromPath(image_path, File::PNG);
-  image_size = sdl_->surface_->format->BytesPerPixel * sdl_->surface_->w * 
-               sdl_->surface_->h;
-  LoadImageFromArray(sdl_->surface_->pixels, image_size, sdl_->surface_->w,
+  w_ = sdl_->surface_->w;
+  h_ = sdl_->surface_->h;
+  array_size_ = sdl_->surface_->format->BytesPerPixel *
+                sdl_->surface_->w * sdl_->surface_->h;
+  LoadImageFromArray(sdl_->surface_->pixels, array_size_, sdl_->surface_->w,
                      sdl_->surface_->h);
 }
 
@@ -85,8 +105,8 @@ void retro::VulkanViewport::LoadImageFromArray(void* image_data,
                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-  vkDestroyBuffer(*logical_device_, staging_buffer, allocator_.get());
-  vkFreeMemory(*logical_device_, staging_buffer_memory, allocator_.get());
+  vkDestroyBuffer(*logical_device_, staging_buffer, allocator_);
+  vkFreeMemory(*logical_device_, staging_buffer_memory, allocator_);
 
   CreateTextureImageView();
 }
@@ -107,7 +127,7 @@ void retro::VulkanViewport::CreateBuffer(VkDeviceSize size,
   buffer_info.size = size;
   buffer_info.usage = usage;
   buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  result = vkCreateBuffer(*logical_device_, &buffer_info, allocator_.get(), &buffer);
+  result = vkCreateBuffer(*logical_device_, &buffer_info, allocator_, &buffer);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create buffer! {}", VkResultToString(result));
     throw std::runtime_error("Failed to create buffer" +
@@ -134,7 +154,7 @@ void retro::VulkanViewport::CreateBuffer(VkDeviceSize size,
 
   // Now we pass the infomation to the vulkan function that allocates memory to
   // the device. However we don't know where the grahpic device stored the data
-  result = vkAllocateMemory(*logical_device_, &allocate_info, allocator_.get(),
+  result = vkAllocateMemory(*logical_device_, &allocate_info, allocator_,
                             &buffer_memory);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to allocate buffer memory {} ",
@@ -175,7 +195,7 @@ void retro::VulkanViewport::CreateImage(uint32_t width, uint32_t height,
   image_info.flags = 0; 
 
   result =
-      vkCreateImage(*logical_device_, &image_info, allocator_.get(), &image);
+      vkCreateImage(*logical_device_, &image_info, allocator_, &image);
 
   if (result != VK_SUCCESS) { 
     spdlog::critical("Failed to create image! {}", VkResultToString(result)); 
@@ -190,7 +210,7 @@ void retro::VulkanViewport::CreateImage(uint32_t width, uint32_t height,
   allocate_info.memoryTypeIndex =
       FindMemoryType(memory_requirements.memoryTypeBits, properties);
   
-  result = vkAllocateMemory(*logical_device_, &allocate_info, allocator_.get(),
+  result = vkAllocateMemory(*logical_device_, &allocate_info, allocator_,
                             &image_memory);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to allocate image memory! {}",
@@ -227,8 +247,8 @@ void retro::VulkanViewport::TransitionImageLayout(VkImage image,
       BeginSingleTimeCommands(*command_pool_, *logical_device_);
 
   barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; 
-  barrier.oldLayout = old_layout; 
-  barrier.newLayout = new_layout; 
+  barrier.oldLayout = old_layout;
+  barrier.newLayout = new_layout;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; 
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; 
   barrier.image = image; 
@@ -310,7 +330,7 @@ void retro::VulkanViewport::CreateTextureSampler() {
   sampler_info.minLod = 0.0f;
   sampler_info.maxLod = 0.0f;
 
-  result = vkCreateSampler(*logical_device_, &sampler_info, allocator_.get(),
+  result = vkCreateSampler(*logical_device_, &sampler_info, allocator_,
                            &texture_sampler_);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create texture sampler! {}",
@@ -334,7 +354,7 @@ VkImageView retro::VulkanViewport::CreateImageView(
   view_info.subresourceRange.baseArrayLayer = 0;
   view_info.subresourceRange.layerCount = 1;
 
-  result = vkCreateImageView(*logical_device_, &view_info, allocator_.get(),
+  result = vkCreateImageView(*logical_device_, &view_info, allocator_,
                              &image_view);
   if (result != VK_SUCCESS) {
     spdlog::critical("Failed to create texture image view {}",
@@ -346,5 +366,7 @@ VkImageView retro::VulkanViewport::CreateImageView(
 }
 
 void retro::VulkanViewport::CreateTextureDescriptorSet() {
-
+  texture_descriptor_set_ =
+      ImGui_ImplVulkan_AddTexture(texture_sampler_, texture_image_view_,
+                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }

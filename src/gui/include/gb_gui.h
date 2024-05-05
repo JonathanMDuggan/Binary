@@ -2,6 +2,18 @@
 #include "../../drivers/include/renderer_opengl.h"
 #include "../../drivers/include/peripherals_sdl.h"
 namespace retro {
+typedef struct VulkanViewportInfo { 
+  uint32_t* mips_levels{};
+  VkSampler* texture_sampler{};
+  VkImageView* texture_image_view{};
+  VkDeviceMemory* texture_image_memory{};
+  VkImage* texture_image{};
+  VkDeviceSize* array_size{};
+  VkDescriptorSet* texture_descriptor_set{};
+  uint32_t w{};
+  uint32_t h{};
+} VulkanViewportInfo; 
+
 class GUI {
  public: 
   virtual void StartGUI();
@@ -18,16 +30,16 @@ extern void DefaultImGuiStyle();
 
 class VulkanViewport {
  public:
-  VulkanViewport(gbVulkanGraphicsHandler vulkan, std::unique_ptr<SDL> sdl);
+  VulkanViewport(gbVulkanGraphicsHandler vulkan, SDL* sdl);
   void Destory();
   void Free();
   void Update(void* array_data);
   void LoadFromPath(const char* file_path);
   void LoadFromArray(void* array_data, VkDeviceSize array_size, uint32_t w,
                      uint32_t h);
-  
-  VkDescriptorSet descriptor_set_;  
+  VulkanViewportInfo GetViewportInfo();
  private:
+  VkDescriptorSet texture_descriptor_set_;
   uint32_t mips_levels_{};
   VkSampler texture_sampler_{}; 
   VkImageView texture_image_view_{};
@@ -38,17 +50,16 @@ class VulkanViewport {
   uint32_t h_{};
   
   // Pointers to vulkan logical device and its dependencies 
-  std::unique_ptr<VkAllocationCallbacks> allocator_ = VK_NULL_HANDLE;
-  std::unique_ptr<VkDevice> logical_device_;
-  std::unique_ptr<VkPhysicalDevice> physical_device_;
-  std::unique_ptr<VkQueue> graphics_queue_;
-  std::unique_ptr<VkCommandPool> command_pool_;
-  std::unique_ptr<VkDescriptorPool> descriptor_pool_;
-  std::unique_ptr<VkDescriptorSetLayout> descriptor_set_layout_;
-  std::unique_ptr<VkDescriptorSetLayout> texture_descriptor_set_layout_;
+  VkAllocationCallbacks* allocator_ = VK_NULL_HANDLE;
+  VkDevice* logical_device_;
+  VkPhysicalDevice* physical_device_;
+  VkQueue* graphics_queue_;
+  VkCommandPool* command_pool_;
+  VkDescriptorPool* descriptor_pool_;
+
 
   // Pointer to the SDL class
-  std::unique_ptr<SDL> sdl_;
+  SDL* sdl_;
 
   // Texture Function
   void ViewPortCreateTextureImage(const char* image_path);
@@ -87,8 +98,8 @@ class VulkanViewport {
 }  // namespace retro
 
 namespace retro::gui::mainmenu {
-extern void Start(); 
-extern void DrawMenuBar();
-extern void Titles();
+extern void Start(VulkanViewportInfo* texture);
+extern void DrawMenuBar(VulkanViewportInfo* texture);
+extern void Titles(VulkanViewportInfo* texture);
 }
 

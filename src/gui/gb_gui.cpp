@@ -16,7 +16,7 @@ void retro::GUI::StartGUI() {
 
 void retro::GUI::MainMenu() { 
   using namespace retro::gui::mainmenu;
-  DrawMenuBar();
+  //DrawMenuBar();
 
 }
 
