@@ -293,6 +293,4 @@ void retro::Vulkan::LoadImageFromArray(
 
   vkDestroyBuffer(logical_device_, staging_buffer, allocator_);
   vkFreeMemory(logical_device_, staging_buffer_memory, allocator_);
-
-  CreateTextureImageView();
 }

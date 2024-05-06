@@ -56,6 +56,7 @@ class VulkanViewport {
   VkQueue* graphics_queue_;
   VkCommandPool* command_pool_;
   VkDescriptorPool* descriptor_pool_;
+  VkDescriptorPool* imgui_pool;
 
 
   // Pointer to the SDL class

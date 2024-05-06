@@ -54,6 +54,29 @@ void retro::OpenGL::InitIMGUI() {
 }
 
 void retro::Vulkan::InitIMGUI(SDL* sdl) {
+
+  VkDescriptorPoolSize pool_sizes[] = {
+      {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
+      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+      {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
+      {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
+      {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
+      {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
+      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
+      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+      {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+      {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
+
+  VkDescriptorPoolCreateInfo pool_info = {};
+
+  pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+  pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+  pool_info.maxSets = 1000;
+  pool_info.poolSizeCount = std::size(pool_sizes);
+  pool_info.pPoolSizes = pool_sizes;
+
+  vkCreateDescriptorPool(logical_device_, &pool_info, nullptr, &imgui_pool_);
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
 
@@ -79,7 +102,7 @@ void retro::Vulkan::InitIMGUI(SDL* sdl) {
   imgui_info.Device = logical_device_;
   imgui_info.QueueFamily = graphics_queue_family_; 
   imgui_info.Queue = graphics_queue_; 
-  imgui_info.DescriptorPool = descriptor_pool_;
+  imgui_info.DescriptorPool = imgui_pool_;
   imgui_info.RenderPass = render_pass_;
   imgui_info.Subpass = 0; 
   imgui_info.ImageCount = 3;

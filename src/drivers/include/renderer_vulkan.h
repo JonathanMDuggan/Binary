@@ -214,6 +214,9 @@ class Vulkan : public Renderer {
   VkDescriptorSetLayout descriptor_set_layout_{};
   VkQueue graphics_queue_{};
 
+  // Imgui stuff 
+	VkDescriptorPool imgui_pool_;
+
   bool IsPhysicalDeviceSuitable(VkPhysicalDevice physical_device);
 
   void CreateImage(uint32_t width, uint32_t height, VkFormat format,

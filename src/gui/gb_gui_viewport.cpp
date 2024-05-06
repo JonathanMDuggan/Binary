@@ -6,6 +6,7 @@ retro::VulkanViewport::VulkanViewport(gbVulkanGraphicsHandler vulkan,
   graphics_queue_(vulkan.graphics_queue),
   command_pool_(vulkan.command_pool),
   descriptor_pool_(vulkan.descriptor_pool),
+  imgui_pool(vulkan.imgui_pool),
   texture_descriptor_set_(VK_NULL_HANDLE),
   sdl_(sdl){
 }
@@ -17,6 +18,7 @@ void retro::VulkanViewport::Destory() {
   vkDestroyImage(*logical_device_, texture_image_, allocator_);
   vkFreeMemory(*logical_device_, texture_image_memory_, allocator_);
   ImGui_ImplVulkan_RemoveTexture(texture_descriptor_set_);
+
   texture_descriptor_set_ = VK_NULL_HANDLE;
 }
 
@@ -26,7 +28,7 @@ void retro::VulkanViewport::Free() {
   vkDestroyImageView(*logical_device_, texture_image_view_, allocator_);
   vkDestroyImage(*logical_device_, texture_image_, allocator_);
   vkFreeMemory(*logical_device_, texture_image_memory_, allocator_);
-  vkFreeDescriptorSets(*logical_device_, *descriptor_pool_, 1,
+  vkFreeDescriptorSets(*logical_device_, *imgui_pool, 1, 
                        &texture_descriptor_set_);
   texture_descriptor_set_ = VK_NULL_HANDLE;
 }
@@ -122,8 +124,6 @@ void retro::VulkanViewport::LoadImageFromArray(void* image_data,
 
   vkDestroyBuffer(*logical_device_, staging_buffer, allocator_);
   vkFreeMemory(*logical_device_, staging_buffer_memory, allocator_);
-
-  CreateTextureImageView();
 }
 
 void retro::VulkanViewport::CreateBuffer(VkDeviceSize size,

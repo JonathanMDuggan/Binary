@@ -143,6 +143,7 @@ retro::Vulkan::GetGraphicsHandler() {
   graphics_handler.logical_device = &logical_device_;
   graphics_handler.graphics_queue = &graphics_queue_;
   graphics_handler.physical_device = &physical_device_;
+  graphics_handler.imgui_pool = &imgui_pool_;
   return graphics_handler;
 }
 
@@ -151,9 +152,12 @@ retro::Vulkan::~Vulkan() {
   // (do when vulkan isn't renderering anything)
   vkDeviceWaitIdle(logical_device_);
   CleanUpSwapChain();
+
+  // Destroy Imgui memory stuff
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   ImGui::DestroyContext();
+  vkDestroyDescriptorPool(logical_device_, imgui_pool_, allocator_); 
 
   vkDestroySampler(logical_device_, texture_sampler_, allocator_);
   vkDestroyImageView(logical_device_, texture_image_view_, allocator_);

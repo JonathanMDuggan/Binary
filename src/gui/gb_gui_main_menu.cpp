@@ -13,7 +13,6 @@ void Start(VulkanViewportInfo* texture) {
     ImGui::UpdatePlatformWindows();
     ImGui::RenderPlatformWindowsDefault();
   }
-
 }
 
 void DrawMenuBar(VulkanViewportInfo* texture) { 

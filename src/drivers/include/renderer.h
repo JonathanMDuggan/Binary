@@ -11,6 +11,7 @@ typedef struct gbVulkanGraphicsHandler {
   VkQueue* graphics_queue;
   VkCommandPool* command_pool;
   VkDescriptorPool* descriptor_pool;
+  VkDescriptorPool* imgui_pool; 
   VkDescriptorSetLayout* descriptor_set_layout;
 } gbVulkanGraphicsHandler;
 

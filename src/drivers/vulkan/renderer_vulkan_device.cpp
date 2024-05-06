@@ -105,10 +105,13 @@ void retro::Vulkan::PickPhysicalDevice() {
   // to display images ( has a graphics queue )
   for (const auto& device_ : devices) {
     if (IsPhysicalDeviceSuitable(device_)) {
+      // without this if statement, the rate device suitabillity function
+      // will crash the program
       if (physical_device_ == VK_NULL_HANDLE) {
         physical_device_ = device_;
         continue;
       }
+      // Pick a device best graphics device for the progranm
       if (RateDeviceSuitabillity(physical_device_) < RateDeviceSuitabillity(device_)) {
         physical_device_ = device_;
       }
