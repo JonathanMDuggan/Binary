@@ -54,6 +54,11 @@ int main(int argc, char** argv) {
           event.window.windowID == SDL_GetWindowID(sdl.window_)) {
         running = false;
       }
+      if (event.key.keysym.sym == SDLK_LEFT) {
+        std::cout << "AHHHHH!\n";
+        sdl.InitSurfaceFromPath("resources/textures/moonvoid.png", File::PNG);
+        texture.Update(sdl.surface_->pixels); 
+      }
     }
 
     // When we minimize the window this casues vulkan to send validation

@@ -151,7 +151,7 @@ retro::Vulkan::~Vulkan() {
   // (do when vulkan isn't renderering anything)
   vkDeviceWaitIdle(logical_device_);
   CleanUpSwapChain();
-  ImGui_ImplVulkan_Shutdown(); 
+  ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   ImGui::DestroyContext();
 

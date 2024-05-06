@@ -35,8 +35,22 @@ int retro::Vulkan::RateDeviceSuitabillity(VkPhysicalDevice phyiscal_device) {
   }
   // We'll take the discete graphics card over any intergrated GPU.
   // Even the worse ones
-  if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-    score += 1000;
+  switch (device_properties.deviceType) {
+    case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+      score += 1000; 
+      break;
+    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+      score += 100; 
+      break;
+    case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+      score += 10;
+      break;
+    case VK_PHYSICAL_DEVICE_TYPE_CPU:
+      score += 1; 
+      break;
+    default:
+      score += 0;
+      break;
   }
   score += device_properties.limits.maxImageDimension2D;
   return score;
@@ -91,8 +105,13 @@ void retro::Vulkan::PickPhysicalDevice() {
   // to display images ( has a graphics queue )
   for (const auto& device_ : devices) {
     if (IsPhysicalDeviceSuitable(device_)) {
-      physical_device_ = device_;
-      break;
+      if (physical_device_ == VK_NULL_HANDLE) {
+        physical_device_ = device_;
+        continue;
+      }
+      if (RateDeviceSuitabillity(physical_device_) < RateDeviceSuitabillity(device_)) {
+        physical_device_ = device_;
+      }
     }
   }
 

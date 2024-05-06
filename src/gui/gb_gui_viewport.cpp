@@ -6,24 +6,38 @@ retro::VulkanViewport::VulkanViewport(gbVulkanGraphicsHandler vulkan,
   graphics_queue_(vulkan.graphics_queue),
   command_pool_(vulkan.command_pool),
   descriptor_pool_(vulkan.descriptor_pool),
+  texture_descriptor_set_(VK_NULL_HANDLE),
   sdl_(sdl){
 }
 
 void retro::VulkanViewport::Destory() {
+  vkDeviceWaitIdle(*logical_device_);
   vkDestroySampler(*logical_device_, texture_sampler_, allocator_);
   vkDestroyImageView(*logical_device_, texture_image_view_, allocator_);
   vkDestroyImage(*logical_device_, texture_image_, allocator_);
   vkFreeMemory(*logical_device_, texture_image_memory_, allocator_);
   ImGui_ImplVulkan_RemoveTexture(texture_descriptor_set_);
+  texture_descriptor_set_ = VK_NULL_HANDLE;
 }
 
 void retro::VulkanViewport::Free() {
+  vkDeviceWaitIdle(*logical_device_);
+  vkDestroySampler(*logical_device_, texture_sampler_, allocator_);
+  vkDestroyImageView(*logical_device_, texture_image_view_, allocator_);
+  vkDestroyImage(*logical_device_, texture_image_, allocator_);
+  vkFreeMemory(*logical_device_, texture_image_memory_, allocator_);
   vkFreeDescriptorSets(*logical_device_, *descriptor_pool_, 1,
                        &texture_descriptor_set_);
+  texture_descriptor_set_ = VK_NULL_HANDLE;
 }
 
 void retro::VulkanViewport::Update(void* array_data) {
-
+  vkDeviceWaitIdle(*logical_device_);
+  Free();
+  LoadImageFromArray(array_data, array_size_, w_, h_);
+  CreateTextureImageView();
+  CreateTextureSampler();
+  CreateTextureDescriptorSet();
 }
 
 void retro::VulkanViewport::LoadFromPath(const char* file_path) {
@@ -37,6 +51,9 @@ void retro::VulkanViewport::LoadFromArray(void* array_data,
                                              VkDeviceSize array_size,
                                              uint32_t w, uint32_t h){
   LoadImageFromArray(array_data, array_size, w, h);
+  CreateTextureImageView();
+  CreateTextureSampler();
+  CreateTextureDescriptorSet();
 }
 
 retro::VulkanViewportInfo retro::VulkanViewport::GetViewportInfo() { 
@@ -44,7 +61,7 @@ retro::VulkanViewportInfo retro::VulkanViewport::GetViewportInfo() {
     spdlog::critical("No texture has been loaded in vulkan viewport!");
     throw std::runtime_error("No texture has been loaded in vulkan viewport!");
   }
-  VulkanViewportInfo viewport_info{};
+  retro::VulkanViewportInfo viewport_info{};
   viewport_info.mips_levels = &mips_levels_; // TODO: THERE IS NO MIPS_LEVELS!
                                              // THIS IS BAD, FIX THIS!    
   viewport_info.texture_sampler = &texture_sampler_; 
@@ -62,10 +79,8 @@ void retro::VulkanViewport::ViewPortCreateTextureImage(const char* image_path){
   sdl_->InitSurfaceFromPath(image_path, File::PNG);
   w_ = sdl_->surface_->w;
   h_ = sdl_->surface_->h;
-  array_size_ = sdl_->surface_->format->BytesPerPixel *
-                sdl_->surface_->w * sdl_->surface_->h;
-  LoadImageFromArray(sdl_->surface_->pixels, array_size_, sdl_->surface_->w,
-                     sdl_->surface_->h);
+  array_size_ = sdl_->surface_->format->BytesPerPixel * w_ * h_;
+  LoadImageFromArray(sdl_->surface_->pixels, array_size_, w_, h_);
 }
 
 void retro::VulkanViewport::LoadImageFromArray(void* image_data,
