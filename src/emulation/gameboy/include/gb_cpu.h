@@ -30,4 +30,6 @@ Register register_;
 SM83();
 void PrintCurrentProgramCounterValue();
 };
+
+extern uint32_t Test123();
 }

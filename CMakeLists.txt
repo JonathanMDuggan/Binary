@@ -39,11 +39,17 @@ find_package(Vulkan REQUIRED)
 find_package(OpenGL REQUIRED)
 
 enable_testing()
-
+file(GLOB RETRO_SOURCE_CODE
+  ${IMGUI_SRC} 
+  ${ALL_CPP_HEADER_FILES}
+  ${ALL_CPP_SRC_FILES}
+)
 add_executable(Retro 
-${IMGUI_SRC} 
-${ALL_CPP_HEADER_FILES}
-${ALL_CPP_SRC_FILES})
+  ${RETRO_SOURCE_CODE}
+)
+
+# Google Test
+add_subdirectory(dep/googletest)
 
 target_include_directories(Retro PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -56,8 +62,29 @@ target_link_libraries(Retro PRIVATE
   spdlog::spdlog spdlog::spdlog_header_only
   glfw
   OpenGL::GL
+  GTest::gtest_main
   #fmt::fmt
 )
+
+if(BUILD_TESTING)
+  set(RETRO_GB_SOURCE_DIR src/emulation/gameboy)
+  add_subdirectory(${RETRO_GB_SOURCE_DIR})
+  get_directory_property(RETRO_GB_SOURCE
+                        DIRECTORY ${RETRO_GB_SOURCE_DIR}
+                        DEFINITION RETRO_GB_SOURCE)
+  get_directory_property(RETRO_GB_HEADER
+                        DIRECTORY ${RETRO_GB_SOURCE_DIR}
+                        DEFINITION RETRO_GB_HEADER)
+  message("[Google Test] Adding google test to the build system")
+  add_executable(Retro_Gb_Test 
+    ${RETRO_GB_HEADER}
+    ${RETRO_GB_SOURCE}
+  )
+  target_link_libraries(Retro_Gb_Test PRIVATE GTest::gtest_main)
+  include(GoogleTest)
+  gtest_discover_tests(Retro_Gb_Test)
+endif()
+
 find_path(SDL2_IMAGE_INCLUDE_DIR NAMES SDL2_image.h)
 set_property(TARGET Retro PROPERTY CXX_STANDARD 20)
 

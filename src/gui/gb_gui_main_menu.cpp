@@ -44,19 +44,14 @@ void DrawMenuBar(VulkanViewportInfo* texture) {
 
 void Titles(VulkanViewportInfo* texture) { 
    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | 
-                                   !ImGuiWindowFlags_NoDocking;\
-
-
-
-  if (ImGui::Begin("Start Window", nullptr, window_flags)) {
+                                   !ImGuiWindowFlags_NoDocking;
+  if (ImGui::Begin("Screen View", nullptr, window_flags)) {
     VkDescriptorSet texture_descriptor_set;
+    ImVec2 viewport_panel_size = ImGui::GetContentRegionAvail();
     texture_descriptor_set = (*texture->texture_descriptor_set);
-    ImGui::Text("pointer = %p", texture);
-    ImGui::Text("size = %d x %d", texture->w, texture->h);
     ImGui::Image((ImTextureID)texture_descriptor_set,
-                 ImVec2(texture->w, texture->h));
+                 ImVec2(viewport_panel_size.x, viewport_panel_size.y));
   }
   ImGui::End();
 }
-
 }

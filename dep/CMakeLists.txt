@@ -29,4 +29,3 @@ if(CMD_RESULT EQUAL "0")
   message(FATAL_ERROR "failed to update submdoules: " ${CMD_RESULT})
 endif()
 
-# Google Test
