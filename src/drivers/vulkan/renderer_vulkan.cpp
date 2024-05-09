@@ -11,7 +11,7 @@ void retro::Vulkan::InitVulkan(SDL* sdl, Application app) {
   if (ValidationLayersEnabled) spdlog::set_level(spdlog::level::trace);
   spdlog::info("Initializing Vulkan Instance");
   InitVulkanInstance(sdl->window_, app);
-  spdlog::info("Seting up Vulkan Debug Messenger");
+  spdlog::info("Setting up Vulkan Debug Messenger");
   SetupDebugMessenger();
   spdlog::info("Creating Vulkan surface");
   CreateSurface(sdl->window_);
@@ -148,12 +148,12 @@ retro::Vulkan::GetGraphicsHandler() {
 }
 
 retro::Vulkan::~Vulkan() {
-  // Do not destory any objects until the device is idle
-  // (do when vulkan isn't renderering anything)
+  // Do not destroy any objects until the device is idle
+  // (do when Vulkan isn't rendering anything)
   vkDeviceWaitIdle(logical_device_);
   CleanUpSwapChain();
 
-  // Destroy Imgui memory stuff
+  // Destroy ImGui memory stuff
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplSDL2_Shutdown();
   ImGui::DestroyContext();

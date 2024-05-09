@@ -269,7 +269,7 @@ void retro::Vulkan::LoadImageFromArray(
   // don't have a graphics card then it's DDRAM.
   //
   // This whole setup is allocating space in whatever memory channel you're
-  // using and puting the image there
+  // using and putting the image there
   vkMapMemory(logical_device_, staging_buffer_memory, 0, image_size, 0, &data);
 
   // We got the pointer to the memory free for us to use, lets put the surface

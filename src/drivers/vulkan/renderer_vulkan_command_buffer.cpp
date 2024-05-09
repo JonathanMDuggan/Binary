@@ -116,6 +116,7 @@ VkCommandBuffer retro::BeginSingleTimeCommands(VkCommandPool command_pool,
   VkCommandBufferAllocateInfo allocate_info{};
   VkCommandBufferBeginInfo begin_info{};
   VkCommandBuffer command_buffer;
+
   allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   allocate_info.commandPool = command_pool;
@@ -129,8 +130,8 @@ VkCommandBuffer retro::BeginSingleTimeCommands(VkCommandPool command_pool,
 }
 
 void retro::EndSingleTimeCommands(VkCommandBuffer command_buffer,
-                                     VkCommandPool command_pool,
-                                     VkDevice logical_device, VkQueue queue) {
+                                  VkCommandPool command_pool,
+                                  VkDevice logical_device, VkQueue queue) {
   VkSubmitInfo submit_info{};
   vkEndCommandBuffer(command_buffer);
   submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

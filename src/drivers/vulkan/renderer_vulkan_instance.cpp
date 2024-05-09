@@ -3,20 +3,20 @@
 // Vulkan Instance
 
 // Creates a "Vulkan Instance" taking two parameters:
-// Window: What window will Vulkan renender to
+// Window: What window will Vulkan renderer to
 // Application: The application Vulkan is under.
 void retro::Vulkan::InitVulkanInstance(SDL_Window* window_,
                                           Application app) {
-  // The Vulkan Instance sits at the top of the Vulkan hierachy, the vulkan
-  // instance must be initizted with what appliaction infomation ( name,
-  // version, engine etc. while also requiring the extensions of outside
-  // libraies like SDL, GLSW, or other window libaries inorder for vulkan
-  // to render to a window.
+  // The Vulkan Instance sits at the top of the Vulkan hierarchy, the Vulkan
+  // instance must be initiated with the application infomation ( name,
+  // version, engine, etc). While also requiring the extensions of outside
+  // libraries like SDL, GLSW, or other window libraries for Vulkan to render 
+  // to a window.
   VkInstanceCreateInfo instance_info{};
   VkApplicationInfo app_info{};
   VkResult result;
 
-  // Checks if validation layers are supported in this version of vulkan
+  // Checks if validation layers are supported in this version of Vulkan
   // only prints to the console if the program was compiled in debug mode
   if (ValidationLayersEnabled && !VulkanValidationLayerSupported()) {
     spdlog::critical("Validation layers requested, but not available!");
@@ -35,11 +35,11 @@ void retro::Vulkan::InitVulkanInstance(SDL_Window* window_,
   instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   instance_info.pApplicationInfo = &app_info;
 
-  // Vulkan Instances can have what are called "extentions". Extensions are
+  // Vulkan Instances can have what are called "extensions". Extensions are
   // features which allow Vulkan to do more things it otherwise cannot do.
   // In this line of code, we are calling the get extension function
   // which will get the extensions needed to use SDL for the windowing
-  // and the debug extenstion for the validation layers
+  // and the debug extension for the validation layers
 
   std::vector<const char*> sdl_extensions = GetExtensions(window_);
   instance_info.enabledExtensionCount =
@@ -61,15 +61,17 @@ void retro::Vulkan::InitVulkanInstance(SDL_Window* window_,
     instance_info.pNext = nullptr;
   }
 
-  // Create the vulkan instance with all the infomation given above
+  // Create the Vulkan instance with all the infomation given above
   result = vkCreateInstance(&instance_info, allocator_, &instance_);
   if (result != VK_SUCCESS) {
-    spdlog::critical("Failed to create Vulkan instance");
-    std::runtime_error("Failed to create Vulkan instance");
+    spdlog::critical("Failed to create Vulkan instance ", 
+      VkResultToString(result));
+    std::runtime_error("Failed to create Vulkan instance " +
+      VkResultToString(result));
     return;
   }
 
-  // Collect the infomation from the vulkan instance, and print the extensions
+  // Collect the infomation from the Vulkan instance, and print the extensions
   // to the terminal
   uint32_t extension_count = 0;
   vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
@@ -84,7 +86,7 @@ void retro::Vulkan::InitVulkanInstance(SDL_Window* window_,
 
 // Vulkan Extensions
 
-// Gets extensions from the SDL library to allow vulkan to do features it
+// Gets extensions from the SDL library to allow Vulkan to do features it
 // otherwise cannot do by itself
 std::vector<const char*> retro::Vulkan::GetExtensions(SDL_Window* window_) {
   // Get the number of extensions sdl needs and increase the size of a vector

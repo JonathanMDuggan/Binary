@@ -83,35 +83,35 @@ bool retro::Vulkan::CheckDeviceExtensionSupport(
 
 // Finds a suitble device that supports Vulkan
 void retro::Vulkan::PickPhysicalDevice() {
-  // In Vulkan the programmer must choose the physical device in which vulkan
+  // In Vulkan the programmer must choose the physical device in which Vulkan
   // will use to render to the screen
   uint32_t device_count = 0;
-  // Searches the host computer for a device that supports vulkan
+  // Searches the host computer for a device that supports Vulkan
   vkEnumeratePhysicalDevices(instance_, &device_count, nullptr);
 
-  // If there is no device in which vulkan cannot support, there's no point
+  // If there is no device in which Vulkan cannot support, there's no point
   // in going on. Throw a runtime error!
   if (device_count == 0) {
-    spdlog::critical("Failed to find GPU with vulkan support!");
+    spdlog::critical("Failed to find GPU with Vulkan support!");
     throw std::runtime_error("");
   }
 
-  // Fill vector with the devices found by vulkan
+  // Fill vector with the devices found by Vulkan
   std::vector<VkPhysicalDevice> devices(device_count);
   vkEnumeratePhysicalDevices(instance_, &device_count, devices.data());
 
-  // Not every device which supports vulkan can show images to the screen
+  // Not every device which supports Vulkan can show images to the screen
   // enumerate over the them and keep the ones which have the capability
   // to display images ( has a graphics queue )
   for (const auto& device_ : devices) {
     if (IsPhysicalDeviceSuitable(device_)) {
-      // without this if statement, the rate device suitabillity function
+      // without this if statement, the rate device suitability function
       // will crash the program
       if (physical_device_ == VK_NULL_HANDLE) {
         physical_device_ = device_;
         continue;
       }
-      // Pick a device best graphics device for the progranm
+      // Pick a device best graphics device for the Program 
       if (RateDeviceSuitabillity(physical_device_) < RateDeviceSuitabillity(device_)) {
         physical_device_ = device_;
       }
@@ -164,7 +164,7 @@ void retro::Vulkan::CreateLogicalDevice() {
       static_cast<uint32_t>(device_extensions.size());
   device_info.ppEnabledExtensionNames = device_extensions.data();
 
-  // Add debuging capabilities for the logical device if validation layers were
+  // Add debugging capabilities for the logical device if validation layers were
   // enabled
   if (ValidationLayersEnabled) {
     device_info.enabledLayerCount =
@@ -193,14 +193,14 @@ void retro::Vulkan::CreateLogicalDevice() {
 
 // Vulkan Queue
 
-// Gets queue familes from the phyiscal device
+// Gets queue families from the phyiscal device
 retro::QueueFamilyIndices retro::Vulkan::FindQueueFamilies(
     VkPhysicalDevice phyiscal_device) {
   VkBool32 present_support;
   QueueFamilyIndices indices;
   int i = 0;
   uint32_t queue_family_count = 0;
-  // Get the queue familes from the physical device so we can determind if the
+  // Get the queue families from the physical device so we can determined if the
   // physical device and display graphics to the screen.
   vkGetPhysicalDeviceQueueFamilyProperties(phyiscal_device, &queue_family_count,
                                            nullptr);
@@ -214,7 +214,7 @@ retro::QueueFamilyIndices retro::Vulkan::FindQueueFamilies(
     //
     // NOTE: graphic_family is a std::optional, meaning it holds nothing
     // if it isn't set, this is okay since we can use the method .has_value()
-    // to check if the grpahic_family has a value.
+    // to check if the graphic family has a value.
     if (queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
       indices.graphics_family = i;
     }
