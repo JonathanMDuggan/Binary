@@ -1,6 +1,6 @@
 #include "gb_cpu.h"
 namespace retro::gb {
-class Gameboy {
+class GameBoy {
 public:
   SM83 sm83; 
 private:
@@ -166,4 +166,33 @@ enum Instruction {
   SET_5_H     = 0xEC, SET_5_L   = 0xED, SET_5__HL = 0xEE, SET_5_A   = 0xEF,
   SET_7_H     = 0xFC, SET_7_L   = 0xFD, SET_7__HL = 0xFE, SET_7_A   = 0xFF
 };
-}
+enum CpuFlags {
+  Z = 0b1000000,
+  N = 0b0100000,
+  H = 0b0010000,
+  C = 0b0001000
+};
+typedef struct Opcode {
+  Instruction hexadecimal;
+  std::string name;
+  std::function<void()> execute(Device* gb); 
+
+}Opcode;
+extern const std::array<Opcode, 512> k_OpcodeLookupTable;
+// Function implementation for 
+// Nibble 0
+extern void (*NOP_NoOperation)(GameBoy*);
+extern void (*STOP_Stop)(GameBoy*);
+extern void (*JR_NZ_R8_JumpRelativeSubtractZeroReg8)(GameBoy*);
+extern void (*JR_NC_R8_JumpRelativeSubtractCarryReg8)(GameBoy*);
+extern void (*LD_B_B_LoadRegBtoRegB)(GameBoy*);
+extern void (*LD_B_D_LoadRegDtoRegB)(GameBoy*);
+extern void (*LD_H_B_LoadRegHtoRegB)(GameBoy*);
+extern void (*LD__HL_B_LoadRegHLtoRegB)(GameBoy*);
+extern void (*ADD_A_B_AddRegAtoB)(GameBoy*);
+extern void (*SUB_B_SubRegB)(GameBoy*);
+extern void (*AND_B_AndRegB)(GameBoy*);
+extern void (*RET_NZ_ReturnSubtractZero)(GameBoy*);
+extern void (*RET_NC_ReturnSubtractCarry)(GameBoy*);
+}  // namespace retro::gb
+

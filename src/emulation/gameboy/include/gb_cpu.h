@@ -1,4 +1,8 @@
 #include <cstdint>
+#include <string>
+#include <array>
+#include <functional>
+
 namespace retro::gb{
 class SM83 {
 public:
@@ -32,4 +36,7 @@ void PrintCurrentProgramCounterValue();
 };
 
 extern uint32_t Test123();
+class Device {
+  SM83* sm83_;
+};
 }
