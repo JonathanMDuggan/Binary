@@ -172,6 +172,7 @@ enum CpuFlags {
 };
 typedef struct Opcode {
   Instruction hexadecimal;
+  std::string opcode;
   std::string name;
   std::function<void()> Execute(Device* gb); 
 
@@ -302,184 +303,183 @@ extern void (*PushRegHL)(GameBoy*);                          // 0xE5 PUSH HL
 extern void (*PushRegAF)(GameBoy*);                          // 0xF5 PUSH AF
                                                              
 // Nibble 6                                                  
-extern void (*LoadRegBImmediate8)(GameBoy*);                 // 0x06
-extern void (*LoadRegDImmediate8)(GameBoy*);                 // 0x16
-extern void (*LoadRegHImmediate8)(GameBoy*);                 // 0x26
-extern void (*LoadIndirectRegHLImmediate8)(GameBoy*);        // 0x36
-extern void (*LoadRegB)(GameBoy*);                           // 0x46
-extern void (*LoadRegD)(GameBoy*);                           // 0x56
-extern void (*LoadRegH)(GameBoy*);                           // 0x66
-extern void (*Halt)(GameBoy*);                               // 0x76
-extern void (*AddRegAFromIndirectRegHL)(GameBoy*);           // 0x86
-extern void (*SubIndirectRegHL)(GameBoy*);                   // 0x96
-extern void (*AndIndirectRegHL)(GameBoy*);                   // 0xA6
-extern void (*OrIndirectRegHL)(GameBoy*);                    // 0xB6
-extern void (*AddRegAFromImmediate8)(GameBoy*);              // 0xC6
-extern void (*SubImmediate8)(GameBoy*);                      // 0xD6
-extern void (*AndImmediate8)(GameBoy*);                      // 0xE6
-extern void (*OrImmediate8)(GameBoy*);                       // 0xF6
+extern void (*LoadRegBImmediate8)(GameBoy*);                 // 0x06 LD B,d8
+extern void (*LoadRegDImmediate8)(GameBoy*);                 // 0x16 LD D,d8
+extern void (*LoadRegHImmediate8)(GameBoy*);                 // 0x26 LD H,d8
+extern void (*LoadIndirectRegHLImmediate8)(GameBoy*);        // 0x36 LD (HL),d8
+extern void (*LoadRegB)(GameBoy*);                           // 0x46 LD B,(HL)
+extern void (*LoadRegD)(GameBoy*);                           // 0x56 LD D,(HL)
+extern void (*LoadRegH)(GameBoy*);                           // 0x66 LD H,(HL)
+extern void (*Halt)(GameBoy*);                               // 0x76 HALT
+extern void (*AddRegAFromIndirectRegHL)(GameBoy*);           // 0x86 ADD A,(HL)
+extern void (*SubIndirectRegHL)(GameBoy*);                   // 0x96 SUB (HL)
+extern void (*AndIndirectRegHL)(GameBoy*);                   // 0xA6 AND (HL)
+extern void (*OrIndirectRegHL)(GameBoy*);                    // 0xB6 OR (HL)
+extern void (*AddRegAFromImmediate8)(GameBoy*);              // 0xC6 ADD A,d8
+extern void (*SubImmediate8)(GameBoy*);                      // 0xD6 SUB d8
+extern void (*AndImmediate8)(GameBoy*);                      // 0xE6 AND d8
+extern void (*OrImmediate8)(GameBoy*);                       // 0xF6 OR d8
                                                              
 // Nibble 7                                                  
-extern void (*RotateLeftCarryRegA)(GameBoy*);                // 0x07
-extern void (*RotateLeftRegA)(GameBoy*);                     // 0x17
-extern void (*DecimalAdjectAccumulator)(GameBoy*);           // 0x27
-extern void (*SetCarryFlag)(GameBoy*);                       // 0x37
-extern void (*LoadRegBFromRegA)(GameBoy*);                   // 0x57
-extern void (*LoadRegDFromRegA)(GameBoy*);                   // 0x67
-extern void (*LoadRegHFromRegA)(GameBoy*);                   // 0x77
-extern void (*LoadIndirectHLFromRegA)(GameBoy*);             // 0x47
-extern void (*AddRegAFromRegA)(GameBoy*);                    // 0x87
-extern void (*SubRegA)(GameBoy*);                            // 0x97
-extern void (*AndRegA)(GameBoy*);                            // 0xA7
-extern void (*OrRegA)(GameBoy*);                             // 0xB7
+extern void (*RotateLeftCarryRegA)(GameBoy*);                // 0x07 RLCA
+extern void (*RotateLeftRegA)(GameBoy*);                     // 0x17 RLA
+extern void (*DecimalAdjectAccumulator)(GameBoy*);           // 0x27 DAA
+extern void (*SetCarryFlag)(GameBoy*);                       // 0x37 SCF
+extern void (*LoadRegBFromRegA)(GameBoy*);                   // 0x57 LD B,A
+extern void (*LoadRegDFromRegA)(GameBoy*);                   // 0x67 LD D,A
+extern void (*LoadRegHFromRegA)(GameBoy*);                   // 0x77 LD H,A
+extern void (*LoadIndirectHLFromRegA)(GameBoy*);             // 0x47 LD (HL),A
+extern void (*AddRegAFromRegA)(GameBoy*);                    // 0x87 ADD A,A
+extern void (*SubRegA)(GameBoy*);                            // 0x97 SUB A
+extern void (*AndRegA)(GameBoy*);                            // 0xA7 AND A
+extern void (*OrRegA)(GameBoy*);                             // 0xB7 OR A
 extern void (*RestartAtAddress00)(GameBoy*);                 // 0xC7 RST 00H
 extern void (*RestartAtAddress10)(GameBoy*);                 // 0xD7 RST 10H
 extern void (*RestartAtAddress20)(GameBoy*);                 // 0xE7 RST 20H
 extern void (*RestartAtAddress30)(GameBoy*);                 // 0xF7 RST 30H
                                                              
 // Nibble 8                                                  
-extern void (*LoadIndirect16FromStackPointer)(GameBoy*);     // 0x08
-extern void (*JumpRelativeSigned8)(GameBoy*);                // 0x18
-extern void (*JumpRelativeSigned8IfZero)(GameBoy*);          // 0x28
-extern void (*JumpRelativeSigned8IfCarry)(GameBoy*);         // 0x38
-extern void (*LoadRegCFromRegB)(GameBoy*);                   // 0x48
-extern void (*LoadRegEFromRegB)(GameBoy*);                   // 0x58
-extern void (*LoadRegLFromRegB)(GameBoy*);                   // 0x68
-extern void (*LoadRegAFromRegB)(GameBoy*);                   // 0x78
-extern void (*AddWithCarryRegAFromRegB)(GameBoy*);           // 0x88
-extern void (*SubWithCarryRegAFromRegB)(GameBoy*);           // 0x98
-extern void (*XorRegB)(GameBoy*);                            // 0xA8
-extern void (*CompareRegB)(GameBoy*);                        // 0xB8
-extern void (*ReturnIfZero)(GameBoy*);                       // 0xC8
-extern void (*ReturnIfCarry)(GameBoy*);                      // 0xD8
-extern void (*AddStackPointerFromSigned8)(GameBoy*);         // 0xE8
-extern void (*LoadRegHLFromSigned8PlusRegSP)(GameBoy*);      // 0xF8
+extern void (*LoadIndirect16FromStackPointer)(GameBoy*);     // 0x08 LD (a16),SP
+extern void (*JumpRelativeSigned8)(GameBoy*);                // 0x18 JR r8
+extern void (*JumpRelativeSigned8IfZero)(GameBoy*);          // 0x28 JR Z,r8
+extern void (*JumpRelativeSigned8IfCarry)(GameBoy*);         // 0x38 JR C.r8
+extern void (*LoadRegCFromRegB)(GameBoy*);                   // 0x48 LD C,B
+extern void (*LoadRegEFromRegB)(GameBoy*);                   // 0x58 LD E,B
+extern void (*LoadRegLFromRegB)(GameBoy*);                   // 0x68 LD L,B
+extern void (*LoadRegAFromRegB)(GameBoy*);                   // 0x78 LD A,B
+extern void (*AddWithCarryRegAFromRegB)(GameBoy*);           // 0x88 ADC A,B
+extern void (*SubWithCarryRegAFromRegB)(GameBoy*);           // 0x98 SBC A,B
+extern void (*XorRegB)(GameBoy*);                            // 0xA8 XOR B
+extern void (*CompareRegB)(GameBoy*);                        // 0xB8 CP B
+extern void (*ReturnIfZero)(GameBoy*);                       // 0xC8 RET Z
+extern void (*ReturnIfCarry)(GameBoy*);                      // 0xD8 RET C
+extern void (*AddStackPointerFromSigned8)(GameBoy*);         // 0xE8 ADD SP,r8
+extern void (*LoadRegHLFromSigned8PlusRegSP)(GameBoy*);      // 0xF8 LD HL,SP+r8
                                                              
 // Nibble 9                                                  
-extern void (*AddRegHLFromRegBC)(GameBoy*);                  // 0x09
-extern void (*AddRegHLFromRegDE)(GameBoy*);                  // 0x19
-extern void (*AddRegHLFromRegHL)(GameBoy*);                  // 0x29
-extern void (*AddRegHLFromRegSP)(GameBoy*);                  // 0x39
-extern void (*LoadRegCFromRegC)(GameBoy*);                   // 0x49
-extern void (*LoadRegEFromRegC)(GameBoy*);                   // 0x59
-extern void (*LoadRegLFromRegC)(GameBoy*);                   // 0x69
-extern void (*LoadRegAFromRegC)(GameBoy*);                   // 0x79
-extern void (*AddWithCarryRegAFromRegC)(GameBoy*);           // 0x89
-extern void (*SubWithCarryRegAFromRegC)(GameBoy*);           // 0x99
-extern void (*XorRegC)(GameBoy*);                            // 0xA9
-extern void (*CompareRegC)(GameBoy*);                        // 0xB9
-extern void (*Return)(GameBoy*);                             // 0xC9
-extern void (*ReturnIndex)(GameBoy*);                        // 0xD9
-extern void (*JumpToIndirectRegHL)(GameBoy*);                // 0xE9
-extern void (*LoadStackPointerFromRegHL)(GameBoy*);          // 0xF9
+extern void (*AddRegHLFromRegBC)(GameBoy*);                  // 0x09 ADD HL.BC
+extern void (*AddRegHLFromRegDE)(GameBoy*);                  // 0x19 ADD HL,DE
+extern void (*AddRegHLFromRegHL)(GameBoy*);                  // 0x29 ADD HL,HL
+extern void (*AddRegHLFromRegSP)(GameBoy*);                  // 0x39 ADD HL,SP
+extern void (*LoadRegCFromRegC)(GameBoy*);                   // 0x49 LD C,C
+extern void (*LoadRegEFromRegC)(GameBoy*);                   // 0x59 LD E,C
+extern void (*LoadRegLFromRegC)(GameBoy*);                   // 0x69 LD L,C
+extern void (*LoadRegAFromRegC)(GameBoy*);                   // 0x79 LD A,C
+extern void (*AddWithCarryRegAFromRegC)(GameBoy*);           // 0x89 ADC A,C
+extern void (*SubWithCarryRegAFromRegC)(GameBoy*);           // 0x99 SBC A.C
+extern void (*XorRegC)(GameBoy*);                            // 0xA9 XOR C
+extern void (*CompareRegC)(GameBoy*);                        // 0xB9 CP C
+extern void (*Return)(GameBoy*);                             // 0xC9 RET
+extern void (*ReturnIndex)(GameBoy*);                        // 0xD9 RETI
+extern void (*JumpToIndirectRegHL)(GameBoy*);                // 0xE9 JP (HL)
+extern void (*LoadStackPointerFromRegHL)(GameBoy*);          // 0xF9 LD SP,HL
 
 // Nibble A
-extern void (*LoadRegAFromIndirectRegBC)(GameBoy*);          // 0x0A
-extern void (*LoadRegAFromIndirectRegDE)(GameBoy*);          // 0x1A
-extern void (*LoadRegAFromIncrementIndirectRegHL)(GameBoy*); // 0x2A
-extern void (*LoadRegAFromDecrementIndirectRegHL)(GameBoy*); // 0x3A
-extern void (*LoadRegCFromRegD)(GameBoy*);                   // 0x4A
-extern void (*LoadRegEFromRegD)(GameBoy*);                   // 0x5A
-extern void (*LoadRegLFromRegD)(GameBoy*);                   // 0x6A
-extern void (*LoadRegAFromRegD)(GameBoy*);                   // 0x7A
-extern void (*AddWithCarryRegAFromRegD)(GameBoy*);           // 0x8A
-extern void (*SubWithCarryRegAFromRegD)(GameBoy*);           // 0x9A
-extern void (*XorRegD)(GameBoy*);                            // 0xAA
-extern void (*CompareRegD)(GameBoy*);                        // 0xBA
-extern void (*JumpIfZeroAddress16)(GameBoy*);                // 0xCA
-extern void (*JumpIfCarryAddress16)(GameBoy*);               // 0xDA
-extern void (*LoadAddress16FromRegA)(GameBoy*);              // 0xEA
-extern void (*LoadRegAFromAddress16)(GameBoy*);              // 0xFA
+extern void (*LoadRegAFromIndirectRegBC)(GameBoy*);          // 0x0A LD A,(BC) 
+extern void (*LoadRegAFromIndirectRegDE)(GameBoy*);          // 0x1A LD A,(DE)
+extern void (*LoadRegAFromIncrementIndirectRegHL)(GameBoy*); // 0x2A LD A,(HL+)
+extern void (*LoadRegAFromDecrementIndirectRegHL)(GameBoy*); // 0x3A LD A,(HL-)
+extern void (*LoadRegCFromRegD)(GameBoy*);                   // 0x4A LD C,D
+extern void (*LoadRegEFromRegD)(GameBoy*);                   // 0x5A LD E,D
+extern void (*LoadRegLFromRegD)(GameBoy*);                   // 0x6A LD L,D
+extern void (*LoadRegAFromRegD)(GameBoy*);                   // 0x7A LD A,D
+extern void (*AddWithCarryRegAFromRegD)(GameBoy*);           // 0x8A ADC A,(HL)
+extern void (*SubWithCarryRegAFromRegD)(GameBoy*);           // 0x9A SBC A,(HL)
+extern void (*XorRegD)(GameBoy*);                            // 0xAA XOR (HL)
+extern void (*CompareRegD)(GameBoy*);                        // 0xBA CP (HL)
+extern void (*JumpIfZeroAddress16)(GameBoy*);                // 0xCA ADC A,d8
+extern void (*JumpIfCarryAddress16)(GameBoy*);               // 0xDA SBC A,d8
+extern void (*LoadAddress16FromRegA)(GameBoy*);              // 0xEA XOR d8
+extern void (*LoadRegAFromAddress16)(GameBoy*);              // 0xFA CP d8
 
 // Nibble B
-extern void (*DecrementRegBC)(GameBoy*);                     // 0x0B
-extern void (*DecrementRegDE)(GameBoy*);                     // 0x1B
-extern void (*DecrementRegHL)(GameBoy*);                     // 0x2B
-extern void (*DecrementStackPointer)(GameBoy*);              // 0x3B
-extern void (*LoadRegCFromE)(GameBoy*);                      // 0x4B
-extern void (*LoadRegEFromE)(GameBoy*);                      // 0x5B
-extern void (*LoadRegLFromE)(GameBoy*);                      // 0x6B
-extern void (*LoadRegAFromE)(GameBoy*);                      // 0x7B
-extern void (*AddWithCarryRegAFromRegE)(GameBoy*);           // 0x8B
-extern void (*SubWithCarryRegAFromRegE)(GameBoy*);           // 0x9B
-extern void (*XorRegE)(GameBoy*);                            // 0xAB
-extern void (*CompareRegE)(GameBoy*);                        // 0xBB
-extern void (*Prefix)(GameBoy*);                             // 0xCB
-extern void (*NoInstructionDB)(GameBoy*);                    // 0xDB
-extern void (*NoInstructionEB)(GameBoy*);                    // 0xEB
-extern void (*EnableInterrupts)(GameBoy*);                   // 0xFB
+extern void (*DecrementRegBC)(GameBoy*);                     // 0x0B DEC BC
+extern void (*DecrementRegDE)(GameBoy*);                     // 0x1B DEC DE
+extern void (*DecrementRegHL)(GameBoy*);                     // 0x2B DEC HL
+extern void (*DecrementStackPointer)(GameBoy*);              // 0x3B DEC SP
+extern void (*LoadRegCFromE)(GameBoy*);                      // 0x4B LD C,E
+extern void (*LoadRegEFromE)(GameBoy*);                      // 0x5B LD E,E
+extern void (*LoadRegLFromE)(GameBoy*);                      // 0x6B LD L,E
+extern void (*LoadRegAFromE)(GameBoy*);                      // 0x7B LD A,E
+extern void (*AddWithCarryRegAFromRegE)(GameBoy*);           // 0x8B ADC A,E
+extern void (*SubWithCarryRegAFromRegE)(GameBoy*);           // 0x9B SBC A,E
+extern void (*XorRegE)(GameBoy*);                            // 0xAB XOR E
+extern void (*CompareRegE)(GameBoy*);                        // 0xBB CP E
+extern void (*Prefix)(GameBoy*);                             // 0xCB PREFIX CB
+extern void (*NoInstructionDB)(GameBoy*);                    // 0xDB NUL
+extern void (*NoInstructionEB)(GameBoy*);                    // 0xEB NUL
+extern void (*EnableInterrupts)(GameBoy*);                   // 0xFB EI
 
 // Nibble C
-extern void (*IncrementC)(GameBoy*);                         // 0x0C
-extern void (*IncrementE)(GameBoy*);                         // 0x1C
-extern void (*IncrementL)(GameBoy*);                         // 0x2C
-extern void (*IncrementA)(GameBoy*);                         // 0x3C
-extern void (*LoadRegCFromRegH)(GameBoy*);                   // 0x4C
-extern void (*LoadRegEFromRegH)(GameBoy*);                   // 0x5C
-extern void (*LoadRegLFromRegH)(GameBoy*);                   // 0x6C
-extern void (*LoadRegAFromRegH)(GameBoy*);                   // 0x7C
-extern void (*AddWithCarryRegAFromRegH)(GameBoy*);           // 0x8C
-extern void (*SubWithCarryRegAfromRegH)(GameBoy*);           // 0x9C
-extern void (*XorRegH)(GameBoy*);                            // 0xAC
-extern void (*CompareH)(GameBoy*);                           // 0xBC
-extern void (*CallIfZeroAddress16)(GameBoy*);                // 0xCC
-extern void (*CallIfCarryAddress16)(GameBoy*);               // 0xDC
-extern void (*NoInstructionEC)(GameBoy*);                    // 0xEC
-extern void (*NoInstructionFC)(GameBoy*);                    // 0xFC
+extern void (*IncrementRegC)(GameBoy*);                      // 0x0C LD C,d8
+extern void (*IncrementRegE)(GameBoy*);                      // 0x1C LD E,d8
+extern void (*IncrementRegL)(GameBoy*);                      // 0x2C LD L,d8
+extern void (*IncrementRegA)(GameBoy*);                      // 0x3C LD A,d8
+extern void (*LoadRegCFromRegH)(GameBoy*);                   // 0x4C LD C,(HL)
+extern void (*LoadRegEFromRegH)(GameBoy*);                   // 0x5C LD E,(HL)
+extern void (*LoadRegLFromRegH)(GameBoy*);                   // 0x6C LD L,(HL)
+extern void (*LoadRegAFromRegH)(GameBoy*);                   // 0x7C LD A,(HL)
+extern void (*AddWithCarryRegAFromRegH)(GameBoy*);           // 0x8C ADC A,(HL)
+extern void (*SubWithCarryRegAFromRegH)(GameBoy*);           // 0x9C SBC A,(HL)
+extern void (*XorRegH)(GameBoy*);                            // 0xAC XOR (HL)
+extern void (*CompareH)(GameBoy*);                           // 0xBC CP (HL)
+extern void (*CallIfZeroAddress16)(GameBoy*);                // 0xCC ADC A,d8
+extern void (*CallIfCarryAddress16)(GameBoy*);               // 0xDC SBC A,d8
+extern void (*NoInstructionEC)(GameBoy*);                    // 0xEC XOR d8
+extern void (*NoInstructionFC)(GameBoy*);                    // 0xFC CP d8
 
 // Nibble D
-//extern void (*)(GameBoy*);  // 0x0D
-//extern void (*)(GameBoy*);  // 0x1D
-//extern void (*)(GameBoy*);  // 0x2D
-//extern void (*)(GameBoy*);  // 0x3D
-//extern void (*)(GameBoy*);  // 0x4D
-//extern void (*)(GameBoy*);  // 0x5D
-//extern void (*)(GameBoy*);  // 0x6D
-//extern void (*)(GameBoy*);  // 0x7D
-//extern void (*)(GameBoy*);  // 0x8D
-//extern void (*)(GameBoy*);  // 0x9D
-//extern void (*)(GameBoy*);  // 0xAD
-//extern void (*)(GameBoy*);  // 0xBD
-//extern void (*)(GameBoy*);  // 0xCD
-//extern void (*)(GameBoy*);  // 0xDD
-//extern void (*)(GameBoy*);  // 0xED
-//extern void (*)(GameBoy*);  // 0xFD
-//
-//// Nibble E
-//extern void (*)(GameBoy*);  // 0x0E
-//extern void (*)(GameBoy*);  // 0x1E
-//extern void (*)(GameBoy*);  // 0x2E
-//extern void (*)(GameBoy*);  // 0x3E
-//extern void (*)(GameBoy*);  // 0x4E
-//extern void (*)(GameBoy*);  // 0x5E
-//extern void (*)(GameBoy*);  // 0x6E
-//extern void (*)(GameBoy*);  // 0x7E
-//extern void (*)(GameBoy*);  // 0x8E
-//extern void (*)(GameBoy*);  // 0x9E
-//extern void (*)(GameBoy*);  // 0xAE
-//extern void (*)(GameBoy*);  // 0xBE
-//extern void (*)(GameBoy*);  // 0xCE
-//extern void (*)(GameBoy*);  // 0xDE
-//extern void (*)(GameBoy*);  // 0xEE
-//extern void (*)(GameBoy*);  // 0xFE
-//
-//// Nibble F
-//extern void (*)(GameBoy*);  // 0x0F
-//extern void (*)(GameBoy*);  // 0x1F
-//extern void (*)(GameBoy*);  // 0x2F
-//extern void (*)(GameBoy*);  // 0x3F
-//extern void (*)(GameBoy*);  // 0x4F
-//extern void (*)(GameBoy*);  // 0x5F
-//extern void (*)(GameBoy*);  // 0x6F
-//extern void (*)(GameBoy*);  // 0x7F
-//extern void (*)(GameBoy*);  // 0x8F
-//extern void (*)(GameBoy*);  // 0x9F
-//extern void (*)(GameBoy*);  // 0xAF
-//extern void (*)(GameBoy*);  // 0xBF
-//extern void (*)(GameBoy*);  // 0xCF
-//extern void (*)(GameBoy*);  // 0xDF
-//extern void (*)(GameBoy*);  // 0xEF
-//extern void (*)(GameBoy*);  // 0xFF
+extern void (*DecrementRegC)(GameBoy*);                      // 0x0D DEC C
+extern void (*DecrementRegE)(GameBoy*);                      // 0x1D DEC E
+extern void (*DecrementRegL)(GameBoy*);                      // 0x2D DEC L
+extern void (*DecrementRegA)(GameBoy*);                      // 0x3D DEC A
+extern void (*LoadRegCFromRegL)(GameBoy*);                   // 0x4D LD C,L
+extern void (*LoadRegEFromRegL)(GameBoy*);                   // 0x5D LD E,L
+extern void (*LoadRegLFromRegL)(GameBoy*);                   // 0x6D LD L,L
+extern void (*LoadRegAFromRegL)(GameBoy*);                   // 0x7D LD A,L
+extern void (*AddWithCarryRegAFromRegL)(GameBoy*);           // 0x8D ADC A,L
+extern void (*SubWithCarryRegAFromRegL)(GameBoy*);           // 0x9D SBC A,L
+extern void (*XorRegL)(GameBoy*);                            // 0xAD XOR L
+extern void (*CompareRegL)(GameBoy*);                        // 0xBD CP L
+extern void (*CallAddress16)(GameBoy*);                      // 0xCD CALL a16
+extern void (*NoInstructionDD)(GameBoy*);                    // 0xDD NUL DD
+extern void (*NoInstructionED)(GameBoy*);                    // 0xED NUL ED
+extern void (*NoInstructionFD)(GameBoy*);                    // 0xFD NUL FD
 
-}  // namespace retro::gb::instructionset
+// Nibble E
+extern void (*LoadRegCImmediate8)(GameBoy*);                 // 0x0E LD C,d8
+extern void (*LoadRegEImmediate8)(GameBoy*);                 // 0x1E LD E,d8
+extern void (*LoadRegLImmediate8)(GameBoy*);                 // 0x2E LD L,d8
+extern void (*LoadRegAImmediate8)(GameBoy*);                 // 0x3E LD A,d8
+extern void (*LoadRegCIndirectHL)(GameBoy*);                 // 0x4E LD C,(HL)
+extern void (*LoadRegEIndirectHL)(GameBoy*);                 // 0x5E LD E,(HL)
+extern void (*LoadRegLIndirectHL)(GameBoy*);                 // 0x6E LD L,(HL)
+extern void (*LoadRegAIndirectHL)(GameBoy*);                 // 0x7E LD A,(HL)
+extern void (*AddWithCarryRegAFromIndirectRegHL)(GameBoy*);  // 0x8E ADC A,(HL)
+extern void (*SubWithCarryRegAFromIndirectRegHL)(GameBoy*);  // 0x9E SBC A,(HL)
+extern void (*XorRegL)(GameBoy*);                            // 0xAE XOR (HL)
+extern void (*CompareRegL)(GameBoy*);                        // 0xBE CP (HL)
+extern void (*AddWithCarryRegAFromImmediate8)(GameBoy*);     // 0xCE ADC A,d8
+extern void (*SubWithCarryRegAFromImmediate8)(GameBoy*);     // 0xDE SBC A,d8
+extern void (*XorRegImmediate8)(GameBoy*);                   // 0xEE XOR d8
+extern void (*CompareImmediate8)(GameBoy*);                  // 0xFE CP d8
+
+// Nibble F
+extern void (*RotateRightCarryRegA)(GameBoy*);               // 0x0F RRCA
+extern void (*RotateLeftRegA)(GameBoy*);                     // 0x1F RRA
+extern void (*ComplementAccumulator)(GameBoy*);              // 0x2F CPL
+extern void (*ComplementCarryFlag)(GameBoy*);                // 0x3F CCF
+extern void (*LoadCRegA)(GameBoy*);                          // 0x4F LD C,A
+extern void (*LoadERegA)(GameBoy*);                          // 0x5F LD E,A
+extern void (*LoadLRegA)(GameBoy*);                          // 0x6F LD L,A
+extern void (*LoadARegA)(GameBoy*);                          // 0x7F LD A,A
+extern void (*AddWithCarryRegAFromRegA)(GameBoy*);           // 0x8F ADC A,A
+extern void (*SubWithCarryRegAFromRegA)(GameBoy*);           // 0x9F SBC A,A
+extern void (*XorRegA)(GameBoy*);                            // 0xAF XOR A
+extern void (*CompareRegA)(GameBoy*);                        // 0xBF CP A
+extern void (*RestartAtAddress08)(GameBoy*);                 // 0xCF RST 08H
+extern void (*RestartAtAddress18)(GameBoy*);                 // 0xDF RST 18H
+extern void (*RestartAtAddress28)(GameBoy*);                 // 0xEF RST 28H
+extern void (*RestartAtAddress38)(GameBoy*);                 // 0xFF RST 38H
+}// namespace retro::gb::instructionset
 
