@@ -5,11 +5,9 @@ public:
   SM83 sm83; 
 private:
 };
-
 // TDLR: I broke the style guide here
 // The Google Style Guide states all new enums should be prefix with k, however
 // if I did that the names would be harder to read.
-
 
 ///Gameboy CPU (LR35902) instruction set Documentation:
 // Reference: https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html
@@ -25,7 +23,7 @@ private:
 // brackets in its name. C/C++ cannot use brackets for its identifier, so
 // instead we use _ as the prefix
 // 
-enum Instruction {
+enum class Instruction {
 //Nibble 0            Nibble 1          Nibble 2          Nibble 3
   NOP         = 0x00, LD_BC_D16 = 0x01, LD__BC_A  = 0x02, INC_BC    = 0x03,
   STOP        = 0x10, LD_DE_D16 = 0x11, LD__DE_A  = 0x12, INC_DE    = 0x13,
@@ -175,24 +173,313 @@ enum CpuFlags {
 typedef struct Opcode {
   Instruction hexadecimal;
   std::string name;
-  std::function<void()> execute(Device* gb); 
+  std::function<void()> Execute(Device* gb); 
 
 }Opcode;
 extern const std::array<Opcode, 512> k_OpcodeLookupTable;
-// Function implementation for 
-// Nibble 0
-extern void (*NOP_NoOperation)(GameBoy*);
-extern void (*STOP_Stop)(GameBoy*);
-extern void (*JR_NZ_R8_JumpRelativeSubtractZeroReg8)(GameBoy*);
-extern void (*JR_NC_R8_JumpRelativeSubtractCarryReg8)(GameBoy*);
-extern void (*LD_B_B_LoadRegBtoRegB)(GameBoy*);
-extern void (*LD_B_D_LoadRegDtoRegB)(GameBoy*);
-extern void (*LD_H_B_LoadRegHtoRegB)(GameBoy*);
-extern void (*LD__HL_B_LoadRegHLtoRegB)(GameBoy*);
-extern void (*ADD_A_B_AddRegAtoB)(GameBoy*);
-extern void (*SUB_B_SubRegB)(GameBoy*);
-extern void (*AND_B_AndRegB)(GameBoy*);
-extern void (*RET_NZ_ReturnSubtractZero)(GameBoy*);
-extern void (*RET_NC_ReturnSubtractCarry)(GameBoy*);
 }  // namespace retro::gb
+
+namespace retro::gb::instructionset{
+///Function implementation for the GameBoy CPU instruction set 
+// 
+///Naming conventions
+// * Reg:         Register
+// * Immediate8:  d8 or immediate 8 bit data
+// * Immediate16: d16 or immediate 16 bit data
+// * RegSP:       Stack pointer
+///Notes on order of operations:
+// The Register that is first mention is the location where the data is stored
+// Examples: 
+// * LoadRegDFromRegB is equivalent to: D = B
+// * AddRegAFromRegD is equivalent to:  A += D
+//   
+// Nibble 0
+extern void (*NoOperation)(GameBoy*);                        // 0x00 NOP
+extern void (*Stop)(GameBoy*);                               // 0x10 STOP
+extern void (*JumpRelativeSignedIfNotZero)(GameBoy*);        // 0x20 JR NZ R8
+extern void (*JumpRelativeSignedIfNotCarry)(GameBoy*);       // 0x30 JR NC R8
+extern void (*LoadRegBFromRegB)(GameBoy*);                   // 0x40 LD B,B
+extern void (*LoadRegDFromRegB)(GameBoy*);                   // 0x50 LD D,B
+extern void (*LoadRegHFromRegB)(GameBoy*);                   // 0x60 LD H,B
+extern void (*LoadRegIndirectHLFromRegB)(GameBoy*);          // 0x70 LD (HL),B
+extern void (*AddRegAFromB)(GameBoy*);                       // 0x80 ADD A,B
+extern void (*SubRegB)(GameBoy*);                            // 0x90 SUB B
+extern void (*AndRegB)(GameBoy*);                            // 0xA0 AND B
+extern void (*OrRegB)(GameBoy*);                             // 0xB0 OR B
+extern void (*ReturnIfNotZero)(GameBoy*);                    // 0xC0 RET NZ
+extern void (*ReturnIfNotCarry)(GameBoy*);                   // 0xD0 NET NC
+extern void (*LoadHighAddressIntoRegA)(GameBoy*);            // 0xE0 LDH (A8),A
+extern void (*LoadRegAIntoHighAddress)(GameBoy*);            // 0xF0 LDH A,(A8)
+
+// Nibble 1
+extern void (*LoadRegBCImmediate16)(GameBoy*);               // 0x01 LD BC,d16
+extern void (*LoadRegDEImmediate16)(GameBoy*);               // 0x11 LD DE,d16
+extern void (*LoadRegHLImmediate16)(GameBoy*);               // 0x21 LD HL,d16
+extern void (*LoadStackPointerImmediate16)(GameBoy*);        // 0x31 LD SP,d16
+extern void (*LoadRegBFromRegC)(GameBoy*);                   // 0x41 LD B,C
+extern void (*LoadRegDFromRegC)(GameBoy*);                   // 0x51 LD D,C
+extern void (*LoadRegHFromRegC)(GameBoy*);                   // 0x61 LD H,C
+extern void (*LoadIndirectRegHLFromRegC)(GameBoy*);          // 0x71 LD (HL),C
+extern void (*AddRegAFromC)(GameBoy*);                       // 0x81 ADD A,C
+extern void (*SubRegC)(GameBoy*);                            // 0x91 SUB C
+extern void (*AndRegC)(GameBoy*);                            // 0xA1 AND C
+extern void (*OrRegC)(GameBoy*);                             // 0xB1 OR C
+extern void (*PopRegBC)(GameBoy*);                           // 0xC1 POP BC
+extern void (*PopRegDE)(GameBoy*);                           // 0xD1 POP DE
+extern void (*PopRegHL)(GameBoy*);                           // 0xE1 POP HL
+extern void (*PopRegAF)(GameBoy*);                           // 0xF1 POP AF
+
+// Nibble 2
+extern void (*LoadIndirectRegBCFromRegA)(GameBoy*);          // 0x02 LD (BC),A 
+extern void (*LoadIndirectRegDEFromRegA)(GameBoy*);          // 0x12 LD (DE),A
+extern void (*LoadIndirectIncrementRegHLFromRegA)(GameBoy*); // 0x22 LD (HL+),A
+extern void (*LoadIndirectDecrementRegHLFromRegA)(GameBoy*); // 0x32 LD (HL-),A
+extern void (*LoadRegBFromRegD)(GameBoy*);                   // 0x42 LD B,D
+extern void (*LoadRegDFromRegD)(GameBoy*);                   // 0x52 LD D,D
+extern void (*LoadRegHFromRegD)(GameBoy*);                   // 0x62 LD H,D
+extern void (*LoadIndirectRegHLFromRegD)(GameBoy*);          // 0x72 LD (HL),D
+extern void (*AddRegAFromRegD)(GameBoy*);                    // 0x82 ADD A,D
+extern void (*SubRegD)(GameBoy*);                            // 0x92 SUB D
+extern void (*AndRegD)(GameBoy*);                            // 0xA2 AND D
+extern void (*OrRegD)(GameBoy*);                             // 0xB2 OR D
+extern void (*JumpToAddress16IfNotZero)(GameBoy*);           // 0xC2 RET NZ
+extern void (*JumpToAddress16IfNotCarry)(GameBoy*);          // 0xD2 RET NC
+extern void (*LoadIndirectRegCFromRegA)(GameBoy*);           // 0xE2 LD (C),A
+extern void (*LoadRegAFromIndirectC)(GameBoy*);              // 0xF2 LD A,(C)
+
+// Nibble 3 
+extern void (*IncrementRegBC)(GameBoy*);                     // 0x03 INC BC
+extern void (*IncrementRegDE)(GameBoy*);                     // 0x13 INC DE
+extern void (*IncrementRegHL)(GameBoy*);                     // 0x23 INC HL
+extern void (*IncrementStackPointer)(GameBoy*);              // 0x33 INC SP
+extern void (*LoadRegBFromRegE)(GameBoy*);                   // 0x43 LD B,E
+extern void (*LoadRegDFromRegE)(GameBoy*);                   // 0x53 LD D,E
+extern void (*LoadRegHFromRegE)(GameBoy*);                   // 0x63 LD H,E
+extern void (*LoadIndirectRegHLFromRegE)(GameBoy*);          // 0x73 LD (HL),E
+extern void (*AddRegAFromRegE)(GameBoy*);                    // 0x83 ADD A,E
+extern void (*SubRegE)(GameBoy*);                            // 0x93 SUB E
+extern void (*AndRegE)(GameBoy*);                            // 0xA3 AND E
+extern void (*OrRegE)(GameBoy*);                             // 0xB3 OR E
+extern void (*JumpToAddress16)(GameBoy*);                    // 0xC3 JP a16
+extern void (*NoInstructionD3)(GameBoy*);                    // 0xD3 NUL
+extern void (*NoInstructionE3)(GameBoy*);                    // 0xE3 NUL
+extern void (*DisableInterrupts)(GameBoy*);                  // 0xF3 DI
+                                                             
+// Nibble 4                                                  
+extern void (*IncrementRegB)(GameBoy*);                      // 0x04 INC B
+extern void (*IncrementRegD)(GameBoy*);                      // 0x14 INC D
+extern void (*IncrementRegH)(GameBoy*);                      // 0x24 INC H
+extern void (*IncrementIndirectRegHL)(GameBoy*);             // 0x34 INC (HL)
+extern void (*LoadRegBFromRegH)(GameBoy*);                   // 0x44 LD B, H
+extern void (*LoadRegDFromRegH)(GameBoy*);                   // 0x54 LD D, H
+extern void (*LoadRegHFromRegH)(GameBoy*);                   // 0x64 LD H, H
+extern void (*LoadIndirectRegHLFromRegH)(GameBoy*);          // 0x74 LD (HL),H
+extern void (*AddRegARegH)(GameBoy*);                        // 0x84 ADD A,H
+extern void (*SubRegH)(GameBoy*);                            // 0x94 SUB H 
+extern void (*AndRegH)(GameBoy*);                            // 0xA4 AND H
+extern void (*OrRegH)(GameBoy*);                             // 0xB4 OR H
+extern void (*CallAddress16IfNotZero)(GameBoy*);             // 0xC4 CALL NZ,a16
+extern void (*CallAddress16IfNotCarry)(GameBoy*);            // 0xD4 CALL NC,a16
+extern void (*NoInstructionE4)(GameBoy*);                    // 0xE4 NUL
+extern void (*NoInstructionF4)(GameBoy*);                    // 0xF4 NUL
+                                                             
+// Nibble 5                                                  
+extern void (*DecrementRegB)(GameBoy*);                      // 0x05 DEC B
+extern void (*DecrementRegD)(GameBoy*);                      // 0x15 DEC D
+extern void (*DecrementRegH)(GameBoy*);                      // 0x25 DEC H
+extern void (*DecrementIndirectRegHL)(GameBoy*);             // 0x35 DEC (HL)
+extern void (*LoadRegBFromRegL)(GameBoy*);                   // 0x45 LD B, L
+extern void (*LoadRegDFromRegL)(GameBoy*);                   // 0x55 LD D, L
+extern void (*LoadRegHFromRegL)(GameBoy*);                   // 0x65 LD H, L
+extern void (*LoadIndirectRegHFromRegL)(GameBoy*);           // 0x75 LD (HL),L
+extern void (*AddRegAFromRegL)(GameBoy*);                    // 0x85 ADD A,L
+extern void (*SubRegL)(GameBoy*);                            // 0x95 SUB L
+extern void (*AndRegL)(GameBoy*);                            // 0xA5 AND L
+extern void (*OrRegL)(GameBoy*);                             // 0xB5 OR L
+extern void (*PushRegBC)(GameBoy*);                          // 0xC5 PUSH BC
+extern void (*PushRegDE)(GameBoy*);                          // 0xD5 PUSH DE
+extern void (*PushRegHL)(GameBoy*);                          // 0xE5 PUSH HL
+extern void (*PushRegAF)(GameBoy*);                          // 0xF5 PUSH AF
+                                                             
+// Nibble 6                                                  
+extern void (*LoadRegBImmediate8)(GameBoy*);                 // 0x06
+extern void (*LoadRegDImmediate8)(GameBoy*);                 // 0x16
+extern void (*LoadRegHImmediate8)(GameBoy*);                 // 0x26
+extern void (*LoadIndirectRegHLImmediate8)(GameBoy*);        // 0x36
+extern void (*LoadRegB)(GameBoy*);                           // 0x46
+extern void (*LoadRegD)(GameBoy*);                           // 0x56
+extern void (*LoadRegH)(GameBoy*);                           // 0x66
+extern void (*Halt)(GameBoy*);                               // 0x76
+extern void (*AddRegAFromIndirectRegHL)(GameBoy*);           // 0x86
+extern void (*SubIndirectRegHL)(GameBoy*);                   // 0x96
+extern void (*AndIndirectRegHL)(GameBoy*);                   // 0xA6
+extern void (*OrIndirectRegHL)(GameBoy*);                    // 0xB6
+extern void (*AddRegAFromImmediate8)(GameBoy*);              // 0xC6
+extern void (*SubImmediate8)(GameBoy*);                      // 0xD6
+extern void (*AndImmediate8)(GameBoy*);                      // 0xE6
+extern void (*OrImmediate8)(GameBoy*);                       // 0xF6
+                                                             
+// Nibble 7                                                  
+extern void (*RotateLeftCarryRegA)(GameBoy*);                // 0x07
+extern void (*RotateLeftRegA)(GameBoy*);                     // 0x17
+extern void (*DecimalAdjectAccumulator)(GameBoy*);           // 0x27
+extern void (*SetCarryFlag)(GameBoy*);                       // 0x37
+extern void (*LoadRegBFromRegA)(GameBoy*);                   // 0x57
+extern void (*LoadRegDFromRegA)(GameBoy*);                   // 0x67
+extern void (*LoadRegHFromRegA)(GameBoy*);                   // 0x77
+extern void (*LoadIndirectHLFromRegA)(GameBoy*);             // 0x47
+extern void (*AddRegAFromRegA)(GameBoy*);                    // 0x87
+extern void (*SubRegA)(GameBoy*);                            // 0x97
+extern void (*AndRegA)(GameBoy*);                            // 0xA7
+extern void (*OrRegA)(GameBoy*);                             // 0xB7
+extern void (*RestartAtAddress00)(GameBoy*);                 // 0xC7 RST 00H
+extern void (*RestartAtAddress10)(GameBoy*);                 // 0xD7 RST 10H
+extern void (*RestartAtAddress20)(GameBoy*);                 // 0xE7 RST 20H
+extern void (*RestartAtAddress30)(GameBoy*);                 // 0xF7 RST 30H
+                                                             
+// Nibble 8                                                  
+extern void (*LoadIndirect16FromStackPointer)(GameBoy*);     // 0x08
+extern void (*JumpRelativeSigned8)(GameBoy*);                // 0x18
+extern void (*JumpRelativeSigned8IfZero)(GameBoy*);          // 0x28
+extern void (*JumpRelativeSigned8IfCarry)(GameBoy*);         // 0x38
+extern void (*LoadRegCFromRegB)(GameBoy*);                   // 0x48
+extern void (*LoadRegEFromRegB)(GameBoy*);                   // 0x58
+extern void (*LoadRegLFromRegB)(GameBoy*);                   // 0x68
+extern void (*LoadRegAFromRegB)(GameBoy*);                   // 0x78
+extern void (*AddWithCarryRegAFromRegB)(GameBoy*);           // 0x88
+extern void (*SubWithCarryRegAFromRegB)(GameBoy*);           // 0x98
+extern void (*XorRegB)(GameBoy*);                            // 0xA8
+extern void (*CompareRegB)(GameBoy*);                        // 0xB8
+extern void (*ReturnIfZero)(GameBoy*);                       // 0xC8
+extern void (*ReturnIfCarry)(GameBoy*);                      // 0xD8
+extern void (*AddStackPointerFromSigned8)(GameBoy*);         // 0xE8
+extern void (*LoadRegHLFromSigned8PlusRegSP)(GameBoy*);      // 0xF8
+                                                             
+// Nibble 9                                                  
+extern void (*AddRegHLFromRegBC)(GameBoy*);                  // 0x09
+extern void (*AddRegHLFromRegDE)(GameBoy*);                  // 0x19
+extern void (*AddRegHLFromRegHL)(GameBoy*);                  // 0x29
+extern void (*AddRegHLFromRegSP)(GameBoy*);                  // 0x39
+extern void (*LoadRegCFromRegC)(GameBoy*);                   // 0x49
+extern void (*LoadRegEFromRegC)(GameBoy*);                   // 0x59
+extern void (*LoadRegLFromRegC)(GameBoy*);                   // 0x69
+extern void (*LoadRegAFromRegC)(GameBoy*);                   // 0x79
+extern void (*AddWithCarryRegAFromRegC)(GameBoy*);           // 0x89
+extern void (*SubWithCarryRegAFromRegC)(GameBoy*);           // 0x99
+extern void (*XorRegC)(GameBoy*);                            // 0xA9
+extern void (*CompareRegC)(GameBoy*);                        // 0xB9
+extern void (*Return)(GameBoy*);                             // 0xC9
+extern void (*ReturnIndex)(GameBoy*);                        // 0xD9
+extern void (*JumpToIndirectRegHL)(GameBoy*);                // 0xE9
+extern void (*LoadStackPointerFromRegHL)(GameBoy*);          // 0xF9
+
+// Nibble A
+extern void (*LoadRegAFromIndirectRegBC)(GameBoy*);          // 0x0A
+extern void (*LoadRegAFromIndirectRegDE)(GameBoy*);          // 0x1A
+extern void (*LoadRegAFromIncrementIndirectRegHL)(GameBoy*); // 0x2A
+extern void (*LoadRegAFromDecrementIndirectRegHL)(GameBoy*); // 0x3A
+extern void (*LoadRegCFromRegD)(GameBoy*);                   // 0x4A
+extern void (*LoadRegEFromRegD)(GameBoy*);                   // 0x5A
+extern void (*LoadRegLFromRegD)(GameBoy*);                   // 0x6A
+extern void (*LoadRegAFromRegD)(GameBoy*);                   // 0x7A
+extern void (*AddWithCarryRegAFromRegD)(GameBoy*);           // 0x8A
+extern void (*SubWithCarryRegAFromRegD)(GameBoy*);           // 0x9A
+extern void (*XorRegD)(GameBoy*);                            // 0xAA
+extern void (*CompareRegD)(GameBoy*);                        // 0xBA
+extern void (*JumpIfZeroAddress16)(GameBoy*);                // 0xCA
+extern void (*JumpIfCarryAddress16)(GameBoy*);               // 0xDA
+extern void (*LoadAddress16FromRegA)(GameBoy*);              // 0xEA
+extern void (*LoadRegAFromAddress16)(GameBoy*);              // 0xFA
+
+// Nibble B
+extern void (*DecrementRegBC)(GameBoy*);                     // 0x0B
+extern void (*DecrementRegDE)(GameBoy*);                     // 0x1B
+extern void (*DecrementRegHL)(GameBoy*);                     // 0x2B
+extern void (*DecrementStackPointer)(GameBoy*);              // 0x3B
+extern void (*LoadRegCFromE)(GameBoy*);                      // 0x4B
+extern void (*LoadRegEFromE)(GameBoy*);                      // 0x5B
+extern void (*LoadRegLFromE)(GameBoy*);                      // 0x6B
+extern void (*LoadRegAFromE)(GameBoy*);                      // 0x7B
+extern void (*AddWithCarryRegAFromRegE)(GameBoy*);           // 0x8B
+extern void (*SubWithCarryRegAFromRegE)(GameBoy*);           // 0x9B
+extern void (*XorRegE)(GameBoy*);                            // 0xAB
+extern void (*CompareRegE)(GameBoy*);                        // 0xBB
+extern void (*Prefix)(GameBoy*);                             // 0xCB
+extern void (*NoInstructionDB)(GameBoy*);                    // 0xDB
+extern void (*NoInstructionEB)(GameBoy*);                    // 0xEB
+extern void (*EnableInterrupts)(GameBoy*);                   // 0xFB
+
+// Nibble C
+extern void (*IncrementC)(GameBoy*);                         // 0x0C
+extern void (*IncrementE)(GameBoy*);                         // 0x1C
+extern void (*IncrementL)(GameBoy*);                         // 0x2C
+extern void (*IncrementA)(GameBoy*);                         // 0x3C
+extern void (*LoadRegCFromRegH)(GameBoy*);                   // 0x4C
+extern void (*LoadRegEFromRegH)(GameBoy*);                   // 0x5C
+extern void (*LoadRegLFromRegH)(GameBoy*);                   // 0x6C
+extern void (*LoadRegAFromRegH)(GameBoy*);                   // 0x7C
+extern void (*AddWithCarryRegAFromRegH)(GameBoy*);           // 0x8C
+extern void (*SubWithCarryRegAfromRegH)(GameBoy*);           // 0x9C
+extern void (*XorRegH)(GameBoy*);                            // 0xAC
+extern void (*CompareH)(GameBoy*);                           // 0xBC
+extern void (*CallIfZeroAddress16)(GameBoy*);                // 0xCC
+extern void (*CallIfCarryAddress16)(GameBoy*);               // 0xDC
+extern void (*NoInstructionEC)(GameBoy*);                    // 0xEC
+extern void (*NoInstructionFC)(GameBoy*);                    // 0xFC
+
+// Nibble D
+//extern void (*)(GameBoy*);  // 0x0D
+//extern void (*)(GameBoy*);  // 0x1D
+//extern void (*)(GameBoy*);  // 0x2D
+//extern void (*)(GameBoy*);  // 0x3D
+//extern void (*)(GameBoy*);  // 0x4D
+//extern void (*)(GameBoy*);  // 0x5D
+//extern void (*)(GameBoy*);  // 0x6D
+//extern void (*)(GameBoy*);  // 0x7D
+//extern void (*)(GameBoy*);  // 0x8D
+//extern void (*)(GameBoy*);  // 0x9D
+//extern void (*)(GameBoy*);  // 0xAD
+//extern void (*)(GameBoy*);  // 0xBD
+//extern void (*)(GameBoy*);  // 0xCD
+//extern void (*)(GameBoy*);  // 0xDD
+//extern void (*)(GameBoy*);  // 0xED
+//extern void (*)(GameBoy*);  // 0xFD
+//
+//// Nibble E
+//extern void (*)(GameBoy*);  // 0x0E
+//extern void (*)(GameBoy*);  // 0x1E
+//extern void (*)(GameBoy*);  // 0x2E
+//extern void (*)(GameBoy*);  // 0x3E
+//extern void (*)(GameBoy*);  // 0x4E
+//extern void (*)(GameBoy*);  // 0x5E
+//extern void (*)(GameBoy*);  // 0x6E
+//extern void (*)(GameBoy*);  // 0x7E
+//extern void (*)(GameBoy*);  // 0x8E
+//extern void (*)(GameBoy*);  // 0x9E
+//extern void (*)(GameBoy*);  // 0xAE
+//extern void (*)(GameBoy*);  // 0xBE
+//extern void (*)(GameBoy*);  // 0xCE
+//extern void (*)(GameBoy*);  // 0xDE
+//extern void (*)(GameBoy*);  // 0xEE
+//extern void (*)(GameBoy*);  // 0xFE
+//
+//// Nibble F
+//extern void (*)(GameBoy*);  // 0x0F
+//extern void (*)(GameBoy*);  // 0x1F
+//extern void (*)(GameBoy*);  // 0x2F
+//extern void (*)(GameBoy*);  // 0x3F
+//extern void (*)(GameBoy*);  // 0x4F
+//extern void (*)(GameBoy*);  // 0x5F
+//extern void (*)(GameBoy*);  // 0x6F
+//extern void (*)(GameBoy*);  // 0x7F
+//extern void (*)(GameBoy*);  // 0x8F
+//extern void (*)(GameBoy*);  // 0x9F
+//extern void (*)(GameBoy*);  // 0xAF
+//extern void (*)(GameBoy*);  // 0xBF
+//extern void (*)(GameBoy*);  // 0xCF
+//extern void (*)(GameBoy*);  // 0xDF
+//extern void (*)(GameBoy*);  // 0xEF
+//extern void (*)(GameBoy*);  // 0xFF
+
+}  // namespace retro::gb::instructionset
 
