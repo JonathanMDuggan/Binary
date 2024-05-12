@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
   app.version = 0x00000001;
   app.renderer = k_Vulkan;
 
-  // When the user starts the program SDL, Renederer, and ImGui begin 
+  // When the user starts the program SDL, Renderer, and ImGui begin 
   // its initialization phase. If this phase fails the program crashes
   // and returns an error.
   retro::SDL sdl(app);
@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
   texture.LoadFromPath("resources/textures/sunshine.png");
   while (running) {
     bool window_is_minimized = true;
-    // After SDL, Renederer, and ImGui have finshed the initialization phase,
+    // After SDL, Renderer, and ImGui have finished the initialization phase,
     // The program is stuck in this main loop until the user closes the program
 
     SDL_Event event;
@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
       }
     }
 
-    // When we minimize the window this casues vulkan to send validation
+    // When we minimize the window this causes Vulkan to send validation
     // errors because the window size is less than 1. To fix this, we do not
     // draw new frames until the user opens the application.
     if (!(SDL_GetWindowFlags(sdl.window_) & SDL_WINDOW_MINIMIZED)) {

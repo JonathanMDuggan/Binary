@@ -6,14 +6,6 @@
 #include <iostream>
 #include <optional>
 #include <vector>
-#include <map>
-#include <optional>
-#include <set>
-#include <algorithm>
-#include <limits>
-#include <fstream>
-#include <SDL.h>
-#include <SDL_image.h>
 #include <SDL_vulkan.h>
 
 #include <vulkan/vk_enum_string_helper.h>

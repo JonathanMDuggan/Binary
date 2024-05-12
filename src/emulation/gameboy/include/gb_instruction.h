@@ -1,3 +1,14 @@
+// Purpose: This header file contains the following 
+//  * Instruction Set Opcodes Enums
+//  * Memory Map
+//  * IO Ranges
+//  * VRAM memory map
+//  * Hardware Registers
+//  * CPU Flag Mask
+//  * Nintendo Logo
+//  * New/Old licensee code
+//  * Cartridge Type Flags
+//  * ROM size Flags
 #include "gb_cpu.h"
 namespace retro::gb {
 class GameBoy {
@@ -38,7 +49,7 @@ enum class Instruction {
   AND_B       = 0xA0, AND_C     = 0xA1, ADD_D     = 0xA2, ADD_E     = 0xA3,
   OR_B        = 0xB0, OR_C      = 0xB1, OR_D      = 0xB2, OR_E      = 0xB3,
   RET_NZ      = 0xC0, POP_BC    = 0xC1, JP_NZ_A16 = 0xC2, JP_A16    = 0xC3,
-  NET_NC      = 0xD0, POP_DE    = 0xD1, JP_NC_A16 = 0xD2, NUL_D3    = 0xD3,
+  RET_NC      = 0xD0, POP_DE    = 0xD1, JP_NC_A16 = 0xD2, NUL_D3    = 0xD3,
   LDH__A8_A   = 0xE0, POP_HL    = 0xE1, LD__C_A   = 0xE2, NUL_E3    = 0xE3,
   LDH_A__A8   = 0xF0, POP_AF    = 0xF1, LC_A__C   = 0xF2, DI        = 0xF3,
 //Nibble 4            Nibble 5          Nibble 6          Nibble 7
@@ -164,16 +175,64 @@ enum class Instruction {
   SET_5_H     = 0xEC, SET_5_L   = 0xED, SET_5__HL = 0xEE, SET_5_A   = 0xEF,
   SET_7_H     = 0xFC, SET_7_L   = 0xFD, SET_7__HL = 0xFE, SET_7_A   = 0xFF
 };
+// Thank God for gbdev.io, documentation can be found here:
+// https://gbdev.io/pandocs/Memory_Map.html
+enum class MemoryMap{
+  ROM_BANK_00_START    = 0x0000, ROM_BANK_00_END    = 0x3FFF,
+  ROM_BANK_01_NN_START = 0x4000, ROM_BANK_01_NN_END = 0x7FFF,
+  VIDEO_RAM_START      = 0x8000, VIDEO_RAM_END      = 0x9FFF,
+  EXTERNAL_RAM_START   = 0xA000, EXTERNAL_RAM_END   = 0xBFFF,
+  WORK_RAM_START       = 0xC000, WORK_RAM_END       = 0xCFFF,
+  ECHO_RAM_START       = 0xE000, ECHO_RAM_END       = 0xFDFF,
+  OAM_START            = 0xFE00, OAM_END            = 0xFE9F,
+  NOT_USABLE_START     = 0xFEA0, NOT_USABLE_END     = 0xFEFF,
+  IO_REGISTERS_START   = 0xFF00, IO_REGISTERS_END   = 0xFF7F,
+  HIGH_RAM_START       = 0xFF80, HIGH_RAM_END       = 0xFFFE,
+  INTERRUPT_ENABLE     = 0xFFFF
+};
+// Thank God for gbdev.io, documentation can be found here:
+// https://gbdev.io/pandocs/Memory_Map.html
+enum class IORanges {
+  JOYPAD_INPUT          = 0xFF00,
+  SERIAL_TRANSFER_START = 0xFF01, SERIAL_TRANSFER_END = 0xFF02,
+  TIMER_DIVIDER_START   = 0xFF04, TIMER_DIVIDER_END   = 0xFF07,
+  AUDIO_START           = 0xFF10, AUDIO_END           = 0xFF26,
+  WAVE_PATTERN_START    = 0xFF30, WAVE_PATTERN_END    = 0xFF3F,
+  VRAM_BANK_SELECT      = 0xFF4F,
+  DISABLE_BOOT_ROM      = 0xFF50, 
+  VRAM_DMA_START        = 0xFF51, VRAM_DMA_END        = 0xFF55,
+  BG_OBJ_PALETTES_START = 0xFF68, BG_OBJ_PALETTES_END = 0xFF6B,
+  WRAM_BANK_SELECT      = 0xFF70
+};
+// Thank God for gbdev.io, documentation can be found here:
+// https://gbdev.io/pandocs/Hardware_Reg_List.html
+enum class HardwareRegisersName {
+  P1_JOYP = 0xFF00, // JoyPad
+  SB      = 0xFF01, // Serial Transfer Data
+  SC      = 0xFF02, // Serial Transfer Control
+  DIV     = 0xFF04, // Divider Register
+  TIMA    = 0xFF05, // Timer Counter
+  TMA     = 0xFF06, // Timer Modulo
+  TAC     = 0xFF06, // Timer Control
+  IF      = 0xFF0F, // Interrupt Flag
+  NR10    = 0xFF10, // Sound Channel 1 Sweep
+  NR11    = 0xFF11, // Sound Channel 1 length timer & duty cycle
+  NR12    = 0xFF12, // Sound Channel 1 volume & envelope
+  NR13    = 0xFF13, // Sound Channel 1 period low
+  NR14    = 0xFF14, // Sound Channel 1 period high & control
+  NR21    = 0xFF16, // Sound Channel 2 length timer & duty cycle
+};
+
 enum CpuFlags {
-  Z = 0b1000000,
-  N = 0b0100000,
-  H = 0b0010000,
-  C = 0b0001000
+  Z = 0b10000000,
+  N = 0b01000000,
+  H = 0b00100000,
+  C = 0b00010000
 };
 typedef struct Opcode {
   Instruction hexadecimal;
   std::string opcode;
-  std::string name;
+  std::string mnemonic;
   std::function<void()> Execute(Device* gb); 
 
 }Opcode;
@@ -182,7 +241,7 @@ extern const std::array<Opcode, 512> k_OpcodeLookupTable;
 
 namespace retro::gb::instructionset{
 ///Function implementation for the GameBoy CPU instruction set 
-// 
+// Reference: https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html
 ///Naming conventions
 // * Reg:         Register
 // * Immediate8:  d8 or immediate 8 bit data
@@ -208,7 +267,7 @@ extern void (*SubRegB)(GameBoy*);                            // 0x90 SUB B
 extern void (*AndRegB)(GameBoy*);                            // 0xA0 AND B
 extern void (*OrRegB)(GameBoy*);                             // 0xB0 OR B
 extern void (*ReturnIfNotZero)(GameBoy*);                    // 0xC0 RET NZ
-extern void (*ReturnIfNotCarry)(GameBoy*);                   // 0xD0 NET NC
+extern void (*ReturnIfNotCarry)(GameBoy*);                   // 0xD0 RET NC
 extern void (*LoadHighAddressIntoRegA)(GameBoy*);            // 0xE0 LDH (A8),A
 extern void (*LoadRegAIntoHighAddress)(GameBoy*);            // 0xF0 LDH A,(A8)
 
@@ -283,7 +342,7 @@ extern void (*CallAddress16IfNotZero)(GameBoy*);             // 0xC4 CALL NZ,a16
 extern void (*CallAddress16IfNotCarry)(GameBoy*);            // 0xD4 CALL NC,a16
 extern void (*NoInstructionE4)(GameBoy*);                    // 0xE4 NUL
 extern void (*NoInstructionF4)(GameBoy*);                    // 0xF4 NUL
-                                                             
+                                           
 // Nibble 5                                                  
 extern void (*DecrementRegB)(GameBoy*);                      // 0x05 DEC B
 extern void (*DecrementRegD)(GameBoy*);                      // 0x15 DEC D
@@ -301,7 +360,7 @@ extern void (*PushRegBC)(GameBoy*);                          // 0xC5 PUSH BC
 extern void (*PushRegDE)(GameBoy*);                          // 0xD5 PUSH DE
 extern void (*PushRegHL)(GameBoy*);                          // 0xE5 PUSH HL
 extern void (*PushRegAF)(GameBoy*);                          // 0xF5 PUSH AF
-                                                             
+
 // Nibble 6                                                  
 extern void (*LoadRegBImmediate8)(GameBoy*);                 // 0x06 LD B,d8
 extern void (*LoadRegDImmediate8)(GameBoy*);                 // 0x16 LD D,d8
@@ -482,4 +541,3 @@ extern void (*RestartAtAddress18)(GameBoy*);                 // 0xDF RST 18H
 extern void (*RestartAtAddress28)(GameBoy*);                 // 0xEF RST 28H
 extern void (*RestartAtAddress38)(GameBoy*);                 // 0xFF RST 38H
 }// namespace retro::gb::instructionset
-
