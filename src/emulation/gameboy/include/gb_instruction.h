@@ -176,7 +176,7 @@ enum class Instruction {
   SET_7_H     = 0xFC, SET_7_L   = 0xFD, SET_7__HL = 0xFE, SET_7_A   = 0xFF
 };
 // Thank God for gbdev.io, documentation can be found here:
-// https://gbdev.io/pandocs/Memory_Map.html
+// Reference: https://gbdev.io/pandocs/Memory_Map.html
 enum class MemoryMap{
   ROM_BANK_00_START    = 0x0000, ROM_BANK_00_END    = 0x3FFF,
   ROM_BANK_01_NN_START = 0x4000, ROM_BANK_01_NN_END = 0x7FFF,
@@ -191,7 +191,7 @@ enum class MemoryMap{
   INTERRUPT_ENABLE     = 0xFFFF
 };
 // Thank God for gbdev.io, documentation can be found here:
-// https://gbdev.io/pandocs/Memory_Map.html
+// Reference: https://gbdev.io/pandocs/Memory_Map.html
 enum class IORanges {
   JOYPAD_INPUT          = 0xFF00,
   SERIAL_TRANSFER_START = 0xFF01, SERIAL_TRANSFER_END = 0xFF02,
@@ -205,22 +205,68 @@ enum class IORanges {
   WRAM_BANK_SELECT      = 0xFF70
 };
 // Thank God for gbdev.io, documentation can be found here:
-// https://gbdev.io/pandocs/Hardware_Reg_List.html
-enum class HardwareRegisersName {
-  P1_JOYP = 0xFF00, // JoyPad
-  SB      = 0xFF01, // Serial Transfer Data
-  SC      = 0xFF02, // Serial Transfer Control
-  DIV     = 0xFF04, // Divider Register
-  TIMA    = 0xFF05, // Timer Counter
-  TMA     = 0xFF06, // Timer Modulo
-  TAC     = 0xFF06, // Timer Control
-  IF      = 0xFF0F, // Interrupt Flag
-  NR10    = 0xFF10, // Sound Channel 1 Sweep
-  NR11    = 0xFF11, // Sound Channel 1 length timer & duty cycle
-  NR12    = 0xFF12, // Sound Channel 1 volume & envelope
-  NR13    = 0xFF13, // Sound Channel 1 period low
-  NR14    = 0xFF14, // Sound Channel 1 period high & control
-  NR21    = 0xFF16, // Sound Channel 2 length timer & duty cycle
+// Reference: https://gbdev.io/pandocs/Hardware_Reg_List.html
+enum class HardwareRegistersName {
+  P1_JOYP   = 0xFF00, // JoyPad
+  SB        = 0xFF01, // Serial Transfer Data
+  SC        = 0xFF02, // Serial Transfer Control
+  DIV       = 0xFF04, // Divider Register
+  TIMA      = 0xFF05, // Timer Counter
+  TMA       = 0xFF06, // Timer Modulo
+  TAC       = 0xFF07, // Timer Control
+  IF        = 0xFF0F, // Interrupt Flag
+  NR10      = 0xFF10, // Sound Channel 1 Sweep
+  NR11      = 0xFF11, // Sound Channel 1 length timer & duty cycle
+  NR12      = 0xFF12, // Sound Channel 1 volume & envelope
+  NR13      = 0xFF13, // Sound Channel 1 period low
+  NR14      = 0xFF14, // Sound Channel 1 period high & control
+  NR21      = 0xFF16, // Sound Channel 2 length timer & duty cycle
+  NR22      = 0xFF17, // Sound Channel 2 volume & envelope
+  NR23      = 0xFF18, // Sound Channel 2 period low
+  NR24      = 0xFF19, // Sound Channel 2 period high & control
+  NR30      = 0xFF1A, // Sound Channel 3 DAC enable
+  NR31      = 0xFF1B, // Sound Channel 3 length timer
+  NR32      = 0xFF1C, // Sound Channel 3 output level
+  NR33      = 0xFF1D, // Sound Channel 3 period low
+  NR34      = 0xFF1E, // Sound Channel 3 period high & control
+  NR41      = 0xFF20, // Sound Channel 4 length timer
+  NR42      = 0xFF21, // Sound Channel 4 volume & envelope
+  NR43      = 0xFF22, // Sound Channel 4 frequency & randomness
+  NR44      = 0xFF23, // Sound Channel 4 control
+  NR50      = 0xFF24, // Master volume & VIN panning
+  NR51      = 0xFF25, // Sound panning
+  NR52      = 0xFF26, // Sound on/off
+  WaveRAM   = 0xFF30, // Wave RAM
+  LCDC      = 0xFF40, // LCD control
+  STAT      = 0xFF41, // LCD status
+  SCY       = 0xFF42, // Viewport Y position
+  SCX       = 0xFF43, // Viewport X position
+  LY        = 0xFF44, // LCD Y coordinate
+  LYC       = 0xFF45, // LY compare
+  DMA       = 0xFF46, // OAM DMA source address & start
+  BGP       = 0xFF47, // BG palette data
+  OBP0      = 0xFF48, // OBJ palette 0 data
+  OBP1      = 0xFF49, // OBJ palette 1 data
+  WY        = 0xFF4A, // Window Y position
+  WX        = 0xFF4B, // Window X position plus 7
+  KEY1      = 0xFF4D, // Prepare speed switch
+  VBK       = 0xFF4F, // VRAM bank
+  HDMA1     = 0xFF51, // VRAM DMA source high
+  HDMA2     = 0xFF52, // VRAM DMA source low
+  HDMA3     = 0xFF53, // VRAM DMA destination high
+  HDMA4     = 0xFF54, // VRAM DMA destination low
+  HDMA5     = 0xFF55, // VRAM DMA length/mode/start
+  RP        = 0xFF56, // Infrared communications port
+  BCPS_BGPI = 0xFF68, // Background color palette specification / Background
+                      // palette index
+  BCPD_BGPD = 0xFF69, // Background color palette data / Background palette data
+  OCPS_OBPI = 0xFF6A, // OBJ color palette specification / OBJ palette index
+  OCPD_OBPD = 0xFF6B, // OBJ color palette data / OBJ palette data
+  OPRI      = 0xFF6C, // Object priority mode
+  SVBK      = 0xFF70, // WRAM bank
+  PCM12     = 0xFF76, // Audio digital outputs 1 & 2
+  PCM34     = 0xFF77, // Audio digital outputs 3 & 4
+  IE        = 0xFFFF  // Interrupt enable
 };
 
 enum CpuFlags {
@@ -236,6 +282,88 @@ typedef struct Opcode {
   std::function<void()> Execute(Device* gb); 
 
 }Opcode;
+// I don't understand how Kodansha uses code DK? how does that make sense,
+// Read the reference and you'll see how dumb this 
+// Reference: https://gbdev.io/pandocs/The_Cartridge_Header.html
+enum class PublisherCode {
+  NONE                                   = 0,
+  NINTENDO_RESEARCH_AND_DEVELOPMENT_1    = 1,
+  CAPCOM                                 = 8,
+  EA                                     = 13,
+  HUDSON_SOFT                            = 18,
+  B_AI                                   = 19,
+  KSS                                    = 20,
+  PLANNING_OFFICE_WADA                   = 22,
+  PCM_COMPLETE                           = 24,
+  SAN_X                                  = 25,
+  KEMCO                                  = 28,
+  SETA_CORPORATION                       = 29,
+  VIACOM                                 = 30,
+  NINTENDO                               = 31,
+  BANDAI                                 = 32,
+  OCEAN_SOFTWARE_ACCLAIM_ENTERTAINMENT   = 33,
+  KONAMI                                 = 34,
+  HECTOR_SOFT                            = 35,
+  TAITO                                  = 37,
+  HUDSON_SOFT_2                          = 38,
+  BANPRESTO                              = 39,
+  UBI_SOFT                               = 41,
+  ATLUS                                  = 42,
+  MALIBU_INTERACTIVE                     = 44,
+  ANGEL                                  = 46,
+  BULLET_PROOF_SOFTWARE                  = 47,
+  IREM                                   = 49,
+  ABSOLUTE                               = 50,
+  ACCLAIM_ENTERTAINMENT_2                = 51,
+  ACTIVISION                             = 52,
+  SAMMY_USA_CORPORATION                  = 53,
+  KONAMI_2                               = 54,
+  HI_TECH_EXPRESSIONS                    = 55,
+  LJN                                    = 56,
+  MATCHBOX                               = 57,
+  MATTEL                                 = 58,
+  MILTON_BRADLEY_COMPANY                 = 59,
+  TITUS_INTERACTIVE                      = 60,
+  VIRGIN_GAMES_LTD                       = 61,
+  LUCASFILM_GAMES                        = 64,
+  OCEAN_SOFTWARE_2                       = 67,
+  EA_2                                   = 69,
+  INFOGRAMES                             = 70,
+  INTERPLAY_ENTERTAINMENT                = 71,
+  BRODERBUND                             = 72,
+  SCULPTURED_SOFTWARE                    = 73,
+  THE_SALES_CURVE_LIMITED                = 75,
+  THQ                                    = 78,
+  ACCOLADE                               = 79,
+  MISAWA_ENTERTAINMENT                   = 80,
+  LOZC                                   = 83,
+  TOKUMA_SHOTEN                          = 86,
+  TSUKUDA_ORIGINAL                       = 87,
+  CHUNSOFT_CO                            = 91,
+  VIDEO_SYSTEM                           = 92,
+  OCEAN_SOFTWARE_ACCLAIM_ENTERTAINMENT_2 = 93,
+  VARIE                                  = 95,
+  YONEZAWA_S_PAL                         = 96,
+  KANEKO                                 = 97,
+  PACK_IN_VIDEO                          = 99,
+  BOTTOM_UP                              = 0x90,
+  KONAMI_YU_GI_OH                        = 0xA4,
+  MTO                                    = 0xBL,
+  KODANSHA                               = 0xD0
+};
+enum class AddressingModes{
+  NONE,
+  ADDRESS_8,   ADDRESS_16,
+  DIRECT,      REGISTER_DIRECT,
+  INDEXED,
+  IMMEDIATE_8, IMMEDIATE_16,
+  INDIRECT,    REGISTER_INDIRECT,
+  RELATIVE,
+};
+
+enum class BitEnum : uint8_t {
+  ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN
+};
 extern const std::array<Opcode, 512> k_OpcodeLookupTable;
 }  // namespace retro::gb
 
@@ -320,7 +448,7 @@ extern void (*AddRegAFromRegE)(GameBoy*);                    // 0x83 ADD A,E
 extern void (*SubRegE)(GameBoy*);                            // 0x93 SUB E
 extern void (*AndRegE)(GameBoy*);                            // 0xA3 AND E
 extern void (*OrRegE)(GameBoy*);                             // 0xB3 OR E
-extern void (*JumpToAddress16)(GameBoy*);                    // 0xC3 JP a16
+extern void (*JumpToAddress16)(GameBoy*);                    //   JP a16
 extern void (*NoInstructionD3)(GameBoy*);                    // 0xD3 NUL
 extern void (*NoInstructionE3)(GameBoy*);                    // 0xE3 NUL
 extern void (*DisableInterrupts)(GameBoy*);                  // 0xF3 DI
@@ -540,4 +668,279 @@ extern void (*RestartAtAddress08)(GameBoy*);                 // 0xCF RST 08H
 extern void (*RestartAtAddress18)(GameBoy*);                 // 0xDF RST 18H
 extern void (*RestartAtAddress28)(GameBoy*);                 // 0xEF RST 28H
 extern void (*RestartAtAddress38)(GameBoy*);                 // 0xFF RST 38H
+// PREFIX CB 
+// Nibble 0
+extern void (*RotateLeftCarryRegA)(GameBoy*);               // 0xCB00 RLC B
+extern void (*RotateLeftRegA)(GameBoy*);                    // 0xCB10 RL B
+extern void (*ShiftLeftRegA)(GameBoy*);                     // 0xCB20 SLA B
+extern void (*SwapRegB)(GameBoy*);                          // 0xCB30 SWAP B
+extern void (*Bit0RegB)(GameBoy*);                          // 0xCB40 BIT 0,B
+extern void (*Bit2RegB)(GameBoy*);                          // 0xCB50 BIT 2,B
+extern void (*Bit4RegB)(GameBoy*);                          // 0xCB60 BIT 4,B
+extern void (*Bit6RegB)(GameBoy*);                          // 0xCB70 BIT 6,B
+extern void (*Reset0RegB)(GameBoy*);                        // 0xCB80 RES 0,B
+extern void (*Reset2RegB)(GameBoy*);                        // 0xCB90 RES 2,B
+extern void (*Reset4RegB)(GameBoy*);                        // 0xCBA0 RES 4,B
+extern void (*Reset6RegB)(GameBoy*);                        // 0xCBB0 RES 6,B
+extern void (*Set0RegB)(GameBoy*);                          // 0xCBC0 SET 0,B
+extern void (*Set2RegB)(GameBoy*);                          // 0xCBD0 SET 2,B
+extern void (*Set4RegB)(GameBoy*);                          // 0xCBE0 SET 4,B
+extern void (*Set6RegB)(GameBoy*);                          // 0xCBF0 SET 6,B
+                                                            
+// Nibble 1                                                 
+extern void (*RotateLeftCarryRegC)(GameBoy*);               // 0xCB01 RLC C
+extern void (*RotateLeftRegC)(GameBoy*);                    // 0xCB11 RL C
+extern void (*ShiftLeftRegC)(GameBoy*);                     // 0xCB21 SLA C
+extern void (*SwapRegC)(GameBoy*);                          // 0xCB31 SWAP C
+extern void (*Bit0RegC)(GameBoy*);                          // 0xCB41 BIT 0,C
+extern void (*Bit2RegC)(GameBoy*);                          // 0xCB51 BIT 2,C
+extern void (*Bit4RegC)(GameBoy*);                          // 0xCB61 BIT 4,C
+extern void (*Bit6RegC)(GameBoy*);                          // 0xCB71 BIT 6,C
+extern void (*Reset0RegC)(GameBoy*);                        // 0xCB81 RES 0,C
+extern void (*Reset2RegC)(GameBoy*);                        // 0xCB91 RES 2,C
+extern void (*Reset4RegC)(GameBoy*);                        // 0xCBA1 RES 4,C
+extern void (*Reset6RegC)(GameBoy*);                        // 0xCBB1 RES 6,C
+extern void (*Set0RegC)(GameBoy*);                          // 0xCBC1 SET 0,C
+extern void (*Set2RegC)(GameBoy*);                          // 0xCBD1 SET 2,C
+extern void (*Set4RegC)(GameBoy*);                          // 0xCBE1 SET 4,C
+extern void (*Set6RegC)(GameBoy*);                          // 0xCBF1 SET 6,C
+                                                            
+// Nibble 2                                                 
+extern void (*RotateLeftCarryRegD)(GameBoy*);               // 0xCB02 RLC D
+extern void (*RotateLeftRegD)(GameBoy*);                    // 0xCB12 RL D
+extern void (*ShiftLeftRegD)(GameBoy*);                     // 0xCB22 SLA D
+extern void (*SwapRegD)(GameBoy*);                          // 0xCB32 SWAP D
+extern void (*Bit0RegD)(GameBoy*);                          // 0xCB42 BIT 0,D
+extern void (*Bit2RegD)(GameBoy*);                          // 0xCB52 BIT 2,D
+extern void (*Bit4RegD)(GameBoy*);                          // 0xCB62 BIT 4,D
+extern void (*Bit6RegD)(GameBoy*);                          // 0xCB72 BIT 6,D
+extern void (*Reset0RegD)(GameBoy*);                        // 0xCB82 RES 0,D
+extern void (*Reset2RegD)(GameBoy*);                        // 0xCB92 RES 2,D
+extern void (*Reset4RegD)(GameBoy*);                        // 0xCBA2 RES 4,D
+extern void (*Reset6RegD)(GameBoy*);                        // 0xCBB2 RES 6,D
+extern void (*Set0RegD)(GameBoy*);                          // 0xCBC2 SET 0,D
+extern void (*Set2RegD)(GameBoy*);                          // 0xCBD2 SET 2,D
+extern void (*Set4RegD)(GameBoy*);                          // 0xCBE2 SET 4,D
+extern void (*Set6RegD)(GameBoy*);                          // 0xCBF2 SET 6,D
+                                                            
+// Nibble 3                                                 
+extern void (*RotateLeftCarryRegE)(GameBoy*);               // 0xCB03 RLC E
+extern void (*RotateLeftRegE)(GameBoy*);                    // 0xCB13 RL E
+extern void (*ShiftLeftRegE)(GameBoy*);                     // 0xCB23 SLA E
+extern void (*SwapRegE)(GameBoy*);                          // 0xCB33 SWAP E
+extern void (*Bit0RegE)(GameBoy*);                          // 0xCB43 BIT 0,E
+extern void (*Bit2RegE)(GameBoy*);                          // 0xCB53 BIT 2,E
+extern void (*Bit4RegE)(GameBoy*);                          // 0xCB63 BIT 4,E
+extern void (*Bit6RegE)(GameBoy*);                          // 0xCB73 BIT 6,E
+extern void (*Reset0RegE)(GameBoy*);                        // 0xCB83 RES 0,E
+extern void (*Reset2RegE)(GameBoy*);                        // 0xCB93 RES 2,E
+extern void (*Reset4RegE)(GameBoy*);                        // 0xCBA3 RES 4,E
+extern void (*Reset6RegE)(GameBoy*);                        // 0xCBB3 RES 6,E
+extern void (*Set0RegE)(GameBoy*);                          // 0xCBC3 SET 0,E
+extern void (*Set2RegE)(GameBoy*);                          // 0xCBD3 SET 2,E
+extern void (*Set4RegE)(GameBoy*);                          // 0xCBE3 SET 4,E
+extern void (*Set6RegE)(GameBoy*);                          // 0xCBF3 SET 6,E
+                                                            
+// Nibble 4                                                 
+extern void (*RotateLeftCarryRegH)(GameBoy*);               // 0xCB04 RLC H
+extern void (*RotateLeftRegH)(GameBoy*);                    // 0xCB14 RL H
+extern void (*ShiftLeftRegH)(GameBoy*);                     // 0xCB24 SLA H
+extern void (*SwapRegH)(GameBoy*);                          // 0xCB34 SWAP H
+extern void (*Bit0RegH)(GameBoy*);                          // 0xCB44 BIT 0,H
+extern void (*Bit2RegH)(GameBoy*);                          // 0xCB54 BIT 2,H
+extern void (*Bit4RegH)(GameBoy*);                          // 0xCB64 BIT 4,H
+extern void (*Bit6RegH)(GameBoy*);                          // 0xCB74 BIT 6,H
+extern void (*Reset0RegH)(GameBoy*);                        // 0xCB84 RES 0,H
+extern void (*Reset2RegH)(GameBoy*);                        // 0xCB94 RES 2,H
+extern void (*Reset4RegH)(GameBoy*);                        // 0xCBA4 RES 4,H
+extern void (*Reset6RegH)(GameBoy*);                        // 0xCBB4 RES 6,H
+extern void (*Set0RegH)(GameBoy*);                          // 0xCBC4 SET 0,H
+extern void (*Set2RegH)(GameBoy*);                          // 0xCBD4 SET 2,H
+extern void (*Set4RegH)(GameBoy*);                          // 0xCBE4 SET 4,H
+extern void (*Set6RegH)(GameBoy*);                          // 0xCBF4 SET 6,H
+
+// Nibble 5
+extern void (*RotateLeftCarryRegL)(GameBoy*);               // 0xCB05 RLC L
+extern void (*RotateLeftRegL)(GameBoy*);                    // 0xCB15 RL L
+extern void (*ShiftLeftRegL)(GameBoy*);                     // 0xCB25 SLA L
+extern void (*SwapRegL)(GameBoy*);                          // 0xCB35 SWAP L
+extern void (*Bit0RegL)(GameBoy*);                          // 0xCB45 BIT 0,L
+extern void (*Bit2RegL)(GameBoy*);                          // 0xCB55 BIT 2,L
+extern void (*Bit4RegL)(GameBoy*);                          // 0xCB65 BIT 4,L
+extern void (*Bit6RegL)(GameBoy*);                          // 0xCB75 BIT 6,L
+extern void (*Reset0RegL)(GameBoy*);                        // 0xCB85 RES 0,L
+extern void (*Reset2RegL)(GameBoy*);                        // 0xCB95 RES 2,L
+extern void (*Reset4RegL)(GameBoy*);                        // 0xCBA5 RES 4,L
+extern void (*Reset6RegL)(GameBoy*);                        // 0xCBB5 RES 6,L
+extern void (*Set0RegL)(GameBoy*);                          // 0xCBC5 SET 0,L
+extern void (*Set2RegL)(GameBoy*);                          // 0xCBD5 SET 2,L
+extern void (*Set4RegL)(GameBoy*);                          // 0xCBE5 SET 4,L
+extern void (*Set6RegL)(GameBoy*);                          // 0xCBF5 SET 6,L
+
+// Nibble 6
+extern void (*RotateLeftCarryRegIndirectHL)(GameBoy*);      // 0xCB06 RLC (HL)
+extern void (*RotateLeftIndirectRegHL)(GameBoy*);           // 0xCB16 RL (HL)
+extern void (*ShiftLeftIndirectRegHL)(GameBoy*);            // 0xCB26 SLA (HL)
+extern void (*SwapIndirectRegHL)(GameBoy*);                 // 0xCB36 SWAP (HL)
+extern void (*Bit0IndirectRegHL)(GameBoy*);                 // 0xCB46 BIT 0,(HL)
+extern void (*Bit2IndirectRegHL)(GameBoy*);                 // 0xCB56 BIT 2,(HL)
+extern void (*Bit4IndirectRegHL)(GameBoy*);                 // 0xCB66 BIT 4,(HL)
+extern void (*Bit6IndirectRegHL)(GameBoy*);                 // 0xCB76 BIT 6,(HL)
+extern void (*Reset0IndirectRegHL)(GameBoy*);               // 0xCB86 RES 0,(HL)
+extern void (*Reset2IndirectRegHL)(GameBoy*);               // 0xCB96 RES 2,(HL)
+extern void (*Reset4IndirectRegHL)(GameBoy*);               // 0xCBA6 RES 4,(HL)
+extern void (*Reset6IndirectRegHL)(GameBoy*);               // 0xCBB6 RES 6,(HL)
+extern void (*Set0IndirectRegHL)(GameBoy*);                 // 0xCBC6 SET 0,(HL)
+extern void (*Set2IndirectRegHL)(GameBoy*);                 // 0xCBD6 SET 2,(HL)
+extern void (*Set4IndirectRegHL)(GameBoy*);                 // 0xCBE6 SET 4,(HL)
+extern void (*Set6IndirectRegHL)(GameBoy*);                 // 0xCBF6 SET 6,(HL)
+
+// Nibble 7
+extern void (*RotateLeftCarryRegA)(GameBoy*);               // 0xCB07 RLC A
+extern void (*RotateLeftRegA)(GameBoy*);                    // 0xCB17 RL A
+extern void (*ShiftLeftRegA)(GameBoy*);                     // 0xCB27 SLA A
+extern void (*SwapRegA)(GameBoy*);                          // 0xCB37 SWAP A
+extern void (*Bit0RegA)(GameBoy*);                          // 0xCB47 BIT 0,A
+extern void (*Bit2RegA)(GameBoy*);                          // 0xCB57 BIT 2,A
+extern void (*Bit4RegA)(GameBoy*);                          // 0xCB67 BIT 4,A
+extern void (*Bit6RegA)(GameBoy*);                          // 0xCB77 BIT 6,A
+extern void (*Reset0RegA)(GameBoy*);                        // 0xCB87 RES 0,A
+extern void (*Reset2RegA)(GameBoy*);                        // 0xCB97 RES 2,A
+extern void (*Reset4RegA)(GameBoy*);                        // 0xCBA7 RES 4,A
+extern void (*Reset6RegA)(GameBoy*);                        // 0xCBB7 RES 6,A
+extern void (*Set0RegA)(GameBoy*);                          // 0xCBC7 SET 0,A
+extern void (*Set2RegA)(GameBoy*);                          // 0xCBD7 SET 2,A
+extern void (*Set4RegA)(GameBoy*);                          // 0xCBE7 SET 4,A
+extern void (*Set6RegA)(GameBoy*);                          // 0xCBF7 SET 6,A
+
+// Nibble 8
+extern void (*RotateRightCarryRegB)(GameBoy*);              // 0xCB08 RRC B
+extern void (*RotateRightRegB)(GameBoy*);                   // 0xCB18 RR B
+extern void (*ShiftRightRegB)(GameBoy*);                    // 0xCB28 SRA B
+extern void (*ShiftRightLogicalRegB)(GameBoy*);             // 0xCB38 SRL B
+extern void (*Bit1RegB)(GameBoy*);                          // 0xCB48 BIT 1,B
+extern void (*Bit3RegB)(GameBoy*);                          // 0xCB58 BIT 3,B
+extern void (*Bit5RegB)(GameBoy*);                          // 0xCB68 BIT 5,B
+extern void (*Bit7RegB)(GameBoy*);                          // 0xCB78 BIT 7,B
+extern void (*Reset1RegB)(GameBoy*);                        // 0xCB88 RES 1,B
+extern void (*Reset3RegB)(GameBoy*);                        // 0xCB98 RES 3,B
+extern void (*Reset5RegB)(GameBoy*);                        // 0xCBAA RES 5,B
+extern void (*Reset7RegB)(GameBoy*);                        // 0xCBB8 RES 7,B
+extern void (*Set1RegB)(GameBoy*);                          // 0xCBC8 SET 1,B
+extern void (*Set3RegB)(GameBoy*);                          // 0xCBD8 SET 3,B
+extern void (*Set5RegB)(GameBoy*);                          // 0xCBE8 SET 5,B
+extern void (*Set7RegB)(GameBoy*);                          // 0xCBF8 SET 7,B
+
+// Nibble 9
+extern void (*RotateRightCarryRegC)(GameBoy*);              // 0xCB09 RRC C
+extern void (*RotateRightRegC)(GameBoy*);                   // 0xCB19 RR C
+extern void (*ShiftRightRegC)(GameBoy*);                    // 0xCB29 SRA C
+extern void (*ShiftRightLogicalRegC)(GameBoy*);             // 0xCB39 SRL C
+extern void (*Bit1RegC)(GameBoy*);                          // 0xCB49 BIT 1,C
+extern void (*Bit3RegC)(GameBoy*);                          // 0xCB59 BIT 3,C
+extern void (*Bit5RegC)(GameBoy*);                          // 0xCB69 BIT 5,C
+extern void (*Bit7RegC)(GameBoy*);                          // 0xCB79 BIT 7,C
+extern void (*Reset1RegC)(GameBoy*);                        // 0xCB89 RES 1,C
+extern void (*Reset3RegC)(GameBoy*);                        // 0xCB99 RES 3,C
+extern void (*Reset5RegC)(GameBoy*);                        // 0xCBA9 RES 5,C
+extern void (*Reset7RegC)(GameBoy*);                        // 0xCBB9 RES 7,C
+extern void (*Set1RegC)(GameBoy*);                          // 0xCBC9 SET 1,C
+extern void (*Set3RegC)(GameBoy*);                          // 0xCBD9 SET 3,C
+extern void (*Set5RegC)(GameBoy*);                          // 0xCBE9 SET 5,C
+extern void (*Set7RegC)(GameBoy*);                          // 0xCBF9 SET 7,C
+
+// Nibble A
+extern void (*RotateRightCarryRegE)(GameBoy*);              // 0xCB0A RRC E
+extern void (*RotateRightRegE)(GameBoy*);                   // 0xCB1A RR E
+extern void (*ShiftRightRegE)(GameBoy*);                    // 0xCB2A SRA E
+extern void (*ShiftRightLogicalRegE)(GameBoy*);             // 0xCB3A SRL C
+extern void (*Bit1RegE)(GameBoy*);                          // 0xCB4A BIT 1,E
+extern void (*Bit3RegE)(GameBoy*);                          // 0xCB5A BIT 3,E
+extern void (*Bit5RegE)(GameBoy*);                          // 0xCB6A BIT 5,E
+extern void (*Bit7RegE)(GameBoy*);                          // 0xCB7A BIT 7,E
+extern void (*Reset1RegE)(GameBoy*);                        // 0xCB8A RES 1,E
+extern void (*Reset3RegE)(GameBoy*);                        // 0xCB9A RES 3,E
+extern void (*Reset5RegE)(GameBoy*);                        // 0xCBAA RES 5,E
+extern void (*Reset7RegE)(GameBoy*);                        // 0xCBBA RES 7,E
+extern void (*Set1RegE)(GameBoy*);                          // 0xCBCA SET 1,E
+extern void (*Set3RegE)(GameBoy*);                          // 0xCBDA SET 3,E
+extern void (*Set5RegE)(GameBoy*);                          // 0xCBEA SET 5,E
+extern void (*Set7RegE)(GameBoy*);                          // 0xCBFA SET 7,E
+
+// Nibble B
+extern void (*RotateRightCarryRegH)(GameBoy*);              // 0xCB0B RRC H
+extern void (*RotateRightRegH)(GameBoy*);                   // 0xCB1B RR H
+extern void (*ShiftRightRegH)(GameBoy*);                    // 0xCB2B SRA H
+extern void (*ShiftRightLogicalRegH)(GameBoy*);             // 0xCB39 SRL H
+extern void (*Bit1RegH)(GameBoy*);                          // 0xCB4B BIT 1,H
+extern void (*Bit3RegH)(GameBoy*);                          // 0xCB5B BIT 3,H
+extern void (*Bit5RegH)(GameBoy*);                          // 0xCB6B BIT 5,H
+extern void (*Bit7RegH)(GameBoy*);                          // 0xCB7B BIT 7,H
+extern void (*Reset1RegH)(GameBoy*);                        // 0xCB8B RES 1,H
+extern void (*Reset3RegH)(GameBoy*);                        // 0xCB9B RES 3,H
+extern void (*Reset5RegH)(GameBoy*);                        // 0xCBAB RES 5,H
+extern void (*Reset7RegH)(GameBoy*);                        // 0xCBBB RES 7,H
+extern void (*Set1RegH)(GameBoy*);                          // 0xCBCB SET 1,H
+extern void (*Set3RegH)(GameBoy*);                          // 0xCBDB SET 3,H
+extern void (*Set5RegH)(GameBoy*);                          // 0xCBEB SET 5,H
+extern void (*Set7RegH)(GameBoy*);                          // 0xCBFB SET 7,H
+
+// Nibble C
+extern void (*RotateRightCarryRegL)(GameBoy*);              // 0xCB0C RRC L
+extern void (*RotateRightRegL)(GameBoy*);                   // 0xCB1C RR L
+extern void (*ShiftRightRegL)(GameBoy*);                    // 0xCB2C SRA L
+extern void (*ShiftRightLogicalRegL)(GameBoy*);             // 0xCB3C SRL L
+extern void (*Bit1RegL)(GameBoy*);                          // 0xCB4C BIT 1,L
+extern void (*Bit3RegL)(GameBoy*);                          // 0xCB5C BIT 3,L
+extern void (*Bit5RegL)(GameBoy*);                          // 0xCB6C BIT 5,L
+extern void (*Bit7RegL)(GameBoy*);                          // 0xCB7C BIT 7,L
+extern void (*Reset1RegL)(GameBoy*);                        // 0xCB8C RES 1,L
+extern void (*Reset3RegL)(GameBoy*);                        // 0xCB9C RES 3,L
+extern void (*Reset5RegL)(GameBoy*);                        // 0xCBAC RES 5,L
+extern void (*Reset7RegL)(GameBoy*);                        // 0xCBBC RES 7,L
+extern void (*Set1RegL)(GameBoy*);                          // 0xCBCC SET 1,L
+extern void (*Set3RegL)(GameBoy*);                          // 0xCBDC SET 3,L
+extern void (*Set5RegL)(GameBoy*);                          // 0xCBEC SET 5,L
+extern void (*Set7RegL)(GameBoy*);                          // 0xCBFC SET 7,L
+
+// Nibble D
+extern void (*RotateRightCarryRegA)(GameBoy*);              // 0xCB0F RRC A
+extern void (*RotateRightRegA)(GameBoy*);                   // 0xCB1F RR A
+extern void (*ShiftRightRegA)(GameBoy*);                    // 0xCB2F SRA A
+extern void (*ShiftRightLogicalRegA)(GameBoy*);             // 0xCB3F SRL A
+extern void (*Bit1RegA)(GameBoy*);                          // 0xCB4F BIT 1,A
+extern void (*Bit3RegA)(GameBoy*);                          // 0xCB5F BIT 3,A
+extern void (*Bit5RegA)(GameBoy*);                          // 0xCB6F BIT 5,A
+extern void (*Bit7RegA)(GameBoy*);                          // 0xCB7F BIT 7,A
+extern void (*Reset1RegA)(GameBoy*);                        // 0xCB8F RES 1,A
+extern void (*Reset3RegA)(GameBoy*);                        // 0xCB9F RES 3,A
+extern void (*Reset5RegA)(GameBoy*);                        // 0xCBAF RES 5,A
+extern void (*Reset7RegA)(GameBoy*);                        // 0xCBBF RES 7,A
+extern void (*Set1RegA)(GameBoy*);                          // 0xCBCF SET 1,A
+extern void (*Set3RegA)(GameBoy*);                          // 0xCBDF SET 3,A
+extern void (*Set5RegA)(GameBoy*);                          // 0xCBEF SET 5,A
+extern void (*Set7RegA)(GameBoy*);                          // 0xCBFF SET 7,A
+
+// Addressing different processor address modes 
+//
+// Prefix CB Instructions 
+extern inline void Set(const BitEnum k_Bit, uint8_t* reg);
+extern inline void Bit(const BitEnum k_Bit, uint8_t* reg);
+extern inline void Reset(const BitEnum k_Bit, uint8_t* reg);
+extern inline void RotateRightCarry(uint8_t* reg);
+extern inline void RotateRight(uint8_t* reg);
+extern inline void RotateLeft(uint8_t* reg);
+extern inline void RatateLeftCarry(uint8_t* reg);
+extern inline void Swap(uint8_t* reg);
+
+// Load Instructions
+extern inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Reg);
+extern inline void LoadRegisterIndirect8(uint8_t* reg, const uint8_t k_Reg);
+extern inline void LoadDirect(uint8_t* reg, const uint16_t k_Address);
+extern inline void LoadImmediate8(uint8_t* reg, const uint16_t k_Data);
+extern inline void LoadImmediate16(uint16_t* reg, const uint16_t k_Data);
+
+// Operation Instructions 
+extern void Add8(uint8_t* reg, const uint8_t k_Operand);
+extern void Add16(uint16_t* reg, const uint16_t k_Operand);
 }// namespace retro::gb::instructionset
