@@ -1,10 +1,11 @@
-#include "include/gb_cpu.h"
-#include "include/gb_memory.h"
+#include "include/gb_instruction.h" 
 #include <iostream>
 
-retro::gb::SM83::SM83() { register_.program_counter_ = PROGRAM_START; }
+retro::gb::SM83::SM83() { 
+  reg_.program_counter_ = (uint16_t)MemoryMap::ROM_BANK_00_START;
+};
 void retro::gb::SM83::PrintCurrentProgramCounterValue() {
-  std::cout << register_.program_counter_ << "\n";
+  std::cout << reg_.program_counter_ << "\n";
 }
 
 uint32_t retro::gb::Test123() { 

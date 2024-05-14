@@ -34,7 +34,7 @@ private:
 // brackets in its name. C/C++ cannot use brackets for its identifier, so
 // instead we use _ as the prefix
 // 
-enum class Instruction {
+enum class Instruction : uint8_t {
 //Nibble 0            Nibble 1          Nibble 2          Nibble 3
   NOP         = 0x00, LD_BC_D16 = 0x01, LD__BC_A  = 0x02, INC_BC    = 0x03,
   STOP        = 0x10, LD_DE_D16 = 0x11, LD__DE_A  = 0x12, INC_DE    = 0x13,
@@ -177,7 +177,7 @@ enum class Instruction {
 };
 // Thank God for gbdev.io, documentation can be found here:
 // Reference: https://gbdev.io/pandocs/Memory_Map.html
-enum class MemoryMap{
+enum class MemoryMap : uint16_t{
   ROM_BANK_00_START    = 0x0000, ROM_BANK_00_END    = 0x3FFF,
   ROM_BANK_01_NN_START = 0x4000, ROM_BANK_01_NN_END = 0x7FFF,
   VIDEO_RAM_START      = 0x8000, VIDEO_RAM_END      = 0x9FFF,
@@ -192,7 +192,7 @@ enum class MemoryMap{
 };
 // Thank God for gbdev.io, documentation can be found here:
 // Reference: https://gbdev.io/pandocs/Memory_Map.html
-enum class IORanges {
+enum class IORanges : uint16_t {
   JOYPAD_INPUT          = 0xFF00,
   SERIAL_TRANSFER_START = 0xFF01, SERIAL_TRANSFER_END = 0xFF02,
   TIMER_DIVIDER_START   = 0xFF04, TIMER_DIVIDER_END   = 0xFF07,
@@ -206,7 +206,7 @@ enum class IORanges {
 };
 // Thank God for gbdev.io, documentation can be found here:
 // Reference: https://gbdev.io/pandocs/Hardware_Reg_List.html
-enum class HardwareRegistersName {
+enum class HardwareRegistersName : uint16_t {
   P1_JOYP   = 0xFF00, // JoyPad
   SB        = 0xFF01, // Serial Transfer Data
   SC        = 0xFF02, // Serial Transfer Control
@@ -279,7 +279,7 @@ typedef struct Opcode {
   Instruction hexadecimal;
   std::string opcode;
   std::string mnemonic;
-  std::function<void()> Execute(Device* gb); 
+  std::function<void()> Execute(GameBoy* gb); 
 
 }Opcode;
 // I don't understand how Kodansha uses code DK? how does that make sense,
@@ -939,8 +939,18 @@ extern inline void LoadRegisterIndirect8(uint8_t* reg, const uint8_t k_Reg);
 extern inline void LoadDirect(uint8_t* reg, const uint16_t k_Address);
 extern inline void LoadImmediate8(uint8_t* reg, const uint16_t k_Data);
 extern inline void LoadImmediate16(uint16_t* reg, const uint16_t k_Data);
+extern inline void LoadHighImmediate8(uint8_t* reg, const uint16_t k_Data);
+extern inline void LoadHighImmediate16(uint16_t* reg, const uint16_t k_Data);
+ // Operation Instructions 
+extern void AddImmediate8(uint8_t* reg, const uint8_t k_Operand);
+extern void AddImmediate16(uint16_t* reg, const uint16_t k_Operand);
+extern void AddStackPointer();
+extern void XorImmediate8(uint8_t* reg);
+extern void XorImmediate16(uint16_t* reg);
 
-// Operation Instructions 
-extern void Add8(uint8_t* reg, const uint8_t k_Operand);
-extern void Add16(uint16_t* reg, const uint16_t k_Operand);
+extern void AndImmediate8Function(uint8_t* reg);
+extern void AndImmediate16Function(uint16_t* reg);
+
+extern void SubImmediate8Function(uint8_t* reg);
+extern void SubImmediate16Function(uint16_t* reg);
 }// namespace retro::gb::instructionset

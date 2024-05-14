@@ -3,40 +3,41 @@
 #include <array>
 #include <functional>
 
-namespace retro::gb{
+namespace retro::gb {
 class SM83 {
-public:
-typedef struct Register {
-  // 8 Bit general purpose Registers
-  uint8_t A_{};
-  uint8_t F_{};
-  uint8_t B_{};
-  uint8_t C_{};
-  uint8_t D_{};
-  uint8_t E_{};
-  uint8_t H_{};
-  uint8_t L_{};
-  
-  uint16_t program_counter_{};
-  uint8_t instruction_{};
-  uint16_t stack_pointer_{};
-  uint8_t accumulator_{};
-  uint8_t interrupt_{};
-  uint16_t IDU_{};
-} Register; 
-typedef struct Flags {
-  bool zero_;
-  bool subtract_;
-  bool half_carry_;
-  bool carry_;
-}Flags;
-Register register_;
-SM83();
-void PrintCurrentProgramCounterValue();
-};
+ public:
+  uint64_t cycles;
+  typedef struct Register {
+    // 8 Bit general purpose Registers
+    uint8_t a_{};
+    uint8_t f_{};
+    uint8_t b_{};
+    uint8_t c_{};
+    uint8_t d_{};
+    uint8_t e_{};
+    uint8_t h_{};
+    uint8_t l_{};
 
-extern uint32_t Test123();
-class Device {
-  SM83* sm83_;
+    uint16_t hl_;
+    uint16_t bc_;
+    uint16_t de_;
+    uint16_t program_counter_{};
+    uint16_t stack_pointer_{};
+    uint16_t IDU_{};
+    uint8_t instruction_{};
+    uint8_t accumulator_{};
+    uint8_t interrupt_{};
+  } Register;
+  typedef struct Flags {
+    bool zero_;
+    bool subtract_;
+    bool half_carry_;
+    bool carry_;
+  } Flags;
+  Register reg_;
+  Flags flags_;
+  SM83();
+  void PrintCurrentProgramCounterValue();
 };
-}
+extern uint32_t Test123();
+}  // namespace retro::gb
