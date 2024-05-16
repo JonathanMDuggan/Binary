@@ -1,12 +1,12 @@
 #include <cstdint>
-#include <string>
-#include <array>
-#include <functional>
-
 namespace retro::gb {
 class SM83 {
  public:
-  uint64_t cycles;
+  uint64_t cycles_;
+  uint8_t idu_;
+  uint8_t read_signal_;
+  uint8_t address_bus_;
+  uint8_t data_bus_;
   typedef struct Register {
     // 8 Bit general purpose Registers
     uint8_t a_{};

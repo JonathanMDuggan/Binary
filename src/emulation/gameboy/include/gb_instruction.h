@@ -9,12 +9,15 @@
 //  * New/Old licensee code
 //  * Cartridge Type Flags
 //  * ROM size Flags
+#include <array>
+#include <string>
 #include "gb_cpu.h"
 namespace retro::gb {
 class GameBoy {
 public:
-  SM83 sm83; 
-private:
+  SM83 sm83_; 
+  std::array<uint8_t, 8000> memory_;
+ private:
 };
 // TDLR: I broke the style guide here
 // The Google Style Guide states all new enums should be prefix with k, however
@@ -34,7 +37,7 @@ private:
 // brackets in its name. C/C++ cannot use brackets for its identifier, so
 // instead we use _ as the prefix
 // 
-enum class Instruction : uint8_t {
+enum Instruction : uint8_t {
 //Nibble 0            Nibble 1          Nibble 2          Nibble 3
   NOP         = 0x00, LD_BC_D16 = 0x01, LD__BC_A  = 0x02, INC_BC    = 0x03,
   STOP        = 0x10, LD_DE_D16 = 0x11, LD__DE_A  = 0x12, INC_DE    = 0x13,
@@ -236,7 +239,7 @@ enum class HardwareRegistersName : uint16_t {
   NR50      = 0xFF24, // Master volume & VIN panning
   NR51      = 0xFF25, // Sound panning
   NR52      = 0xFF26, // Sound on/off
-  WaveRAM   = 0xFF30, // Wave RAM
+  WAVE_RAM  = 0xFF30, // Wave RAM
   LCDC      = 0xFF40, // LCD control
   STAT      = 0xFF41, // LCD status
   SCY       = 0xFF42, // Viewport Y position
@@ -275,15 +278,16 @@ enum CpuFlags {
   H = 0b00100000,
   C = 0b00010000
 };
+typedef void (*OpcodeFunction)(GameBoy*);
 typedef struct Opcode {
   Instruction hexadecimal;
   std::string opcode;
   std::string mnemonic;
-  std::function<void()> Execute(GameBoy* gb); 
-
+  OpcodeFunction execute;
 }Opcode;
-// I don't understand how Kodansha uses code DK? how does that make sense,
-// Read the reference and you'll see how dumb this 
+
+// TODO: Read the docs, it's because they're strings not hexadecimal
+// Fix this!
 // Reference: https://gbdev.io/pandocs/The_Cartridge_Header.html
 enum class PublisherCode {
   NONE                                   = 0,
@@ -364,7 +368,8 @@ enum class AddressingModes{
 enum class BitEnum : uint8_t {
   ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN
 };
-extern const std::array<Opcode, 512> k_OpcodeLookupTable;
+void InitOpcodeTable(
+    std::array<retro::gb::Opcode, 512>& opcode_table_dst);
 }  // namespace retro::gb
 
 namespace retro::gb::instructionset{
@@ -382,22 +387,22 @@ namespace retro::gb::instructionset{
 // * AddRegAFromRegD is equivalent to:  A += D
 //   
 // Nibble 0
-extern void (*NoOperation)(GameBoy*);                        // 0x00 NOP
-extern void (*Stop)(GameBoy*);                               // 0x10 STOP
-extern void (*JumpRelativeSignedIfNotZero)(GameBoy*);        // 0x20 JR NZ R8
-extern void (*JumpRelativeSignedIfNotCarry)(GameBoy*);       // 0x30 JR NC R8
-extern void (*LoadRegBFromRegB)(GameBoy*);                   // 0x40 LD B,B
-extern void (*LoadRegDFromRegB)(GameBoy*);                   // 0x50 LD D,B
-extern void (*LoadRegHFromRegB)(GameBoy*);                   // 0x60 LD H,B
-extern void (*LoadRegIndirectHLFromRegB)(GameBoy*);          // 0x70 LD (HL),B
-extern void (*AddRegAFromB)(GameBoy*);                       // 0x80 ADD A,B
-extern void (*SubRegB)(GameBoy*);                            // 0x90 SUB B
-extern void (*AndRegB)(GameBoy*);                            // 0xA0 AND B
-extern void (*OrRegB)(GameBoy*);                             // 0xB0 OR B
-extern void (*ReturnIfNotZero)(GameBoy*);                    // 0xC0 RET NZ
-extern void (*ReturnIfNotCarry)(GameBoy*);                   // 0xD0 RET NC
-extern void (*LoadHighAddressIntoRegA)(GameBoy*);            // 0xE0 LDH (A8),A
-extern void (*LoadRegAIntoHighAddress)(GameBoy*);            // 0xF0 LDH A,(A8)
+extern void NoOperation(GameBoy*);                        // 0x00 NOP
+extern void Stop(GameBoy*);                               // 0x10 STOP
+extern void JumpRelativeSignedIfNotZero(GameBoy*);        // 0x20 JR NZ R8
+extern void JumpRelativeSignedIfNotCarry(GameBoy*);       // 0x30 JR NC R8
+extern void LoadRegBFromRegB(GameBoy*);                   // 0x40 LD B,B
+extern void LoadRegDFromRegB(GameBoy*);                   // 0x50 LD D,B
+extern void LoadRegHFromRegB(GameBoy*);                   // 0x60 LD H,B
+extern void LoadRegIndirectHLFromRegB(GameBoy*);          // 0x70 LD (HL),B
+extern void AddRegAFromB(GameBoy*);                       // 0x80 ADD A,B
+extern void SubRegB(GameBoy*);                            // 0x90 SUB B
+extern void AndRegB(GameBoy*);                            // 0xA0 AND B
+extern void OrRegB(GameBoy*);                             // 0xB0 OR B
+extern void ReturnIfNotZero(GameBoy*);                    // 0xC0 RET NZ
+extern void ReturnIfNotCarry(GameBoy*);                   // 0xD0 RET NC
+extern void LoadHighAddressIntoRegA(GameBoy*);            // 0xE0 LDH (A8),A
+extern void LoadRegAIntoHighAddress(GameBoy*);            // 0xF0 LDH A,(A8)
 
 // Nibble 1
 extern void (*LoadRegBCImmediate16)(GameBoy*);               // 0x01 LD BC,d16
@@ -934,7 +939,10 @@ extern inline void RatateLeftCarry(uint8_t* reg);
 extern inline void Swap(uint8_t* reg);
 
 // Load Instructions
-extern inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Reg);
+
+// LD r, r;
+extern inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Reg);  
+
 extern inline void LoadRegisterIndirect8(uint8_t* reg, const uint8_t k_Reg);
 extern inline void LoadDirect(uint8_t* reg, const uint16_t k_Address);
 extern inline void LoadImmediate8(uint8_t* reg, const uint16_t k_Data);
@@ -950,7 +958,11 @@ extern void XorImmediate16(uint16_t* reg);
 
 extern void AndImmediate8Function(uint8_t* reg);
 extern void AndImmediate16Function(uint16_t* reg);
-
+extern void ReadMemory(GameBoy* gb);
 extern void SubImmediate8Function(uint8_t* reg);
 extern void SubImmediate16Function(uint16_t* reg);
+extern void Fetch(SM83* sm83, GameBoy* gb);
+
+extern void NoOperationFunction(GameBoy* gb);
+
 }// namespace retro::gb::instructionset

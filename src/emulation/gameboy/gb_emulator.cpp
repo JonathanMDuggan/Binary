@@ -1,10 +1,9 @@
 #include "include/gb_emulator.h"
-#include "include/gb_instruction.h"
 #include <spdlog/spdlog.h>
 #include <fstream>
 void retro::gb::test() {
   retro::gb::GameBoy gameboy;
-  gameboy.sm83.PrintCurrentProgramCounterValue();
+  gameboy.sm83_.PrintCurrentProgramCounterValue();
   return;
 }
 void retro::gb::LoadRom(std::string file_path, void* data) {
@@ -32,4 +31,21 @@ void retro::gb::LoadRom(std::string file_path, void* data) {
   }
   file.read(file_path.data(), sizeof(data));
 
+}
+
+void retro::gb::Emulate(GameBoy* gameboy, bool running) {
+  using namespace retro::gb::instructionset;
+  Fetch(&gameboy->sm83_, gameboy); 
+}
+
+void retro::gb::instructionset::Fetch(SM83* sm83, GameBoy* gb) {
+  
+  sm83->idu_                  = sm83->reg_.program_counter_;
+  sm83->address_bus_          = sm83->idu_;
+  sm83->idu_++;
+  sm83->reg_.program_counter_ = sm83->idu_;
+  sm83->read_signal_          = true;
+  sm83->reg_.instruction_     = gb->memory_[sm83->address_bus_];
+  sm83->cycles_++;
+  return;
 }
