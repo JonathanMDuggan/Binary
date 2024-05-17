@@ -1,5 +1,6 @@
-#include "../include/gb_cpu.h"
+#include "../include/gb_instruction.h"
 #include <gtest/gtest.h>
-TEST(gb_cpu, Test123) { 
-  EXPECT_EQ(retro::gb::Test123(), 123); 
-}
+//TEST(gb_cpu, LoadRegisterDirect) { 
+//  
+//  EXPECT_EQ(retro::gb::LoadRegisterDirect(), 123);
+//}

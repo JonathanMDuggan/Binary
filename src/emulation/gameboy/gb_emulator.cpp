@@ -2,8 +2,7 @@
 #include <spdlog/spdlog.h>
 #include <fstream>
 void retro::gb::test() {
-  retro::gb::GameBoy gameboy;
-  gameboy.sm83_.PrintCurrentProgramCounterValue();
+  retro::gb::GameBoy gb;
   return;
 }
 void retro::gb::LoadRom(std::string file_path, void* data) {
@@ -35,17 +34,17 @@ void retro::gb::LoadRom(std::string file_path, void* data) {
 
 void retro::gb::Emulate(GameBoy* gameboy, bool running) {
   using namespace retro::gb::instructionset;
-  Fetch(&gameboy->sm83_, gameboy); 
+  Fetch(gameboy); 
 }
 
-void retro::gb::instructionset::Fetch(SM83* sm83, GameBoy* gb) {
+void retro::gb::instructionset::Fetch(GameBoy* gb) {
   
-  sm83->idu_                  = sm83->reg_.program_counter_;
-  sm83->address_bus_          = sm83->idu_;
-  sm83->idu_++;
-  sm83->reg_.program_counter_ = sm83->idu_;
-  sm83->read_signal_          = true;
-  sm83->reg_.instruction_     = gb->memory_[sm83->address_bus_];
-  sm83->cycles_++;
+  gb->idu_                  = gb->reg_.program_counter_;
+  gb->address_bus_          = gb->idu_;
+  gb->idu_++;                 
+  gb->reg_.program_counter_ = gb->idu_;
+  gb->read_signal_          = true;
+  gb->reg_.instruction_     = gb->memory_[gb->address_bus_];
+  gb->cycles_++;
   return;
 }
