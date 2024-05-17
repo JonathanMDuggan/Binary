@@ -13,22 +13,20 @@
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h" 
 #include "../gui/include/gb_gui.h"
+#include "../io/include/io.h"
 using namespace retro;
 int main(int argc, char** argv) {
   bool running = true;
-  retro::Application app = {};
-  app.name = "Retro";
-  app.height = 720;
-  app.width = 1280;
-  app.version = 0x00000001;
-  app.renderer = k_Vulkan;
-
+  retro::Application app = LoadMainConfig("config/main/retro_config.yaml");
   // When the user starts the program SDL, Renderer, and ImGui begin 
   // its initialization phase. If this phase fails the program crashes
   // and returns an error.
   retro::SDL sdl(app);
   retro::Renderer* render;
   retro::GUI* gui;
+
+  // TODO: Change new to a smart pointer, 
+  // you should never have new in your program! 99.9% of the time
   if (app.renderer == k_OpenGL) {
     render = new retro::OpenGL(&sdl);
     gui = new OpenGLGUI;

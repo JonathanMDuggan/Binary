@@ -313,9 +313,9 @@ enum class CpuFlags {
 };
 typedef void (*OpcodeFunction)(GameBoy*);
 typedef struct Opcode {
-  Instruction hexadecimal;
   std::string opcode;
   std::string mnemonic;
+  uint8_t machine_cycles{};
   OpcodeFunction execute;
 }Opcode;
 
@@ -983,18 +983,18 @@ extern inline void LoadImmediate16(uint16_t* reg, const uint16_t k_Data);
 extern inline void LoadHighImmediate8(uint8_t* reg, const uint16_t k_Data);
 extern inline void LoadHighImmediate16(uint16_t* reg, const uint16_t k_Data);
  // Operation Instructions 
-extern void AddImmediate8(uint8_t* reg, const uint8_t k_Operand);
-extern void AddImmediate16(uint16_t* reg, const uint16_t k_Operand);
-extern void AddStackPointer();
-extern void XorImmediate8(uint8_t* reg);
-extern void XorImmediate16(uint16_t* reg);
+extern inline void AddImmediate8(uint8_t* reg, const uint8_t k_Operand);
+extern inline void AddImmediate16(uint16_t* reg, const uint16_t k_Operand);
+extern inline void AddStackPointer();
+extern inline void XorImmediate8(uint8_t* reg);
+extern inline void XorImmediate16(uint16_t* reg);
 
-extern void AndImmediate8Function(uint8_t* reg);
-extern void AndImmediate16Function(uint16_t* reg);
-extern void ReadMemory(GameBoy* gb);
-extern void SubImmediate8Function(uint8_t* reg);
-extern void SubImmediate16Function(uint16_t* reg);
-extern void Fetch(GameBoy* gb);
+extern inline void AndImmediate8Function(uint8_t* reg);
+extern inline void AndImmediate16Function(uint16_t* reg);
+extern inline void ReadMemory(GameBoy* gb);
+extern inline void SubImmediate8Function(uint8_t* reg);
+extern inline void SubImmediate16Function(uint16_t* reg);
+extern inline void Fetch(GameBoy* gb);
 
 extern void NoOperationFunction(GameBoy* gb);
 

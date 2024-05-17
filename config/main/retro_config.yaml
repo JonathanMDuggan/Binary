@@ -1,0 +1,15 @@
+# Last changed: 2024-05-17 
+# By: Jonathan M Duggan
+application:
+  name: Retro
+  subtitle: Indev
+  version: 0.0.1
+  version_number: 1
+
+window:
+  height: 720
+  width: 1280
+
+graphic_api:
+  name: Vulkan
+  version: 1.3

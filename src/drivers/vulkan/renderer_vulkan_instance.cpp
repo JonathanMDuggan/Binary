@@ -25,9 +25,9 @@ void retro::Vulkan::InitVulkanInstance(SDL_Window* window_,
   // Init the application infomation to Vulkan
   app_info = {
       .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-      .pApplicationName = app.name,
+      .pApplicationName = app.name.c_str(),
       .applicationVersion = VK_MAKE_API_VERSION(1, 0, 0, 0),
-      .pEngineName = app.name,
+      .pEngineName = app.name.c_str(),
       .engineVersion = VK_MAKE_API_VERSION(1, 0, 0, 0),
       .apiVersion = VK_API_VERSION_1_3,
   };

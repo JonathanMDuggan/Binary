@@ -19,9 +19,6 @@ namespace retro::gb::instructionset {
 void NoOperationFunction(GameBoy* gb) { return; }
 void NoOperation(GameBoy* gb) { NoOperationFunction(gb); }
 
-template<uint8_t* p_Reg, const uint8_t k_Operand>
-void LoadRegisterDirectT(GameBoy* gb) {*p_Reg = k_Operand;}
-
 #define RETRO_GB_LOAD_REGISTER_FROM_REG(upper, lower)    \
   void LoadRegBFromReg##upper(GameBoy* gb) {             \
     LoadRegisterDirect(&gb->reg_.b_, gb->reg_.lower##_); \
@@ -49,12 +46,7 @@ RETRO_GB_LOAD_REGISTER_FROM_REG(D, d)
 RETRO_GB_LOAD_REGISTER_FROM_REG(E, e)
 RETRO_GB_LOAD_REGISTER_FROM_REG(H, h)
 RETRO_GB_LOAD_REGISTER_FROM_REG(L, l)
-
-void inline LoadRegisterDirect(uint8_t* reg, const uint8_t k_Reg) {
-  // LD r, r;
-  (*reg) = k_Reg;
-}
-
+inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Reg){*reg = k_Reg;}
 // Stop instruction
 void Stop(GameBoy* gb) {
   // There's no reason to call a helper function for this, since there's only

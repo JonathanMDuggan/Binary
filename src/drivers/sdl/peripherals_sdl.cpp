@@ -30,11 +30,11 @@ void retro::SDL::Init(Application app) {
           "cannot display anything to the screen");
   }
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO);
-  window_ = SDL_CreateWindow(app.name, SDL_WINDOWPOS_CENTERED, 
-                            SDL_WINDOWPOS_CENTERED, app.width, app.height,
-                            SDL_WINDOW_SHOWN | 
-                            SDL_WINDOW_RESIZABLE | renderer
-                            );
+  window_ = SDL_CreateWindow(app.name.c_str(), SDL_WINDOWPOS_CENTERED, 
+                             SDL_WINDOWPOS_CENTERED, app.width, app.height,
+                             SDL_WINDOW_SHOWN | 
+                             SDL_WINDOW_RESIZABLE | renderer
+                             );
   // SDL Image
   int img_flags = IMG_INIT_PNG | IMG_INIT_JPG | IMG_INIT_TIF | IMG_INIT_WEBP;
   img_flags |= IMG_INIT_AVIF | IMG_INIT_JXL;

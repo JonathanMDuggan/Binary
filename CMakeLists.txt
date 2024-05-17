@@ -15,7 +15,7 @@ include_directories(${IMGUI_DIR} ${IMGUI_DIR}/backends)
 get_directory_property(IMGUI_SRC
                        DIRECTORY ${CMAKE_SOURCE_DIR}/dep
                        DEFINITION IMGUI_SRC)
-
+add_subdirectory(dep/yaml-cpp)
 add_subdirectory(dep/spdlog)
 add_subdirectory(dep/VulkanMemoryAllocator)
 add_subdirectory(dep/GLFW)
@@ -63,6 +63,7 @@ target_link_libraries(Retro PRIVATE
   glfw
   OpenGL::GL
   GTest::gtest_main
+  yaml-cpp
   #fmt::fmt
 )
 
@@ -90,7 +91,7 @@ set_property(TARGET Retro PROPERTY CXX_STANDARD 20)
 
 # Move the resource folder where the executable is 
 file(COPY resources DESTINATION ${DST_DIR}/)
-
+file(COPY config DESTINATION ${DST_DIR}/)
 # Moving the SDL_Image.dll to the destination folder
 file(COPY ${SDL2_image_DIR}/../lib/x64/SDL2_image.dll DESTINATION ${DST_DIR}/)
 

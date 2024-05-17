@@ -32,7 +32,7 @@ typedef enum RendererType  {
   k_OpenGL = 2
 } RendererType;
 typedef struct Application {
-  const char* name;
+  std::string name;
   uint32_t version;
   uint32_t width;
   uint32_t height;
