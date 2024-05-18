@@ -386,6 +386,7 @@ enum class NewPublisherCodeIndex {
   MTO                                    = 62,
   KODANSHA                               = 63
 };
+// TODO: Fill the PublisherCodeString with the codes corrsponding with the index
 const std::string k_PublisherCodeString{"0"};
 enum class AddressingModes{
   NONE,

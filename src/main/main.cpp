@@ -9,18 +9,50 @@
 #include "../drivers/include/peripherals_sdl.h"
 #include "../drivers/include/renderer_vulkan.h"
 #include "../drivers/include/renderer_opengl.h"
+#include <gtest/gtest.h>
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h" 
 #include "../gui/include/gb_gui.h"
 #include "../io/include/io.h"
+TEST(SampleTest, AssertionTrue) { ASSERT_TRUE(true); }
 int main(int argc, char** argv) {
+  // Initialize Google Test
+  ::testing::InitGoogleTest(&argc, argv);
+
+  // If it doesn't have any arguments, run the program normally.
+  bool google_test_enabled = false;
   if (argc > 1) {
-    spdlog::critical(
-        "Retro doesn't take in any arguments. Closing the program...");
-    return EXIT_FAILURE;
+    spdlog::level::debug;
+    std::string argument_one = argv[1];
+    // Before we begin the application we check if Retro has google test enabled
+    // List out the arguments to the console for debugging
+
+    for (size_t i = 0; i < argc; i++) {
+      spdlog::info("argv[{}] = {}", i, argv[i]);
+    }
+
+    if (argument_one.compare("--gtest_list_tests") == 0 ||
+        argument_one.compare("--gtest_filter")     == 0 ||
+        argument_one.compare("--gtest_output")     == 0 ||
+        argument_one.compare("--gtest_repeat")     == 0 ||
+        argument_one.compare("--gtest_shuffle")    == 0 ||
+        argument_one.compare("--gtest_break_on_failure") == 0) {
+      google_test_enabled = true;
+      spdlog::level::trace;
+      spdlog::info("Starting Google Test");
+    } else {
+      spdlog::critical("Arguments you've passed doesn't exist: {}", argv[1]);
+      spdlog::critical("Do you mean?: '--gtest_list_tests' or other Google Test args");
+      return EXIT_FAILURE;
+    }
   }
+
+  if (google_test_enabled) {
+    return RUN_ALL_TESTS();
+  }
+
   bool running = true;
   retro::Application app = retro::LoadMainConfig("config/main/retro_config.yaml");
   // When the user starts the program SDL, Renderer, and ImGui begin 
@@ -73,7 +105,6 @@ int main(int argc, char** argv) {
       retro::gui::mainmenu::Start(&vulkan_viewport_info); 
       render->DrawFrame(); 
     }
-
   }
   texture.Destory();
   return EXIT_SUCCESS;

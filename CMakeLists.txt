@@ -54,22 +54,44 @@ add_subdirectory(dep/googletest)
 
 target_include_directories(Retro PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(Retro PRIVATE 
-  SDL2::SDL2 SDL2::SDL2main
-  SDL2_image::SDL2_image 
+set(REQUIRED_LIBRARIES
+  SDL2::SDL2
+  SDL2::SDL2main
+  SDL2_image::SDL2_image
   SDL2_mixer::SDL2_mixer
-  Vulkan::Vulkan Vulkan::Headers
+  Vulkan::Vulkan
+  Vulkan::Headers
   GPUOpen::VulkanMemoryAllocator
-  spdlog::spdlog spdlog::spdlog_header_only
+  spdlog::spdlog
+  spdlog::spdlog_header_only
   glfw
   OpenGL::GL
   GTest::gtest_main
   yaml-cpp
-  nfd
-  #fmt::fmt
+  nfd 
+  # fmt::fmt
 )
 
+target_link_libraries(Retro PRIVATE ${REQUIRED_LIBRARIES})
+
 if(BUILD_TESTING)
+  # Test the whole application 
+  set(RETRO_TEST_SOURCE_DIR src/)
+  file(GLOB_RECURSE RETRO_TEST_SOURCE
+    "${RETRO_TEST_SOURCE_DIR}/*.cpp")
+  file(GLOB_RECURSE RETRO_TEST_HEADER
+    "${RETRO_TEST_SOURCE_DIR}/*.h"
+    "${RETRO_TEST_SOURCE_DIR}/*.hpp")
+
+  add_executable(Retro_Test
+    ${RETRO_TEST_SOURCE}
+    ${RETRO_TEST_HEADER}
+    ${IMGUI_SRC} 
+    "${CMAKE_SOURCE_DIR}/test/test_main.cpp"
+  )
+  target_link_libraries(Retro_Test PRIVATE ${REQUIRED_LIBRARIES})
+
+  # Test only the gameboy emulator
   set(RETRO_GB_SOURCE_DIR src/emulation/gameboy)
   add_subdirectory(${RETRO_GB_SOURCE_DIR})
   get_directory_property(RETRO_GB_SOURCE
@@ -83,9 +105,16 @@ if(BUILD_TESTING)
     ${RETRO_GB_HEADER}
     ${RETRO_GB_SOURCE}
   )
-  target_link_libraries(Retro_Gb_Test PRIVATE GTest::gtest_main)
+
+  target_link_libraries(Retro_Gb_Test PRIVATE 
+    GTest::gtest_main
+    spdlog::spdlog
+    spdlog::spdlog_header_only
+  )
+
   include(GoogleTest)
   gtest_discover_tests(Retro_Gb_Test)
+  gtest_discover_tests(Retro_Test)
 endif()
 
 find_path(SDL2_IMAGE_INCLUDE_DIR NAMES SDL2_image.h)
