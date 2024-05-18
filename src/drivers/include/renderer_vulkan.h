@@ -249,7 +249,7 @@ class Vulkan : public Renderer {
                   VkDeviceSize size);
   uint32_t FindMemoryType(uint32_t type_filter,
                           VkMemoryPropertyFlags properties);
-  int RateDeviceSuitabillity(VkPhysicalDevice physical_device);
+  uint64_t RateDeviceSuitability(VkPhysicalDevice physical_device);
   void PopulateDebugMessengerCreateInfo(
       VkDebugUtilsMessengerCreateInfoEXT& debug_info);
   bool VulkanValidationLayerSupported();

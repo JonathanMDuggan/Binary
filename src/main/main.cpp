@@ -4,6 +4,7 @@
 #define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
 #define _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS
 #include <gtest/gtest.h>
+#include <memory>
 #include "include/gbengine.h"
 #include "../drivers/include/peripherals_sdl.h"
 #include "../drivers/include/renderer_vulkan.h"
@@ -14,29 +15,31 @@
 #include "imgui_internal.h" 
 #include "../gui/include/gb_gui.h"
 #include "../io/include/io.h"
-using namespace retro;
 int main(int argc, char** argv) {
+  if (argc > 1) {
+    spdlog::critical(
+        "Retro doesn't take in any arguments. Closing the program...");
+    return EXIT_FAILURE;
+  }
   bool running = true;
-  retro::Application app = LoadMainConfig("config/main/retro_config.yaml");
+  retro::Application app = retro::LoadMainConfig("config/main/retro_config.yaml");
   // When the user starts the program SDL, Renderer, and ImGui begin 
   // its initialization phase. If this phase fails the program crashes
   // and returns an error.
   retro::SDL sdl(app);
-  retro::Renderer* render;
-  retro::GUI* gui;
+  std::unique_ptr<retro::Renderer> render;
+  std::unique_ptr<retro::GUI> gui;
 
-  // TODO: Change new to a smart pointer, 
-  // you should never have new in your program! 99.9% of the time
-  if (app.renderer == k_OpenGL) {
-    render = new retro::OpenGL(&sdl);
-    gui = new OpenGLGUI;
+  if (app.renderer == retro::k_OpenGL) {
+    render = std::make_unique<retro::OpenGL>(&sdl);
+    gui = std::make_unique<retro::OpenGLGUI>();
   } else {
-    render = new retro::Vulkan(&sdl, app);
-    gui = new VulkanGUI;
+    render = std::make_unique<retro::Vulkan>(&sdl, app);
+    gui = std::make_unique<retro::VulkanGUI>();
   }
 
   retro::gbVulkanGraphicsHandler vulkan = render->GetGraphicsHandler();
-  VulkanViewport texture(vulkan, &sdl);
+  retro::VulkanViewport texture(vulkan, &sdl);
   texture.LoadFromPath("resources/textures/sunshine.png");
   while (running) {
     bool window_is_minimized = true;
@@ -55,7 +58,8 @@ int main(int argc, char** argv) {
       }
       if (event.key.keysym.sym == SDLK_LEFT) {
         std::cout << "AHHHHH!\n";
-        sdl.InitSurfaceFromPath("resources/textures/moonvoid.png", File::PNG);
+        sdl.InitSurfaceFromPath("resources/textures/moonvoid.png", 
+          retro::File::PNG);
         texture.Update(sdl.surface_->pixels); 
       }
     }
@@ -65,13 +69,12 @@ int main(int argc, char** argv) {
     // draw new frames until the user opens the application.
     if (!(SDL_GetWindowFlags(sdl.window_) & SDL_WINDOW_MINIMIZED)) {
       gui->StartGUI(); 
-      VulkanViewportInfo vulkan_viewport_info = texture.GetViewportInfo();
-      gui::mainmenu::Start(&vulkan_viewport_info); 
+      retro::VulkanViewportInfo vulkan_viewport_info = texture.GetViewportInfo();
+      retro::gui::mainmenu::Start(&vulkan_viewport_info); 
       render->DrawFrame(); 
     }
 
   }
   texture.Destory();
-  render->~Renderer();
   return EXIT_SUCCESS;
 }

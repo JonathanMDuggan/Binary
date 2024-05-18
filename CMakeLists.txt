@@ -21,6 +21,7 @@ add_subdirectory(dep/VulkanMemoryAllocator)
 add_subdirectory(dep/GLFW)
 add_subdirectory("shaders/")
 add_subdirectory("src/")
+add_subdirectory(dep/nativefiledialog-extended)
 
 get_directory_property(ALL_CPP_HEADER_FILES
                        DIRECTORY ${CMAKE_SOURCE_DIR}/src
@@ -64,6 +65,7 @@ target_link_libraries(Retro PRIVATE
   OpenGL::GL
   GTest::gtest_main
   yaml-cpp
+  nfd
   #fmt::fmt
 )
 

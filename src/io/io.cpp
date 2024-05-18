@@ -18,6 +18,7 @@ std::vector<char> LoadRom(std::string file_path) {
   file.close();
   return ROM;
 }
+
 Application LoadMainConfig(const std::string& file_path) { 
   YAML::Node config = YAML::LoadFile(file_path);
 

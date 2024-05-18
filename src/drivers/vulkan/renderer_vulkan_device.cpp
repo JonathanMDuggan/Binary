@@ -24,8 +24,8 @@ bool retro::Vulkan::IsPhysicalDeviceSuitable(
          supported_features.samplerAnisotropy;
 }
 
-int retro::Vulkan::RateDeviceSuitabillity(VkPhysicalDevice phyiscal_device) {
-  int score = 0;
+uint64_t retro::Vulkan::RateDeviceSuitability(VkPhysicalDevice phyiscal_device) {
+  uint64_t score = 0;
   VkPhysicalDeviceProperties device_properties;
   VkPhysicalDeviceFeatures device_features;
   vkGetPhysicalDeviceFeatures(phyiscal_device, &device_features);
@@ -33,11 +33,11 @@ int retro::Vulkan::RateDeviceSuitabillity(VkPhysicalDevice phyiscal_device) {
   if (!device_features.geometryShader) {
     return 0;
   }
-  // We'll take the discete graphics card over any intergrated GPU.
+  // We'll take the discrete graphics card over any integrated GPU.
   // Even the worse ones
   switch (device_properties.deviceType) {
     case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
-      score += 1000; 
+      score += 8000; 
       break;
     case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
       score += 100; 
@@ -81,7 +81,7 @@ bool retro::Vulkan::CheckDeviceExtensionSupport(
   return required_extensions.empty();
 }
 
-// Finds a suitble device that supports Vulkan
+// Finds a suitable device that supports Vulkan
 void retro::Vulkan::PickPhysicalDevice() {
   // In Vulkan the programmer must choose the physical device in which Vulkan
   // will use to render to the screen
@@ -112,7 +112,7 @@ void retro::Vulkan::PickPhysicalDevice() {
         continue;
       }
       // Pick a device best graphics device for the Program 
-      if (RateDeviceSuitabillity(physical_device_) < RateDeviceSuitabillity(device_)) {
+      if (RateDeviceSuitability(physical_device_) < RateDeviceSuitability(device_)) {
         physical_device_ = device_;
       }
     }

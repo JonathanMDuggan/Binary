@@ -59,21 +59,24 @@ namespace retro::gb {
 
 void InitOpcodeTable(std::array<Opcode, 512>& opcode_table_dst){
   using namespace retro::gb::instructionset;
-  std::unique_ptr<std::array<Opcode, 512>> opcode_table(
-      new std::array<Opcode, 512>);
+  std::unique_ptr<std::array<Opcode, 512>>
+  opcode_table = std::make_unique<std::array<Opcode, 512>>();
 
   (*opcode_table)[NOP].opcode = "00";
-  (*opcode_table)[NOP].execute = NoOperation;
   (*opcode_table)[NOP].mnemonic = "NOP";
+  (*opcode_table)[NOP].execute = NoOperation;
+  (*opcode_table)[NOP].machine_cycles = 1;
 
   (*opcode_table)[STOP].opcode = "00 10";
-  (*opcode_table)[STOP].execute = Stop;
   (*opcode_table)[STOP].mnemonic = "STOP";
+  (*opcode_table)[STOP].execute = Stop;
+  (*opcode_table)[STOP].machine_cycles = 2;
 
   (*opcode_table)[LD_B_B].opcode = "40";
-  (*opcode_table)[LD_B_B].execute = LoadRegBFromRegB;
   (*opcode_table)[LD_B_B].mnemonic = "LD B,B";
+  (*opcode_table)[LD_B_B].execute = LoadRegBFromRegB;
+  (*opcode_table)[LD_B_B].machine_cycles = 1;
 
-  opcode_table_dst = *opcode_table;
+  opcode_table_dst = std::move(*opcode_table);
 }
 }
