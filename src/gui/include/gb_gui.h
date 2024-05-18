@@ -31,7 +31,7 @@ extern void DefaultImGuiStyle();
 class VulkanViewport {
  public:
   VulkanViewport(gbVulkanGraphicsHandler vulkan, SDL* sdl);
-  void Destory();
+  void Destroy();
   void Free();
   void Update(void* array_data);
   void LoadFromPath(const char* file_path);

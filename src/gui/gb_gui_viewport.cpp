@@ -11,7 +11,7 @@ retro::VulkanViewport::VulkanViewport(gbVulkanGraphicsHandler vulkan,
   sdl_(sdl){
 }
 
-void retro::VulkanViewport::Destory() {
+void retro::VulkanViewport::Destroy() {
   vkDeviceWaitIdle(*logical_device_);
   vkDestroySampler(*logical_device_, texture_sampler_, allocator_);
   vkDestroyImageView(*logical_device_, texture_image_view_, allocator_);

@@ -9,18 +9,21 @@
 #include "../drivers/include/peripherals_sdl.h"
 #include "../drivers/include/renderer_vulkan.h"
 #include "../drivers/include/renderer_opengl.h"
-#include <gtest/gtest.h>
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h" 
 #include "../gui/include/gb_gui.h"
 #include "../io/include/io.h"
+
 TEST(SampleTest, AssertionTrue) { ASSERT_TRUE(true); }
+
 int main(int argc, char** argv) {
   // Initialize Google Test
   ::testing::InitGoogleTest(&argc, argv);
-
+  #ifdef RETRO_TEST
+  return RUN_ALL_TESTS();
+  #else
   // If it doesn't have any arguments, run the program normally.
   bool google_test_enabled = false;
   if (argc > 1) {
@@ -61,7 +64,7 @@ int main(int argc, char** argv) {
   retro::SDL sdl(app);
   std::unique_ptr<retro::Renderer> render;
   std::unique_ptr<retro::GUI> gui;
-
+  
   if (app.renderer == retro::k_OpenGL) {
     render = std::make_unique<retro::OpenGL>(&sdl);
     gui = std::make_unique<retro::OpenGLGUI>();
@@ -69,7 +72,7 @@ int main(int argc, char** argv) {
     render = std::make_unique<retro::Vulkan>(&sdl, app);
     gui = std::make_unique<retro::VulkanGUI>();
   }
-
+  
   retro::gbVulkanGraphicsHandler vulkan = render->GetGraphicsHandler();
   retro::VulkanViewport texture(vulkan, &sdl);
   texture.LoadFromPath("resources/textures/sunshine.png");
@@ -77,7 +80,7 @@ int main(int argc, char** argv) {
     bool window_is_minimized = true;
     // After SDL, Renderer, and ImGui have finished the initialization phase,
     // The program is stuck in this main loop until the user closes the program
-
+  
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       ImGui_ImplSDL2_ProcessEvent(&event);
@@ -95,7 +98,7 @@ int main(int argc, char** argv) {
         texture.Update(sdl.surface_->pixels); 
       }
     }
-
+  
     // When we minimize the window this causes Vulkan to send validation
     // errors because the window size is less than 1. To fix this, we do not
     // draw new frames until the user opens the application.
@@ -106,6 +109,7 @@ int main(int argc, char** argv) {
       render->DrawFrame(); 
     }
   }
-  texture.Destory();
+  texture.Destroy();
   return EXIT_SUCCESS;
+  #endif
 }

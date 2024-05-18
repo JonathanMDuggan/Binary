@@ -69,6 +69,7 @@ set(REQUIRED_LIBRARIES
   GTest::gtest_main
   yaml-cpp
   nfd 
+  GTest::gmock_main
   # fmt::fmt
 )
 
@@ -76,21 +77,12 @@ target_link_libraries(Retro PRIVATE ${REQUIRED_LIBRARIES})
 
 if(BUILD_TESTING)
   # Test the whole application 
-  set(RETRO_TEST_SOURCE_DIR src/)
-  file(GLOB_RECURSE RETRO_TEST_SOURCE
-    "${RETRO_TEST_SOURCE_DIR}/*.cpp")
-  file(GLOB_RECURSE RETRO_TEST_HEADER
-    "${RETRO_TEST_SOURCE_DIR}/*.h"
-    "${RETRO_TEST_SOURCE_DIR}/*.hpp")
-
+  file(GLOB TEST_SOURCE_FILES "${CMAKE_SOURCE_DIR}/test/*.cpp")
   add_executable(Retro_Test
-    ${RETRO_TEST_SOURCE}
-    ${RETRO_TEST_HEADER}
-    ${IMGUI_SRC} 
-    "${CMAKE_SOURCE_DIR}/test/test_main.cpp"
+    ${RETRO_SOURCE_CODE}
+    ${TEST_SOURCE_FILES}
   )
   target_link_libraries(Retro_Test PRIVATE ${REQUIRED_LIBRARIES})
-
   # Test only the gameboy emulator
   set(RETRO_GB_SOURCE_DIR src/emulation/gameboy)
   add_subdirectory(${RETRO_GB_SOURCE_DIR})
@@ -105,9 +97,10 @@ if(BUILD_TESTING)
     ${RETRO_GB_HEADER}
     ${RETRO_GB_SOURCE}
   )
-
+  target_compile_definitions(Retro_Test PRIVATE RETRO_TEST)
   target_link_libraries(Retro_Gb_Test PRIVATE 
     GTest::gtest_main
+    GTest::gmock_main
     spdlog::spdlog
     spdlog::spdlog_header_only
   )
