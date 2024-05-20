@@ -22,23 +22,31 @@ void NoOperation(GameBoy* gb) { NoOperationFunction(gb); }
 #define RETRO_GB_LOAD_REGISTER_FROM_REG(upper, lower)    \
   void LoadRegBFromReg##upper(GameBoy* gb) {             \
     LoadRegisterDirect(&gb->reg_.b_, gb->reg_.lower##_); \
+    gb->UpdateRegBC();                                   \
   }                                                      \
   void LoadRegDFromReg##upper(GameBoy* gb) {             \
     LoadRegisterDirect(&gb->reg_.d_, gb->reg_.lower##_); \
+    gb->UpdateRegDE();                                   \
   }                                                      \
   void LoadRegHFromReg##upper(GameBoy* gb) {             \
     LoadRegisterDirect(&gb->reg_.h_, gb->reg_.lower##_); \
+    gb->UpdateRegHL();                                   \
   }                                                      \
   void LoadRegLFromReg##upper(GameBoy* gb) {             \
-    LoadRegisterDirect(&gb->reg_.h_, gb->reg_.lower##_); \
+    LoadRegisterDirect(&gb->reg_.l_, gb->reg_.lower##_); \
+    gb->UpdateRegHL();                                   \
   }                                                      \
   void LoadRegAFromReg##upper(GameBoy* gb) {             \
-    LoadRegisterDirect(&gb->reg_.h_, gb->reg_.lower##_); \
+    LoadRegisterDirect(&gb->reg_.a_, gb->reg_.lower##_); \
   }                                                      \
   void LoadRegCFromReg##upper(GameBoy* gb) {             \
-    LoadRegisterDirect(&gb->reg_.h_, gb->reg_.lower##_); \
+    LoadRegisterDirect(&gb->reg_.c_, gb->reg_.lower##_); \
+    gb->UpdateRegBC();                                   \
+  }                                                      \
+  void LoadRegEFromReg##upper(GameBoy* gb) {             \
+    LoadRegisterDirect(&gb->reg_.e_, gb->reg_.lower##_); \
+    gb->UpdateRegDE();                                   \
   }
-
 // Load Register Direct Functions Macros
 RETRO_GB_LOAD_REGISTER_FROM_REG(B, b)
 RETRO_GB_LOAD_REGISTER_FROM_REG(C, c)
@@ -46,6 +54,7 @@ RETRO_GB_LOAD_REGISTER_FROM_REG(D, d)
 RETRO_GB_LOAD_REGISTER_FROM_REG(E, e)
 RETRO_GB_LOAD_REGISTER_FROM_REG(H, h)
 RETRO_GB_LOAD_REGISTER_FROM_REG(L, l)
+RETRO_GB_LOAD_REGISTER_FROM_REG(A, a)
 inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Reg){*reg = k_Reg;}
 // Stop instruction
 void Stop(GameBoy* gb) {
@@ -54,7 +63,40 @@ void Stop(GameBoy* gb) {
   gb->reg_.interrupt_ = false;
 }
 
+
+
 }  // namespace retro::gb::instructionset
+
+void retro::gb::GameBoy::ClearRegisters() { 
+  reg_.a_  = 0;
+  reg_.bc_ = 0;
+  reg_.b_  = 0;
+  reg_.c_  = 0;
+  reg_.de_ = 0;
+  reg_.d_  = 0;
+  reg_.e_  = 0;
+  reg_.f_  = 0;
+  reg_.h_  = 0;
+  reg_.l_  = 0;
+  reg_.hl_ = 0;
+}
+void retro::gb::GameBoy::UpdateRegHL() {
+  reg_.hl_ = (reg_.h_ << 8);
+  reg_.hl_ |= reg_.l_;
+}
+void retro::gb::GameBoy::UpdateRegBC() {
+  reg_.bc_ = (reg_.b_ << 8);
+  reg_.bc_ |= reg_.c_;
+}
+void retro::gb::GameBoy::UpdateRegDE() {
+  reg_.de_ = (reg_.d_ << 8);
+  reg_.de_ |= reg_.e_;
+}
+void retro::gb::GameBoy::UpdateAll16BitReg() { 
+  UpdateRegHL();
+  UpdateRegBC();
+  UpdateRegDE();
+}
 namespace retro::gb {
 
 void InitOpcodeTable(std::array<Opcode, 512>& opcode_table_dst){

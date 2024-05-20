@@ -16,18 +16,20 @@
 #include "../gui/include/gb_gui.h"
 #include "../io/include/io.h"
 
-TEST(SampleTest, AssertionTrue) { ASSERT_TRUE(true); }
+TEST(GoogleTest, AssertionTrue) { ASSERT_TRUE(true); }
 
 int main(int argc, char** argv) {
   // Initialize Google Test
+  retro::Result result;
   ::testing::InitGoogleTest(&argc, argv);
-  #ifdef RETRO_TEST
+#ifdef RETRO_TEST
   return RUN_ALL_TESTS();
-  #else
+#else
   // If it doesn't have any arguments, run the program normally.
   bool google_test_enabled = false;
   if (argc > 1) {
     spdlog::level::debug;
+    spdlog::level::trace;
     std::string argument_one = argv[1];
     // Before we begin the application we check if Retro has google test enabled
     // List out the arguments to the console for debugging
@@ -43,11 +45,11 @@ int main(int argc, char** argv) {
         argument_one.compare("--gtest_shuffle")    == 0 ||
         argument_one.compare("--gtest_break_on_failure") == 0) {
       google_test_enabled = true;
-      spdlog::level::trace;
       spdlog::info("Starting Google Test");
     } else {
       spdlog::critical("Arguments you've passed doesn't exist: {}", argv[1]);
-      spdlog::critical("Do you mean?: '--gtest_list_tests' or other Google Test args");
+      spdlog::critical("Do you mean?: '--gtest_list_tests' or other"
+        " Google Test args");
       return EXIT_FAILURE;
     }
   }
@@ -56,8 +58,15 @@ int main(int argc, char** argv) {
     return RUN_ALL_TESTS();
   }
 
+  retro::Application app{}; 
+  result = retro::LoadMainConfig("config/main/retro_config.yaml", &app);
+
+  if (result != retro::k_Success) {
+    return EXIT_FAILURE;
+  }
+
   bool running = true;
-  retro::Application app = retro::LoadMainConfig("config/main/retro_config.yaml");
+  
   // When the user starts the program SDL, Renderer, and ImGui begin 
   // its initialization phase. If this phase fails the program crashes
   // and returns an error.

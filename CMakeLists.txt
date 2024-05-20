@@ -76,14 +76,22 @@ set(REQUIRED_LIBRARIES
 target_link_libraries(Retro PRIVATE ${REQUIRED_LIBRARIES})
 
 if(BUILD_TESTING)
-  # Test the whole application 
-  file(GLOB TEST_SOURCE_FILES "${CMAKE_SOURCE_DIR}/test/*.cpp")
+
+  # Test: RETRO
+  add_subdirectory(tests)
+  get_directory_property(TEST_SOURCE_FILES
+                       DIRECTORY ${CMAKE_SOURCE_DIR}/tests
+                       DEFINITION TEST_SOURCE_FILES)
+
   add_executable(Retro_Test
     ${RETRO_SOURCE_CODE}
-    ${TEST_SOURCE_FILES}
-  )
+    ${TEST_SOURCE_FILES})
+
+  target_include_directories(Retro_Test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
   target_link_libraries(Retro_Test PRIVATE ${REQUIRED_LIBRARIES})
-  # Test only the gameboy emulator
+  target_compile_definitions(Retro_Test PRIVATE RETRO_TEST)
+
+  # Test: GAMEBOY EMULATOR
   set(RETRO_GB_SOURCE_DIR src/emulation/gameboy)
   add_subdirectory(${RETRO_GB_SOURCE_DIR})
   get_directory_property(RETRO_GB_SOURCE
@@ -92,12 +100,12 @@ if(BUILD_TESTING)
   get_directory_property(RETRO_GB_HEADER
                         DIRECTORY ${RETRO_GB_SOURCE_DIR}
                         DEFINITION RETRO_GB_HEADER)
+
   message("[Google Test] Adding google test to the build system")
   add_executable(Retro_Gb_Test 
     ${RETRO_GB_HEADER}
     ${RETRO_GB_SOURCE}
   )
-  target_compile_definitions(Retro_Test PRIVATE RETRO_TEST)
   target_link_libraries(Retro_Gb_Test PRIVATE 
     GTest::gtest_main
     GTest::gmock_main
@@ -105,6 +113,7 @@ if(BUILD_TESTING)
     spdlog::spdlog_header_only
   )
 
+  # Include GoogleTest
   include(GoogleTest)
   gtest_discover_tests(Retro_Gb_Test)
   gtest_discover_tests(Retro_Test)
@@ -138,6 +147,11 @@ message("
 foreach(HEADER_FILE ${ALL_CPP_HEADER_FILES})
   message("${HEADER_FILE}")
 endforeach(HEADER_FILE)
+message("
+================================ TEST FILES ================================")
+foreach(TEST_FILE ${TEST_SOURCE_FILES})
+  message("${TEST_FILE}")
+endforeach(TEST_FILE)
 message("
 ================================== IMGUI ===================================")
 foreach(IMGUI_FILE ${IMGUI_SRC})

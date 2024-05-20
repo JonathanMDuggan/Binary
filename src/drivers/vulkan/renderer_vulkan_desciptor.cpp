@@ -1,4 +1,5 @@
 #include "../include/renderer_vulkan.h"
+#include <imgui.h>
 
 void retro::Vulkan::CreateDescriptorPool() {
   std::array<VkDescriptorPoolSize, 2> pool_size;
@@ -14,8 +15,7 @@ void retro::Vulkan::CreateDescriptorPool() {
   pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
   // ImGui needs space for its textures and stuff
   // That's why were using IM_ARRAYSIZE for the pool size count
-  pool_info.poolSizeCount =
-      static_cast<uint32_t>(IM_ARRAYSIZE(pool_size.data()));
+  pool_info.poolSizeCount = static_cast<uint32_t>(IM_ARRAYSIZE(pool_size.data()));
   pool_info.pPoolSizes = pool_size.data(); 
   pool_info.maxSets = static_cast<uint32_t>(k_MaxFramesInFlight * 2); 
 
@@ -23,9 +23,9 @@ void retro::Vulkan::CreateDescriptorPool() {
                                   &descriptor_pool_);
   if (result != VK_SUCCESS) {
     spdlog::critical(
-        "Failed to create Desciptor Pool! {} on line {} in file {}",
+        "Failed to create Descriptor Pool! {} on line {} in file {}",
         VkResultToString(result), __LINE__, __FILE__);
-    throw std::runtime_error("Failed to create Desciptor Pool!: " +
+    throw std::runtime_error("Failed to create Descriptor Pool!: " +
                              VkResultToString(result));
   }
 }

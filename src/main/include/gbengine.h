@@ -22,9 +22,6 @@
 #include <glm/vec4.hpp>
 
 #include "spdlog/spdlog.h"
-
-#define GB_ENGINE_NAME "GameBoy Engine"
-#define GB_VERSION 0
 namespace retro{
 typedef enum RendererType  { 
   k_None = 0,

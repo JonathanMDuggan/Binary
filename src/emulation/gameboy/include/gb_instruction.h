@@ -15,11 +15,11 @@
 namespace retro::gb {
 class GameBoy {
 public:
-  uint64_t cycles_;
-  uint8_t idu_;
-  uint8_t read_signal_;
-  uint8_t address_bus_;
-  uint8_t data_bus_;
+  uint64_t cycles_{};
+  uint8_t idu_{};
+  uint8_t read_signal_{};
+  uint8_t address_bus_{};
+  uint8_t data_bus_{};
   typedef struct Register {
     // 8 Bit general purpose Registers
     uint8_t a_{};
@@ -31,9 +31,9 @@ public:
     uint8_t h_{};
     uint8_t l_{};
 
-    uint16_t hl_;
-    uint16_t bc_;
-    uint16_t de_;
+    uint16_t hl_{};
+    uint16_t bc_{};
+    uint16_t de_{};
     uint16_t program_counter_{};
     uint16_t stack_pointer_{};
     uint16_t IDU_{};
@@ -42,14 +42,19 @@ public:
     uint8_t interrupt_{};
   } Register;
   typedef struct Flags {
-    bool zero_;
-    bool subtract_;
-    bool half_carry_;
-    bool carry_;
+    bool zero_{};
+    bool subtract_{};
+    bool half_carry_{};
+    bool carry_{};
   } Flags;
-  Register reg_;
-  Flags flags_;
-  std::array<uint8_t, 8000> memory_;
+  Register reg_{};
+  Flags flags_{};
+  std::array<uint8_t, 8000> memory_; 
+  void ClearRegisters();
+  void UpdateRegHL();
+  void UpdateRegBC();
+  void UpdateRegDE();
+  void UpdateAll16BitReg();
  private:
 };
 // TDLR: I broke the style guide here
@@ -211,7 +216,6 @@ enum Instruction : uint8_t {
   SET_5_H     = 0xEC, SET_5_L   = 0xED, SET_5__HL = 0xEE, SET_5_A   = 0xEF,
   SET_7_H     = 0xFC, SET_7_L   = 0xFD, SET_7__HL = 0xFE, SET_7_A   = 0xFF
 };
-// Thank God for gbdev.io, documentation can be found here:
 // Reference: https://gbdev.io/pandocs/Memory_Map.html
 enum class MemoryMap : uint16_t{
   ROM_BANK_00_START    = 0x0000, ROM_BANK_00_END    = 0x3FFF,
@@ -226,7 +230,6 @@ enum class MemoryMap : uint16_t{
   HIGH_RAM_START       = 0xFF80, HIGH_RAM_END       = 0xFFFE,
   INTERRUPT_ENABLE     = 0xFFFF
 };
-// Thank God for gbdev.io, documentation can be found here:
 // Reference: https://gbdev.io/pandocs/Memory_Map.html
 enum class IORanges : uint16_t {
   JOYPAD_INPUT          = 0xFF00,
@@ -240,7 +243,6 @@ enum class IORanges : uint16_t {
   BG_OBJ_PALETTES_START = 0xFF68, BG_OBJ_PALETTES_END = 0xFF6B,
   WRAM_BANK_SELECT      = 0xFF70
 };
-// Thank God for gbdev.io, documentation can be found here:
 // Reference: https://gbdev.io/pandocs/Hardware_Reg_List.html
 enum class HardwareRegistersName : uint16_t {
   P1_JOYP   = 0xFF00, // JoyPad
@@ -694,10 +696,10 @@ extern void RotateRightCarryRegA(GameBoy*);               // 0x0F RRCA
 extern void RotateLeftRegA(GameBoy*);                     // 0x1F RRA
 extern void ComplementAccumulator(GameBoy*);              // 0x2F CPL
 extern void ComplementCarryFlag(GameBoy*);                // 0x3F CCF
-extern void LoadCRegA(GameBoy*);                          // 0x4F LD C,A
-extern void LoadERegA(GameBoy*);                          // 0x5F LD E,A
-extern void LoadLRegA(GameBoy*);                          // 0x6F LD L,A
-extern void LoadARegA(GameBoy*);                          // 0x7F LD A,A
+extern void LoadRegCFromRegA(GameBoy*);                   // 0x4F LD C,A
+extern void LoadRegEFromRegA(GameBoy*);                   // 0x5F LD E,A
+extern void LoadRegLFromRegA(GameBoy*);                   // 0x6F LD L,A
+extern void LoadRegAFromRegA(GameBoy*);                   // 0x7F LD A,A
 extern void AddWithCarryRegAFromRegA(GameBoy*);           // 0x8F ADC A,A
 extern void SubWithCarryRegAFromRegA(GameBoy*);           // 0x9F SBC A,A
 extern void XorRegA(GameBoy*);                            // 0xAF XOR A
