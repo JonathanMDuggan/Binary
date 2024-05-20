@@ -36,7 +36,7 @@ class GameBoyTest : public ::testing::Test {
 
 };
 
-TEST_F(GameBoyTest, loadregisterXfromA) {
+TEST_F(GameBoyTest, LoadRegXfromA) {
   using namespace retro::gb::instructionset;
   gb_.reg_.a_ = 1;
   LoadRegBFromRegA(&gb_);
@@ -50,7 +50,7 @@ TEST_F(GameBoyTest, loadregisterXfromA) {
   ClearAndVerifyRegisters();
 }
 
-TEST_F(GameBoyTest, loadregisterXfromH) {
+TEST_F(GameBoyTest, LoadRegXfromH) {
   using namespace retro::gb::instructionset;
   gb_.reg_.h_ = 1;
   LoadRegBFromRegH(&gb_);

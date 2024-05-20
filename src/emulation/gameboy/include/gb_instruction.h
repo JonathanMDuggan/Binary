@@ -34,6 +34,7 @@ public:
     uint16_t hl_{};
     uint16_t bc_{};
     uint16_t de_{};
+    uint16_t af_{}; // Only for Pushing and Popping
     uint16_t program_counter_{};
     uint16_t stack_pointer_{};
     uint16_t IDU_{};
@@ -54,8 +55,12 @@ public:
   void UpdateRegHL();
   void UpdateRegBC();
   void UpdateRegDE();
+  void UpdateRegAF();
+  void UpdateFlags();
   void UpdateAll16BitReg();
  private:
+  inline void Update16BitRegister(uint16_t& _16bit_reg, const uint8_t& high_reg,
+                                  const uint8_t& low_reg);
 };
 // TDLR: I broke the style guide here
 // The Google Style Guide states all new enums should be prefix with k, however

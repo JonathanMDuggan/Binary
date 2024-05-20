@@ -19,7 +19,7 @@ namespace retro::gb::instructionset {
 void NoOperationFunction(GameBoy* gb) { return; }
 void NoOperation(GameBoy* gb) { NoOperationFunction(gb); }
 
-#define RETRO_GB_LOAD_REGISTER_FROM_REG(upper, lower)    \
+#define RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(upper, lower)    \
   void LoadRegBFromReg##upper(GameBoy* gb) {             \
     LoadRegisterDirect(&gb->reg_.b_, gb->reg_.lower##_); \
     gb->UpdateRegBC();                                   \
@@ -48,15 +48,25 @@ void NoOperation(GameBoy* gb) { NoOperationFunction(gb); }
     gb->UpdateRegDE();                                   \
   }
 // Load Register Direct Functions Macros
-RETRO_GB_LOAD_REGISTER_FROM_REG(B, b)
-RETRO_GB_LOAD_REGISTER_FROM_REG(C, c)
-RETRO_GB_LOAD_REGISTER_FROM_REG(D, d)
-RETRO_GB_LOAD_REGISTER_FROM_REG(E, e)
-RETRO_GB_LOAD_REGISTER_FROM_REG(H, h)
-RETRO_GB_LOAD_REGISTER_FROM_REG(L, l)
-RETRO_GB_LOAD_REGISTER_FROM_REG(A, a)
+RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(B, b)
+RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(C, c)
+RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(D, d)
+RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(E, e)
+RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(H, h)
+RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(L, l)
+RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(A, a)
+
 inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Reg){*reg = k_Reg;}
-// Stop instruction
+inline void AddImmediate8(uint8_t* reg, const uint8_t k_Operand) {
+  *reg += k_Operand;
+}
+inline void XorImmediate8(uint8_t* reg, const uint8_t k_Operand) {
+  *reg ^= k_Operand;
+}
+inline void OrImmediate8(uint8_t* reg, const uint8_t k_Operand) {
+  *reg |= k_Operand;
+}
+    // Stop instruction
 void Stop(GameBoy* gb) {
   // There's no reason to call a helper function for this, since there's only
   // one opcode like this
@@ -80,22 +90,39 @@ void retro::gb::GameBoy::ClearRegisters() {
   reg_.l_  = 0;
   reg_.hl_ = 0;
 }
+
 void retro::gb::GameBoy::UpdateRegHL() {
-  reg_.hl_ = (reg_.h_ << 8);
-  reg_.hl_ |= reg_.l_;
+  Update16BitRegister(reg_.hl_, reg_.h_, reg_.l_);
 }
+
 void retro::gb::GameBoy::UpdateRegBC() {
-  reg_.bc_ = (reg_.b_ << 8);
-  reg_.bc_ |= reg_.c_;
+  Update16BitRegister(reg_.bc_, reg_.b_, reg_.c_);
 }
+
 void retro::gb::GameBoy::UpdateRegDE() {
-  reg_.de_ = (reg_.d_ << 8);
-  reg_.de_ |= reg_.e_;
+  Update16BitRegister(reg_.de_, reg_.d_, reg_.e_);
 }
+
+void retro::gb::GameBoy::UpdateRegAF() {
+  Update16BitRegister(reg_.af_, reg_.a_, reg_.f_);
+}
+
+void retro::gb::GameBoy::UpdateFlags() {
+  reg_.f_ = static_cast<uint8_t>(
+    (flags_.zero_       << 8) | (flags_.subtract_ << 7) |
+    (flags_.half_carry_ << 6) | (flags_.carry_ << 5));
+}
+
 void retro::gb::GameBoy::UpdateAll16BitReg() { 
   UpdateRegHL();
   UpdateRegBC();
   UpdateRegDE();
+  UpdateRegAF();
+}
+void retro::gb::GameBoy::Update16BitRegister(uint16_t& _16bit_reg,
+                                             const uint8_t& k_HighReg,
+                                             const uint8_t& k_LowReg) {
+  _16bit_reg = static_cast<uint16_t>((k_HighReg << 8) | k_LowReg);
 }
 namespace retro::gb {
 
