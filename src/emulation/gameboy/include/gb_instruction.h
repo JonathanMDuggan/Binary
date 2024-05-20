@@ -13,6 +13,12 @@
 #include <string>
 #include <string>
 namespace retro::gb {
+typedef struct Flags {
+  bool zero_{};
+  bool subtract_{};
+  bool half_carry_{};
+  bool carry_{};
+} Flags;
 class GameBoy {
 public:
   uint64_t cycles_{};
@@ -42,12 +48,7 @@ public:
     uint8_t accumulator_{};
     uint8_t interrupt_{};
   } Register;
-  typedef struct Flags {
-    bool zero_{};
-    bool subtract_{};
-    bool half_carry_{};
-    bool carry_{};
-  } Flags;
+
   Register reg_{};
   Flags flags_{};
   std::array<uint8_t, 8000> memory_; 
@@ -990,11 +991,15 @@ extern inline void LoadImmediate16(uint16_t* reg, const uint16_t k_Data);
 extern inline void LoadHighImmediate8(uint8_t* reg, const uint16_t k_Data);
 extern inline void LoadHighImmediate16(uint16_t* reg, const uint16_t k_Data);
  // Operation Instructions 
-extern inline void AddImmediate8(uint8_t* reg, const uint8_t k_Operand);
-extern inline void AddImmediate16(uint16_t* reg, const uint16_t k_Operand);
+extern inline void AddRegisterDirect8(uint8_t* reg, const uint8_t k_Reg,
+                                 Flags* flag);
+extern inline void AddImmediate8(uint8_t* reg, const uint8_t k_Operand,
+                                 Flags* flag);
+extern inline void AddImmediate16(uint16_t* reg, const uint16_t k_Operand,
+                                  Flags* flag);
 extern inline void AddStackPointer();
-extern inline void XorImmediate8(uint8_t* reg);
-extern inline void XorImmediate16(uint16_t* reg);
+extern inline void XorImmediate8(uint8_t* reg, Flags* flag);
+extern inline void XorImmediate16(uint16_t* reg, Flags* flag);
 
 extern inline void AndImmediate8Function(uint8_t* reg);
 extern inline void AndImmediate16Function(uint16_t* reg);

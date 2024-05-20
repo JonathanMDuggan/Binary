@@ -38,6 +38,7 @@ void NoOperation(GameBoy* gb) { NoOperationFunction(gb); }
   }                                                      \
   void LoadRegAFromReg##upper(GameBoy* gb) {             \
     LoadRegisterDirect(&gb->reg_.a_, gb->reg_.lower##_); \
+    gb->UpdateRegAF();                                   \
   }                                                      \
   void LoadRegCFromReg##upper(GameBoy* gb) {             \
     LoadRegisterDirect(&gb->reg_.c_, gb->reg_.lower##_); \
@@ -57,14 +58,25 @@ RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(L, l)
 RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(A, a)
 
 inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Reg){*reg = k_Reg;}
-inline void AddImmediate8(uint8_t* reg, const uint8_t k_Operand) {
+void AddRegisterDirect8(uint8_t* reg, const uint8_t k_Reg, Flags* flag) {
+  *reg += k_Reg;
+  flag->zero_       = true;
+  flag->half_carry_ = true;
+  flag->carry_      = true;
+}
+inline void AddImmediate8(uint8_t* reg, const uint8_t k_Operand, Flags* flag) {
   *reg += k_Operand;
+  flag->zero_       = true;
+  flag->half_carry_ = true;
+  flag->carry_      = true;
 }
-inline void XorImmediate8(uint8_t* reg, const uint8_t k_Operand) {
+inline void XorImmediate8(uint8_t* reg, const uint8_t k_Operand, Flags* flag) {
   *reg ^= k_Operand;
+  flag->zero_ = true;
 }
-inline void OrImmediate8(uint8_t* reg, const uint8_t k_Operand) {
+inline void OrImmediate8(uint8_t* reg, const uint8_t k_Operand, Flags* flag) {
   *reg |= k_Operand;
+  flag->zero_ = true;
 }
     // Stop instruction
 void Stop(GameBoy* gb) {
@@ -72,9 +84,6 @@ void Stop(GameBoy* gb) {
   // one opcode like this
   gb->reg_.interrupt_ = false;
 }
-
-
-
 }  // namespace retro::gb::instructionset
 
 void retro::gb::GameBoy::ClearRegisters() { 
@@ -146,6 +155,20 @@ void InitOpcodeTable(std::array<Opcode, 512>& opcode_table_dst){
   (*opcode_table)[LD_B_B].execute = LoadRegBFromRegB;
   (*opcode_table)[LD_B_B].machine_cycles = 1;
 
+  (*opcode_table)[LD_D_B].opcode = "50";
+  (*opcode_table)[LD_D_B].mnemonic = "LD D,B";
+  (*opcode_table)[LD_D_B].execute = LoadRegDFromRegB;
+  (*opcode_table)[LD_D_B].machine_cycles = 1;
+
+  (*opcode_table)[LD_H_B].opcode = "60";
+  (*opcode_table)[LD_H_B].mnemonic = "LD H,B";
+  (*opcode_table)[LD_H_B].execute = LoadRegHFromRegB;
+  (*opcode_table)[LD_H_B].machine_cycles = 1;
+
+  (*opcode_table)[ADD_A_B].opcode   = "80";
+  (*opcode_table)[ADD_A_B].mnemonic = "ADD A,B";
+  (*opcode_table)[ADD_A_B].execute  = LoadRegHFromRegB; // TODO: CHANGE TO ADD!
+  (*opcode_table)[ADD_A_B].machine_cycles = 1;
   opcode_table_dst = std::move(*opcode_table);
 }
 }
