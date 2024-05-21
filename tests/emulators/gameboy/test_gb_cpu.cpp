@@ -46,6 +46,7 @@ TEST_F(GameBoyTest, LoadRegXfromA) {
   LoadRegCFromRegA(&gb_);
   LoadRegEFromRegA(&gb_);
   LoadRegAFromRegA(&gb_);
+  EXPECT_EQ(gb_.reg_.af_, 0x0100);
   VerifyRegisters(gb_.reg_.a_);
   ClearAndVerifyRegisters();
 }

@@ -9,14 +9,25 @@
 //  * New/Old licensee code
 //  * Cartridge Type Flags
 //  * ROM size Flags
+
 #include <array>
 #include <string>
-#include <string>
+#include <functional>
+
 namespace retro::gb {
+enum CpuFlags {
+  k_0 = 0,
+  k_Z = 1,
+  k_N = 1,
+  k_H = 1,
+  k_C = 1,
+  k_Same = 2  // Nothing
+};
+
 typedef struct Flags {
   bool zero_{};
   bool subtract_{};
-  bool half_carry_{};
+  bool hcarry_{};
   bool carry_{};
 } Flags;
 class GameBoy {
@@ -48,7 +59,7 @@ public:
     uint8_t accumulator_{};
     uint8_t interrupt_{};
   } Register;
-
+  bool branched;
   Register reg_{};
   Flags flags_{};
   std::array<uint8_t, 8000> memory_; 
@@ -59,6 +70,8 @@ public:
   void UpdateRegAF();
   void UpdateFlags();
   void UpdateAll16BitReg();
+  void SetFlags(CpuFlags Z, CpuFlags N, CpuFlags H,
+                CpuFlags C);
  private:
   inline void Update16BitRegister(uint16_t& _16bit_reg, const uint8_t& high_reg,
                                   const uint8_t& low_reg);
@@ -313,18 +326,24 @@ enum class HardwareRegistersName : uint16_t {
   IE        = 0xFFFF  // Interrupt enable
 };
 
-enum class CpuFlags {
-  Z = 0b10000000,
-  N = 0b01000000,
-  H = 0b00100000,
-  C = 0b00010000
-};
-typedef void (*OpcodeFunction)(GameBoy*);
-typedef struct Opcode {
-  std::string opcode;
-  std::string mnemonic;
-  uint8_t machine_cycles{};
-  OpcodeFunction execute;
+
+
+typedef struct FlagInfo {
+  CpuFlags z_ = k_Same;
+  CpuFlags n_ = k_Same;
+  CpuFlags h_ = k_Same;
+  CpuFlags c_ = k_Same;
+} FlagInfo;
+
+typedef class Opcode {
+ public:
+  std::string opcode_{};
+  std::string mnemonic_{};
+  std::uint8_t machine_cycles_{};
+  std::uint8_t machine_cycles_branch_{};
+  std::function<void(GameBoy*)> execute_{};
+  void SetMachineCycles(uint8_t machine_cycles, uint8_t machine_cycles_branch);
+  void SetMachineCycles(uint8_t machine_cycles);
 }Opcode;
 
 // Reference: https://gbdev.io/pandocs/The_Cartridge_Header.html
@@ -436,7 +455,7 @@ extern void LoadRegBFromRegB(GameBoy*);                   // 0x40 LD B,B
 extern void LoadRegDFromRegB(GameBoy*);                   // 0x50 LD D,B
 extern void LoadRegHFromRegB(GameBoy*);                   // 0x60 LD H,B
 extern void LoadRegIndirectHLFromRegB(GameBoy*);          // 0x70 LD (HL),B
-extern void AddRegAFromB(GameBoy*);                       // 0x80 ADD A,B
+extern void AddRegAFromRegB(GameBoy*);                    // 0x80 ADD A,B
 extern void SubRegB(GameBoy*);                            // 0x90 SUB B
 extern void AndRegB(GameBoy*);                            // 0xA0 AND B
 extern void OrRegB(GameBoy*);                             // 0xB0 OR B
@@ -454,7 +473,7 @@ extern void LoadRegBFromRegC(GameBoy*);                   // 0x41 LD B,C
 extern void LoadRegDFromRegC(GameBoy*);                   // 0x51 LD D,C
 extern void LoadRegHFromRegC(GameBoy*);                   // 0x61 LD H,C
 extern void LoadIndirectRegHLFromRegC(GameBoy*);          // 0x71 LD (HL),C
-extern void AddRegAFromC(GameBoy*);                       // 0x81 ADD A,C
+extern void AddRegAFromRegC(GameBoy*);                    // 0x81 ADD A,C
 extern void SubRegC(GameBoy*);                            // 0x91 SUB C
 extern void AndRegC(GameBoy*);                            // 0xA1 AND C
 extern void OrRegC(GameBoy*);                             // 0xB1 OR C
@@ -508,7 +527,7 @@ extern void LoadRegBFromRegH(GameBoy*);                   // 0x44 LD B, H
 extern void LoadRegDFromRegH(GameBoy*);                   // 0x54 LD D, H
 extern void LoadRegHFromRegH(GameBoy*);                   // 0x64 LD H, H
 extern void LoadIndirectRegHLFromRegH(GameBoy*);          // 0x74 LD (HL),H
-extern void AddRegARegH(GameBoy*);                        // 0x84 ADD A,H
+extern void AddRegAFromRegH(GameBoy*);                    // 0x84 ADD A,H
 extern void SubRegH(GameBoy*);                            // 0x94 SUB H 
 extern void AndRegH(GameBoy*);                            // 0xA4 AND H
 extern void OrRegH(GameBoy*);                             // 0xB4 OR H
@@ -992,7 +1011,7 @@ extern inline void LoadHighImmediate8(uint8_t* reg, const uint16_t k_Data);
 extern inline void LoadHighImmediate16(uint16_t* reg, const uint16_t k_Data);
  // Operation Instructions 
 extern inline void AddRegisterDirect8(uint8_t* reg, const uint8_t k_Reg,
-                                 Flags* flag);
+                                      GameBoy* gb);
 extern inline void AddImmediate8(uint8_t* reg, const uint8_t k_Operand,
                                  Flags* flag);
 extern inline void AddImmediate16(uint16_t* reg, const uint16_t k_Operand,
@@ -1005,8 +1024,14 @@ extern inline void AndImmediate8Function(uint8_t* reg);
 extern inline void AndImmediate16Function(uint16_t* reg);
 extern inline void ReadMemory(GameBoy* gb);
 extern inline void SubImmediate8Function(uint8_t* reg);
+extern inline void SubWithCarryRegister(uint8_t* reg, const uint8_t k_Reg,
+                                        GameBoy* gb);
+void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result, uint8_t* reg,
+                 const uint8_t k_Reg); 
+extern inline void SubImmediate8Function(uint8_t* reg, GameBoy* gb);
 extern inline void SubImmediate16Function(uint16_t* reg);
 extern inline void Fetch(GameBoy* gb);
+extern void JumpRelative(GameBoy* gb);
 
 extern void NoOperationFunction(GameBoy* gb);
 
