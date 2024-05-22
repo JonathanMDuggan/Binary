@@ -1031,12 +1031,14 @@ extern inline void AndImmediate8Function(uint8_t* reg);
 extern inline void AndImmediate16Function(uint16_t* reg);
 extern inline void ReadMemory(GameBoy* gb);
 extern inline void SubRegisterDirect8(const uint8_t k_Reg, GameBoy* gb);
-extern inline void SubImmediate8Function(uint8_t* reg);
+extern inline void SubImmediate8Function(GameBoy* gb);
 extern inline void SubWithCarryRegister(uint8_t* reg, const uint8_t k_Reg,
                                         GameBoy* gb);
+extern inline void AndRegisterDirect8(GameBoy* gb);
+extern inline void CompareRegisterDirect8(GameBoy* gb);
 void SetFlagZ000(GameBoy* gb, const bool k_IsZero);
-void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result, uint8_t* reg,
-                 const uint8_t k_Reg); 
+void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result, const uint8_t k_Reg,
+                 const uint8_t k_Operand); 
 extern inline void SubImmediate8Function(uint8_t* reg, GameBoy* gb);
 extern inline void SubImmediate16Function(uint16_t* reg);
 extern inline void Fetch(GameBoy* gb);

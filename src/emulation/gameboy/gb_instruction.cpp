@@ -63,7 +63,9 @@ void SubReg##upper(GameBoy* gb) {                                            \
   SubRegisterDirect8(gb->reg_.lower##_, gb);                                 \
 }                                                                            \
 void XorReg##upper(GameBoy* gb) {XorRegisterDirect8(gb->reg_.lower##_, gb);} \
+void AndReg##upper(GameBoy* gb) {XorRegisterDirect8(gb->reg_.lower##_, gb);} \
 void OrReg##upper(GameBoy* gb)  {OrRegisterDirect8(gb->reg_.lower##_, gb); } \
+void CompareReg##upper(GameBoy* gb)  {OrRegisterDirect8(gb->reg_.lower##_, gb); } \
 
 // Load Register Direct Functions Macros
 RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(B, b)
@@ -74,50 +76,60 @@ RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(H, h)
 RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(L, l)
 RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(A, a)
 
-inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Reg){*reg = k_Reg;}
+inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Operand){*reg = k_Operand;}
 
-void AddRegisterDirect8(const uint8_t k_Reg, GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ + k_Reg; 
-  SetFlagZ0HC(gb, k_Result, &gb->reg_.a_, k_Reg);
+void AddRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
+  const uint16_t k_Result = gb->reg_.a_ + k_Operand; 
+  SetFlagZ0HC(gb, k_Result, &gb->reg_.a_, k_Operand);
   gb->reg_.a_ = k_Result;
 }
 inline void AddImmediate8(uint8_t* reg, const uint8_t k_Operand, Flags* flag) {
 
 }
 
-void XorRegisterDirect8(const uint8_t k_Reg, GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ ^ k_Reg;
+void XorRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
+  const uint16_t k_Result = gb->reg_.a_ ^ k_Operand;
   gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;  // SetFlagZ000
   gb->reg_.a_ = k_Result;
 }
-void OrRegisterDirect8(const uint8_t k_Reg, GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ | k_Reg;
-  gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;  // SetFlagZ000
+void AndRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
+  const uint16_t k_Result = gb->reg_.a_ & k_Operand;
+  gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH); // SetFlagZ010
   gb->reg_.a_ = k_Result;
 }
-void SubWithCarryRegister(uint8_t* reg, const uint8_t k_Reg, GameBoy* gb) {
-  const uint16_t k_Result = *reg - k_Reg - gb->flags_.carry_;
+void CompareRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
+  const uint16_t k_Result = gb->reg_.a_ - k_Operand;
+  SetFlagZ1HC(gb, k_Result, gb->reg_.a_, k_Operand);
   gb->reg_.f_ = k_Result;
-  SetFlagZ1HC(gb, k_Result, reg, k_Reg);
+}
+void OrRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
+  const uint16_t k_Result = gb->reg_.a_ | k_Operand;
+  gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;  // SetFlagZ000
+  gb->reg_.a_ = k_Result;
+}
+void SubWithCarryRegister(uint8_t* reg, const uint8_t k_Operand, GameBoy* gb) {
+  const uint16_t k_Result = *reg - k_Operand - gb->flags_.carry_;
+  gb->reg_.f_ = k_Result;
+  SetFlagZ1HC(gb, k_Result, *reg, k_Operand);
   *reg = k_Result;
 }
-void SubRegisterDirect8(const uint8_t k_Reg, GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ - k_Reg;
-  SetFlagZ1HC(gb, k_Result, &gb->reg_.a_, k_Reg);
+void SubRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
+  const uint16_t k_Result = gb->reg_.a_ - k_Operand;
+  SetFlagZ1HC(gb, k_Result, gb->reg_.a_, k_Operand);
   gb->reg_.a_ = k_Result;
 }
 
-void SubImmediate8Function(uint8_t* reg, GameBoy* gb) {
+void SubImmediate8Function(GameBoy* gb) {
   const uint16_t k_Operand = gb->memory_[gb->reg_.program_counter_ + 1];
-  const uint16_t k_Result  = *reg - k_Operand;
-  SetFlagZ1HC(gb, k_Result, reg, k_Operand);
+  const uint16_t k_Result = gb->reg_.a_ - k_Operand;
+  SetFlagZ1HC(gb, k_Result, gb->reg_.a_, k_Operand);
   gb->reg_.a_ = k_Result;
 }
 
-void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result, uint8_t* reg,
+void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result, const uint8_t k_Reg,
                  const uint8_t k_Operand) {
   const bool k_IsZero   = (k_Result == 0);
-  const bool k_IsHCarry = ((*reg & 0x0f) + (k_Operand & 0x0f) > 0x0f);
+  const bool k_IsHCarry = ((k_Reg & 0x0f) + (k_Operand & 0x0f) > 0x0f);
   const bool k_IsCarry  = ((k_Result & 0x100) != 0);
 
   gb->flags_.zero_      = k_IsZero;
@@ -290,5 +302,10 @@ void InitOpcodeTable(std::array<Opcode, 512>& opcode_table){
   opcode_table[ADD_A_B].mnemonic_ = "ADD A,B";
   opcode_table[ADD_A_B].execute_ = AddRegAFromRegB; // TODO: CHANGE TO ADD!
   opcode_table[ADD_A_B].SetMachineCycles(1);
+
+  opcode_table[SUB_B].opcode_ = "90";
+  opcode_table[SUB_B].mnemonic_ = "SUB B";
+  opcode_table[SUB_B].execute_ = SubRegB;
+  opcode_table[SUB_B].SetMachineCycles(1);
 }
 }
