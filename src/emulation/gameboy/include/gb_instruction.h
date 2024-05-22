@@ -24,10 +24,15 @@ enum CpuFlags {
   k_Same = 2  // Nothing
 };
 
+extern const uint8_t k_FlagZ;
+extern const uint8_t k_FlagN;
+extern const uint8_t k_FlagH;
+extern const uint8_t k_FlagC;
+
 typedef struct Flags {
   bool zero_{};
   bool subtract_{};
-  bool hcarry_{};
+  bool h_carry_{};
   bool carry_{};
 } Flags;
 class GameBoy {
@@ -1010,22 +1015,26 @@ extern inline void LoadImmediate16(uint16_t* reg, const uint16_t k_Data);
 extern inline void LoadHighImmediate8(uint8_t* reg, const uint16_t k_Data);
 extern inline void LoadHighImmediate16(uint16_t* reg, const uint16_t k_Data);
  // Operation Instructions 
-extern inline void AddRegisterDirect8(uint8_t* reg, const uint8_t k_Reg,
+extern inline void AddRegisterDirect8(const uint8_t k_Reg,
                                       GameBoy* gb);
-extern inline void AddImmediate8(uint8_t* reg, const uint8_t k_Operand,
-                                 Flags* flag);
+void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t* reg,
+                 const uint8_t k_Reg);
+extern inline void AddImmediate8(uint8_t* reg, GameBoy* gb);
 extern inline void AddImmediate16(uint16_t* reg, const uint16_t k_Operand,
                                   Flags* flag);
 extern inline void AddStackPointer();
 extern inline void XorImmediate8(uint8_t* reg, Flags* flag);
 extern inline void XorImmediate16(uint16_t* reg, Flags* flag);
-
+extern inline void XorRegisterDirect8(const uint8_t k_Reg, GameBoy* gb);
+extern inline void OrRegisterDirect8(const uint8_t k_Reg, GameBoy* gb);
 extern inline void AndImmediate8Function(uint8_t* reg);
 extern inline void AndImmediate16Function(uint16_t* reg);
 extern inline void ReadMemory(GameBoy* gb);
+extern inline void SubRegisterDirect8(const uint8_t k_Reg, GameBoy* gb);
 extern inline void SubImmediate8Function(uint8_t* reg);
 extern inline void SubWithCarryRegister(uint8_t* reg, const uint8_t k_Reg,
                                         GameBoy* gb);
+void SetFlagZ000(GameBoy* gb, const bool k_IsZero);
 void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result, uint8_t* reg,
                  const uint8_t k_Reg); 
 extern inline void SubImmediate8Function(uint8_t* reg, GameBoy* gb);

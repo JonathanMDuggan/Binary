@@ -1,6 +1,11 @@
 #include "include/gb_instruction.h"
 #include <memory>
 
+const uint8_t retro::gb::k_FlagZ = 0x80;
+const uint8_t retro::gb::k_FlagN = 0x40;
+const uint8_t retro::gb::k_FlagH = 0x20;
+const uint8_t retro::gb::k_FlagC = 0x10;
+
 namespace retro::gb::instructionset {
 
 // NOTE TO READER:
@@ -19,38 +24,46 @@ namespace retro::gb::instructionset {
 void NoOperationFunction(GameBoy* gb) { return; }
 void NoOperation(GameBoy* gb) { NoOperationFunction(gb); }
 
-#define RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(upper, lower) \
-void LoadRegBFromReg##upper(GameBoy* gb) {                          \
-  LoadRegisterDirect(&gb->reg_.b_, gb->reg_.lower##_);              \
-  gb->UpdateRegBC();                                                \
-}                                                                   \
-void LoadRegDFromReg##upper(GameBoy* gb) {                          \
-  LoadRegisterDirect(&gb->reg_.d_, gb->reg_.lower##_);              \
-  gb->UpdateRegDE();                                                \
-}                                                                   \
-void LoadRegHFromReg##upper(GameBoy* gb) {                          \
-  LoadRegisterDirect(&gb->reg_.h_, gb->reg_.lower##_);              \
-  gb->UpdateRegHL();                                                \
-}                                                                   \
-void LoadRegLFromReg##upper(GameBoy* gb) {                          \
-  LoadRegisterDirect(&gb->reg_.l_, gb->reg_.lower##_);              \
-  gb->UpdateRegHL();                                                \
-}                                                                   \
-void LoadRegAFromReg##upper(GameBoy* gb) {                          \
-  LoadRegisterDirect(&gb->reg_.a_, gb->reg_.lower##_);              \
-  gb->UpdateRegAF();                                                \
-}                                                                   \
-void LoadRegCFromReg##upper(GameBoy* gb) {                          \
-  LoadRegisterDirect(&gb->reg_.c_, gb->reg_.lower##_);              \
-  gb->UpdateRegBC();                                                \
-}                                                                   \
-void LoadRegEFromReg##upper(GameBoy* gb) {                          \
-  LoadRegisterDirect(&gb->reg_.e_, gb->reg_.lower##_);              \
-  gb->UpdateRegDE();                                                \
-}                                                                   \
-void AddRegAFromReg##upper(GameBoy* gb) {                           \
-  AddRegisterDirect8(&gb->reg_.a_, gb->reg_.lower##_, gb);          \
-}                                                                   
+#define RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(upper, lower)          \
+void LoadRegBFromReg##upper(GameBoy* gb) {                                   \
+  LoadRegisterDirect(&gb->reg_.b_, gb->reg_.lower##_);                       \
+  gb->UpdateRegBC();                                                         \
+}                                                                            \
+void LoadRegDFromReg##upper(GameBoy* gb) {                                   \
+  LoadRegisterDirect(&gb->reg_.d_, gb->reg_.lower##_);                       \
+  gb->UpdateRegDE();                                                         \
+}                                                                            \
+void LoadRegHFromReg##upper(GameBoy* gb) {                                   \
+  LoadRegisterDirect(&gb->reg_.h_, gb->reg_.lower##_);                       \
+  gb->UpdateRegHL();                                                         \
+}                                                                            \
+void LoadRegLFromReg##upper(GameBoy* gb) {                                   \
+  LoadRegisterDirect(&gb->reg_.l_, gb->reg_.lower##_);                       \
+  gb->UpdateRegHL();                                                         \
+}                                                                            \
+void LoadRegAFromReg##upper(GameBoy* gb) {                                   \
+  LoadRegisterDirect(&gb->reg_.a_, gb->reg_.lower##_);                       \
+  gb->UpdateRegAF();                                                         \
+}                                                                            \
+void LoadRegCFromReg##upper(GameBoy* gb) {                                   \
+  LoadRegisterDirect(&gb->reg_.c_, gb->reg_.lower##_);                       \
+  gb->UpdateRegBC();                                                         \
+}                                                                            \
+void LoadRegEFromReg##upper(GameBoy* gb) {                                   \
+  LoadRegisterDirect(&gb->reg_.e_, gb->reg_.lower##_);                       \
+  gb->UpdateRegDE();                                                         \
+}                                                                            \
+void AddRegAFromReg##upper(GameBoy* gb) {                                    \
+  AddRegisterDirect8(gb->reg_.lower##_, gb);                                 \
+}                                                                            \
+void SubWithCarryRegAFromReg##upper(GameBoy* gb) {                           \
+  SubWithCarryRegister(&gb->reg_.a_, gb->reg_.lower##_, gb);                 \
+}                                                                            \
+void SubReg##upper(GameBoy* gb) {                                            \
+  SubRegisterDirect8(gb->reg_.lower##_, gb);                                 \
+}                                                                            \
+void XorReg##upper(GameBoy* gb) {XorRegisterDirect8(gb->reg_.lower##_, gb);} \
+void OrReg##upper(GameBoy* gb)  {OrRegisterDirect8(gb->reg_.lower##_, gb); } \
 
 // Load Register Direct Functions Macros
 RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(B, b)
@@ -63,19 +76,35 @@ RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(A, a)
 
 inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Reg){*reg = k_Reg;}
 
-void AddRegisterDirect8(uint8_t* reg, const uint8_t k_Reg, GameBoy* gb) {
-  const uint16_t k_Result = *reg + k_Reg;
-  gb->flags_.zero_     = (k_Result == 0);
-  gb->flags_.subtract_ = false;
-  gb->flags_.hcarry_   = ((*reg & 0x0f) + (k_Reg & 0x0f) > 0x0f);
-  gb->flags_.carry_    = ((k_Result & 0x100) != 0);
-  *reg += k_Reg;
+void AddRegisterDirect8(const uint8_t k_Reg, GameBoy* gb) {
+  const uint16_t k_Result = gb->reg_.a_ + k_Reg; 
+  SetFlagZ0HC(gb, k_Result, &gb->reg_.a_, k_Reg);
+  gb->reg_.a_ = k_Result;
+}
+inline void AddImmediate8(uint8_t* reg, const uint8_t k_Operand, Flags* flag) {
+
 }
 
+void XorRegisterDirect8(const uint8_t k_Reg, GameBoy* gb) {
+  const uint16_t k_Result = gb->reg_.a_ ^ k_Reg;
+  gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;  // SetFlagZ000
+  gb->reg_.a_ = k_Result;
+}
+void OrRegisterDirect8(const uint8_t k_Reg, GameBoy* gb) {
+  const uint16_t k_Result = gb->reg_.a_ | k_Reg;
+  gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;  // SetFlagZ000
+  gb->reg_.a_ = k_Result;
+}
 void SubWithCarryRegister(uint8_t* reg, const uint8_t k_Reg, GameBoy* gb) {
-  const uint16_t k_Result = *reg - k_Reg;
+  const uint16_t k_Result = *reg - k_Reg - gb->flags_.carry_;
+  gb->reg_.f_ = k_Result;
   SetFlagZ1HC(gb, k_Result, reg, k_Reg);
-  *reg -= k_Reg;
+  *reg = k_Result;
+}
+void SubRegisterDirect8(const uint8_t k_Reg, GameBoy* gb) {
+  const uint16_t k_Result = gb->reg_.a_ - k_Reg;
+  SetFlagZ1HC(gb, k_Result, &gb->reg_.a_, k_Reg);
+  gb->reg_.a_ = k_Result;
 }
 
 void SubImmediate8Function(uint8_t* reg, GameBoy* gb) {
@@ -87,15 +116,29 @@ void SubImmediate8Function(uint8_t* reg, GameBoy* gb) {
 
 void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result, uint8_t* reg,
                  const uint8_t k_Operand) {
-  gb->flags_.zero_ = (k_Result == 0);
-  gb->flags_.subtract_ = true;
-  gb->flags_.hcarry_ = ((*reg & 0x0f) + (k_Operand & 0x0f) > 0x0f);
-  gb->flags_.carry_ = ((k_Result & 0x100) != 0);
+  const bool k_IsZero   = (k_Result == 0);
+  const bool k_IsHCarry = ((*reg & 0x0f) + (k_Operand & 0x0f) > 0x0f);
+  const bool k_IsCarry  = ((k_Result & 0x100) != 0);
+
+  gb->flags_.zero_      = k_IsZero;
+  gb->flags_.subtract_  = true;
+  gb->flags_.h_carry_   = k_IsHCarry;
+  gb->flags_.carry_     = k_IsCarry;
+  gb->UpdateFlags();
+}
+void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t* reg,
+                 const uint8_t k_Operand) {
+  const bool k_IsZero   = (k_Result == 0);
+  const bool k_IsHCarry = ((*reg & 0x0f) + (k_Operand & 0x0f) > 0x0f);
+  const bool k_IsCarry  = ((k_Result & 0x100) != 0);
+
+  gb->flags_.zero_      = k_IsZero;
+  gb->flags_.subtract_  = false;
+  gb->flags_.h_carry_   = k_IsHCarry;
+  gb->flags_.carry_     = k_IsCarry;
+  gb->UpdateFlags();
 }
 
-inline void AddImmediate8(uint8_t* reg, const uint8_t k_Operand, Flags* flag) {
-  *reg += k_Operand;
-}
 inline void XorImmediate8(uint8_t* reg, const uint8_t k_Operand, Flags* flag) {
   *reg ^= k_Operand;
   flag->zero_ = true;
@@ -142,16 +185,14 @@ void retro::gb::Opcode::SetMachineCycles(uint8_t machine_cycles) {
 
 void retro::gb::GameBoy::ClearRegisters() { 
   reg_.a_  = 0;
-  reg_.bc_ = 0;
   reg_.b_  = 0;
   reg_.c_  = 0;
-  reg_.de_ = 0;
   reg_.d_  = 0;
   reg_.e_  = 0;
   reg_.f_  = 0;
   reg_.h_  = 0;
   reg_.l_  = 0;
-  reg_.hl_ = 0;
+  UpdateAll16BitReg();
 }
 
 
@@ -188,7 +229,7 @@ void retro::gb::GameBoy::SetFlags(CpuFlags Z, CpuFlags N,
 
   flags_.zero_     = (Z == k_Same) ? flags_.zero_     : static_cast<bool>(Z);
   flags_.carry_    = (C == k_Same) ? flags_.carry_    : static_cast<bool>(C);
-  flags_.hcarry_   = (H == k_Same) ? flags_.hcarry_   : static_cast<bool>(H);
+  flags_.h_carry_  = (H == k_Same) ? flags_.h_carry_  : static_cast<bool>(H);
   flags_.subtract_ = (N == k_Same) ? flags_.subtract_ : static_cast<bool>(N);
   UpdateFlags();
 }
@@ -196,7 +237,7 @@ void retro::gb::GameBoy::SetFlags(CpuFlags Z, CpuFlags N,
 void retro::gb::GameBoy::UpdateFlags() {
   reg_.f_ = static_cast<uint8_t>((flags_.zero_     << 8)| 
                                  (flags_.subtract_ << 7)|
-                                 (flags_.hcarry_   << 6)|
+                                 (flags_.h_carry_  << 6)|
                                  (flags_.carry_    << 5));
 }
 void retro::gb::GameBoy::Update16BitRegister(uint16_t& _16bit_reg,
