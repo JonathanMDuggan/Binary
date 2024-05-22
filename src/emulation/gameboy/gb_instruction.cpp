@@ -57,7 +57,7 @@ void AddRegAFromReg##upper(GameBoy* gb) {                                    \
   AddRegisterDirect8(gb->reg_.lower##_, gb);                                 \
 }                                                                            \
 void SubWithCarryRegAFromReg##upper(GameBoy* gb) {                           \
-  SubWithCarryRegister(&gb->reg_.a_, gb->reg_.lower##_, gb);                 \
+  SubWithCarryRegister(gb->reg_.lower##_, gb);                               \
 }                                                                            \
 void SubReg##upper(GameBoy* gb) {                                            \
   SubRegisterDirect8(gb->reg_.lower##_, gb);                                 \
@@ -107,11 +107,10 @@ void OrRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;  // SetFlagZ000
   gb->reg_.a_ = k_Result;
 }
-void SubWithCarryRegister(uint8_t* reg, const uint8_t k_Operand, GameBoy* gb) {
-  const uint16_t k_Result = *reg - k_Operand - gb->flags_.carry_;
+void SubWithCarryRegister(const uint8_t k_Operand, GameBoy* gb) {
+  const uint16_t k_Result = gb->reg_.f_ - k_Operand - gb->flags_.carry_;
   gb->reg_.f_ = k_Result;
-  SetFlagZ1HC(gb, k_Result, *reg, k_Operand);
-  *reg = k_Result;
+  SetFlagZ1HC(gb, k_Result, gb->reg_.f_, k_Operand);
 }
 void SubRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ - k_Operand;

@@ -1032,7 +1032,7 @@ extern inline void AndImmediate16Function(uint16_t* reg);
 extern inline void ReadMemory(GameBoy* gb);
 extern inline void SubRegisterDirect8(const uint8_t k_Reg, GameBoy* gb);
 extern inline void SubImmediate8Function(GameBoy* gb);
-extern inline void SubWithCarryRegister(uint8_t* reg, const uint8_t k_Reg,
+extern inline void SubWithCarryRegister(const uint8_t k_Reg,
                                         GameBoy* gb);
 extern inline void AndRegisterDirect8(GameBoy* gb);
 extern inline void CompareRegisterDirect8(GameBoy* gb);
