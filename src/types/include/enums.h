@@ -1,5 +1,5 @@
 #pragma once 
-namespace retro {
+namespace binary {
 enum class File {
   PNG,
   JPEG,

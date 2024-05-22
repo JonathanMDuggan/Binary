@@ -1,11 +1,11 @@
 #include "include/gb_emulator.h"
 #include <spdlog/spdlog.h>
 #include <fstream>
-void retro::gb::test() {
-  retro::gb::GameBoy gb;
+void binary::gb::test() {
+  binary::gb::GameBoy gb;
   return;
 }
-void retro::gb::LoadRom(std::string file_path, void* data) {
+void binary::gb::LoadRom(std::string file_path, void* data) {
   std::string file_extension;
   std::ifstream file(file_path);
   // Failed to find file in OS
@@ -32,12 +32,12 @@ void retro::gb::LoadRom(std::string file_path, void* data) {
 
 }
 
-void retro::gb::Emulate(GameBoy* gameboy, bool running) {
-  using namespace retro::gb::instructionset;
+void binary::gb::Emulate(GameBoy* gameboy, bool running) {
+  using namespace binary::gb::instructionset;
   Fetch(gameboy); 
 }
 
-void retro::gb::instructionset::Fetch(GameBoy* gb) {
+void binary::gb::instructionset::Fetch(GameBoy* gb) {
   
   gb->idu_                  = gb->reg_.program_counter_;
   gb->address_bus_          = gb->idu_;

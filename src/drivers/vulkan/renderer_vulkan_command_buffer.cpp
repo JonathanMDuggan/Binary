@@ -1,7 +1,7 @@
 #include "../include/renderer_vulkan.h"
 
 // Vulkan Command Stuff
-void retro::Vulkan::CreateCommandPool() {
+void binary::Vulkan::CreateCommandPool() {
   QueueFamilyIndices queue_family_indices = FindQueueFamilies(physical_device_);
   VkCommandPoolCreateInfo pool_info{};
   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -16,7 +16,7 @@ void retro::Vulkan::CreateCommandPool() {
   }
 }
 
-void retro::Vulkan::CreateCommandBuffer() {
+void binary::Vulkan::CreateCommandBuffer() {
   command_buffers_.resize(k_MaxFramesInFlight);
   VkCommandBufferAllocateInfo allocate_info{};
   VkResult result;
@@ -35,7 +35,7 @@ void retro::Vulkan::CreateCommandBuffer() {
   }
 }
 
-void retro::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
+void binary::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
                                            uint32_t image_index) {
   VkCommandBufferBeginInfo begin_info{};
   VkResult result;
@@ -111,7 +111,7 @@ void retro::Vulkan::RecordCommandBuffer(VkCommandBuffer command_buffer,
   }
 }
 
-VkCommandBuffer retro::BeginSingleTimeCommands(VkCommandPool command_pool,
+VkCommandBuffer binary::BeginSingleTimeCommands(VkCommandPool command_pool,
                                                   VkDevice logical_device) {
   VkCommandBufferAllocateInfo allocate_info{};
   VkCommandBufferBeginInfo begin_info{};
@@ -129,7 +129,7 @@ VkCommandBuffer retro::BeginSingleTimeCommands(VkCommandPool command_pool,
   return command_buffer;
 }
 
-void retro::EndSingleTimeCommands(VkCommandBuffer command_buffer,
+void binary::EndSingleTimeCommands(VkCommandBuffer command_buffer,
                                   VkCommandPool command_pool,
                                   VkDevice logical_device, VkQueue queue) {
   VkSubmitInfo submit_info{};

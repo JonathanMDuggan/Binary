@@ -1,12 +1,12 @@
 #include "include/gb_instruction.h"
 #include <memory>
 
-const uint8_t retro::gb::k_FlagZ = 0x80;
-const uint8_t retro::gb::k_FlagN = 0x40;
-const uint8_t retro::gb::k_FlagH = 0x20;
-const uint8_t retro::gb::k_FlagC = 0x10;
+const uint8_t binary::gb::k_FlagZ = 0x80;
+const uint8_t binary::gb::k_FlagN = 0x40;
+const uint8_t binary::gb::k_FlagH = 0x20;
+const uint8_t binary::gb::k_FlagC = 0x10;
 
-namespace retro::gb::instructionset {
+namespace binary::gb::instructionset {
 
 // NOTE TO READER:
 // machine cycle = 4 clock cycles
@@ -24,7 +24,7 @@ namespace retro::gb::instructionset {
 void NoOperationFunction(GameBoy* gb) { return; }
 void NoOperation(GameBoy* gb) { NoOperationFunction(gb); }
 
-#define RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(upper, lower)          \
+#define BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(upper, lower)            \
 void LoadRegBFromReg##upper(GameBoy* gb) {                                   \
   LoadRegisterDirect(&gb->reg_.b_, gb->reg_.lower##_);                       \
   gb->UpdateRegBC();                                                         \
@@ -68,13 +68,13 @@ void OrReg##upper(GameBoy* gb)  {OrRegisterDirect8(gb->reg_.lower##_, gb); } \
 void CompareReg##upper(GameBoy* gb)  {OrRegisterDirect8(gb->reg_.lower##_, gb); } \
 
 // Load Register Direct Functions Macros
-RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(B, b)
-RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(C, c)
-RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(D, d)
-RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(E, e)
-RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(H, h)
-RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(L, l)
-RETRO_GB_CREATE_8BIT_REG_ARITHMETIC_FUNCTIONS(A, a)
+BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(B, b)
+BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(C, c)
+BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(D, d)
+BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(E, e)
+BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(H, h)
+BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(L, l)
+BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(A, a)
 
 inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Operand){*reg = k_Operand;}
 
@@ -181,20 +181,20 @@ void Stop(GameBoy* gb) {
   gb->reg_.interrupt_ = false;
 }
 
-}  // namespace retro::gb::instructionset
+}  // namespace binary::gb::instructionset
 
-void retro::gb::Opcode::SetMachineCycles(uint8_t machine_cycles_branch,
+void binary::gb::Opcode::SetMachineCycles(uint8_t machine_cycles_branch,
                                          uint8_t machine_cycles) {
   machine_cycles_ = machine_cycles;
   machine_cycles_branch_ = machine_cycles_branch;
 }
 
-void retro::gb::Opcode::SetMachineCycles(uint8_t machine_cycles) {
+void binary::gb::Opcode::SetMachineCycles(uint8_t machine_cycles) {
   machine_cycles_ = machine_cycles;
   machine_cycles_branch_ = machine_cycles;
 }
 
-void retro::gb::GameBoy::ClearRegisters() { 
+void binary::gb::GameBoy::ClearRegisters() { 
   reg_.a_  = 0;
   reg_.b_  = 0;
   reg_.c_  = 0;
@@ -207,31 +207,31 @@ void retro::gb::GameBoy::ClearRegisters() {
 }
 
 
-void retro::gb::GameBoy::UpdateRegHL() {
+void binary::gb::GameBoy::UpdateRegHL() {
   Update16BitRegister(reg_.hl_, reg_.h_, reg_.l_);
 }
 
-void retro::gb::GameBoy::UpdateRegBC() {
+void binary::gb::GameBoy::UpdateRegBC() {
   Update16BitRegister(reg_.bc_, reg_.b_, reg_.c_);
 }
 
-void retro::gb::GameBoy::UpdateRegDE() {
+void binary::gb::GameBoy::UpdateRegDE() {
   Update16BitRegister(reg_.de_, reg_.d_, reg_.e_);
 }
 
-void retro::gb::GameBoy::UpdateRegAF() {
+void binary::gb::GameBoy::UpdateRegAF() {
   Update16BitRegister(reg_.af_, reg_.a_, reg_.f_);
 }
 
 
-void retro::gb::GameBoy::UpdateAll16BitReg() { 
+void binary::gb::GameBoy::UpdateAll16BitReg() { 
   UpdateRegHL();
   UpdateRegBC();
   UpdateRegDE();
   UpdateRegAF();
 }
 
-void retro::gb::GameBoy::SetFlags(CpuFlags Z, CpuFlags N,
+void binary::gb::GameBoy::SetFlags(CpuFlags Z, CpuFlags N,
                                   CpuFlags H, CpuFlags C) {
 
   // If the CpuFlag type equals k_Same , then set the value to
@@ -245,22 +245,22 @@ void retro::gb::GameBoy::SetFlags(CpuFlags Z, CpuFlags N,
   UpdateFlags();
 }
 
-void retro::gb::GameBoy::UpdateFlags() {
+void binary::gb::GameBoy::UpdateFlags() {
   reg_.f_ = static_cast<uint8_t>((flags_.zero_     << 8)| 
                                  (flags_.subtract_ << 7)|
                                  (flags_.h_carry_  << 6)|
                                  (flags_.carry_    << 5));
 }
-void retro::gb::GameBoy::Update16BitRegister(uint16_t& _16bit_reg,
+void binary::gb::GameBoy::Update16BitRegister(uint16_t& _16bit_reg,
                                              const uint8_t& k_HighReg,
                                              const uint8_t& k_LowReg) {
   _16bit_reg = static_cast<uint16_t>((k_HighReg << 8) | k_LowReg);
 }
 
-namespace retro::gb {
+namespace binary::gb {
 
 void InitOpcodeTable(std::array<Opcode, 512>& opcode_table){
-  using namespace retro::gb::instructionset;
+  using namespace binary::gb::instructionset;
 
   opcode_table[NOP].opcode_ = "00";
   opcode_table[NOP].mnemonic_ = "NOP";

@@ -1,6 +1,6 @@
 #include "../include/renderer_vulkan.h" 
 
-void retro::Vulkan::CreateIndexBuffer() {
+void binary::Vulkan::CreateIndexBuffer() {
   VkDeviceSize buffer_size = sizeof(indices_[0]) * indices_.size();
   VkBuffer staging_buffer;
   VkDeviceMemory staging_buffer_memory;

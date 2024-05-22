@@ -1,7 +1,7 @@
 #include "../../drivers/include/renderer_vulkan.h"
 #include "../../drivers/include/renderer_opengl.h"
 #include "../../drivers/include/peripherals_sdl.h"
-namespace retro {
+namespace binary {
 typedef struct VulkanViewportInfo { 
   uint32_t* mips_levels{};
   VkSampler* texture_sampler{};
@@ -31,6 +31,7 @@ extern void DefaultImGuiStyle();
 class VulkanViewport {
  public:
   VulkanViewport(gbVulkanGraphicsHandler vulkan, SDL* sdl);
+  ~VulkanViewport(); 
   void Destroy();
   void Free();
   void Update(void* array_data);
@@ -96,9 +97,9 @@ class VulkanViewport {
                        VkImageAspectFlags aspect_flag);
   void CreateTextureDescriptorSet();
 };
-}  // namespace retro
+}  // namespace binary
 
-namespace retro::gui::mainmenu {
+namespace binary::gui::mainmenu {
 extern void Start(VulkanViewportInfo* texture);
 extern void DrawMenuBar(VulkanViewportInfo* texture);
 extern void Titles(VulkanViewportInfo* texture);

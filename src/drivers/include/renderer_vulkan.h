@@ -22,7 +22,7 @@
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h"
-namespace retro {
+namespace binary {
 // If I don't make these function inline the command buffer stops
 // recording when returning for no reason.
 
@@ -285,7 +285,7 @@ class Vulkan : public Renderer {
                                VkFormatFeatureFlags features);
   void UpdateUniformBuffer(uint32_t current_frame);
   std::vector<const char*> GetExtensions(SDL_Window* window_);
-  void InitVulkan(retro::SDL* sdl, retro::Application app);
+  void InitVulkan(binary::SDL* sdl, binary::Application app);
   void InitIMGUI(SDL* sdl);
   void LoadImageFromPath(const char* image_path); 
   void _FreeImage();
@@ -294,4 +294,4 @@ class Vulkan : public Renderer {
   void LoadImageFromArray(void* image_data, VkDeviceSize image_size, uint32_t w,
                           uint32_t h);
 };
-}  // namespace retro
+}  // namespace binary

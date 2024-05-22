@@ -2,5 +2,5 @@
 #include <gtest/gtest.h>
 //TEST(gb_cpu, LoadRegisterDirect) { 
 //  
-//  EXPECT_EQ(retro::gb::LoadRegisterDirect(), 123);
+//  EXPECT_EQ(binary::gb::LoadRegisterDirect(), 123);
 //}

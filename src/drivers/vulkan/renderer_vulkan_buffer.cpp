@@ -1,5 +1,5 @@
 #include "../include/renderer_vulkan.h"
-void retro::Vulkan::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+void binary::Vulkan::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                                     VkMemoryPropertyFlags properties,
                                     VkBuffer& buffer,
                                     VkDeviceMemory& buffer_memory) {
@@ -55,7 +55,7 @@ void retro::Vulkan::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
   vkBindBufferMemory(logical_device_, buffer, buffer_memory, 0);
 }
 
-void retro::Vulkan::CopyBuffer(VkBuffer source_buffer,
+void binary::Vulkan::CopyBuffer(VkBuffer source_buffer,
                                   VkBuffer destination_buffer,
                                   VkDeviceSize size) {
   VkCommandBufferAllocateInfo allocate_info{};

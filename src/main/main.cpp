@@ -16,11 +16,9 @@
 #include "../gui/include/gb_gui.h"
 #include "../io/include/io.h"
 
-TEST(GoogleTest, AssertionTrue) { ASSERT_TRUE(true); }
-
 int main(int argc, char** argv) {
   // Initialize Google Test
-  retro::Result result;
+  binary::Result result;
   ::testing::InitGoogleTest(&argc, argv);
 #ifdef RETRO_TEST
   return RUN_ALL_TESTS();
@@ -58,10 +56,10 @@ int main(int argc, char** argv) {
     return RUN_ALL_TESTS();
   }
 
-  retro::Application app{}; 
-  result = retro::LoadMainConfig("config/main/retro_config.yaml", &app);
+  binary::Application app{}; 
+  result = binary::LoadMainConfig("config/main/binary_config.yaml", &app);
 
-  if (result != retro::k_Success) {
+  if (result != binary::k_Success) {
     return EXIT_FAILURE;
   }
 
@@ -70,20 +68,20 @@ int main(int argc, char** argv) {
   // When the user starts the program SDL, Renderer, and ImGui begin 
   // its initialization phase. If this phase fails the program crashes
   // and returns an error.
-  retro::SDL sdl(app);
-  std::unique_ptr<retro::Renderer> render;
-  std::unique_ptr<retro::GUI> gui;
+  binary::SDL sdl(app);
+  std::unique_ptr<binary::Renderer> render;
+  std::unique_ptr<binary::GUI> gui;
   
-  if (app.renderer == retro::k_OpenGL) {
-    render = std::make_unique<retro::OpenGL>(&sdl);
-    gui = std::make_unique<retro::OpenGLGUI>();
+  if (app.renderer == binary::k_OpenGL) {
+    render = std::make_unique<binary::OpenGL>(&sdl);
+    gui = std::make_unique<binary::OpenGLGUI>();
   } else {
-    render = std::make_unique<retro::Vulkan>(&sdl, app);
-    gui = std::make_unique<retro::VulkanGUI>();
+    render = std::make_unique<binary::Vulkan>(&sdl, app);
+    gui = std::make_unique<binary::VulkanGUI>();
   }
   
-  retro::gbVulkanGraphicsHandler vulkan = render->GetGraphicsHandler();
-  retro::VulkanViewport texture(vulkan, &sdl);
+  binary::gbVulkanGraphicsHandler vulkan = render->GetGraphicsHandler();
+  binary::VulkanViewport texture(vulkan, &sdl);
   texture.LoadFromPath("resources/textures/sunshine.png");
   while (running) {
     bool window_is_minimized = true;
@@ -103,7 +101,7 @@ int main(int argc, char** argv) {
       if (event.key.keysym.sym == SDLK_LEFT) {
         std::cout << "AHHHHH!\n";
         sdl.InitSurfaceFromPath("resources/textures/moonvoid.png", 
-          retro::File::PNG);
+          binary::File::PNG);
         texture.Update(sdl.surface_->pixels); 
       }
     }
@@ -113,12 +111,11 @@ int main(int argc, char** argv) {
     // draw new frames until the user opens the application.
     if (!(SDL_GetWindowFlags(sdl.window_) & SDL_WINDOW_MINIMIZED)) {
       gui->StartGUI(); 
-      retro::VulkanViewportInfo vulkan_viewport_info = texture.GetViewportInfo();
-      retro::gui::mainmenu::Start(&vulkan_viewport_info); 
+      binary::VulkanViewportInfo vulkan_viewport_info = texture.GetViewportInfo();
+      binary::gui::mainmenu::Start(&vulkan_viewport_info); 
       render->DrawFrame(); 
     }
   }
-  texture.Destroy();
   return EXIT_SUCCESS;
   #endif
 }

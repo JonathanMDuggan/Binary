@@ -2,7 +2,7 @@
 
 // Vulkan Render Pass
 
-void retro::Vulkan::CreateRenderPass() {
+void binary::Vulkan::CreateRenderPass() {
   VkAttachmentDescription color_attachment{};
   VkAttachmentReference color_attachment_reference{};
   VkSubpassDescription subpass{};

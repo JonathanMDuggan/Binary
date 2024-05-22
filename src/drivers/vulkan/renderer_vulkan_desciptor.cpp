@@ -1,7 +1,7 @@
 #include "../include/renderer_vulkan.h"
 #include <imgui.h>
 
-void retro::Vulkan::CreateDescriptorPool() {
+void binary::Vulkan::CreateDescriptorPool() {
   std::array<VkDescriptorPoolSize, 2> pool_size;
   VkDescriptorPoolCreateInfo pool_info{};
   VkResult result;
@@ -30,7 +30,7 @@ void retro::Vulkan::CreateDescriptorPool() {
   }
 }
 
-void retro::Vulkan::CreateDescriptorSetLayout() {
+void binary::Vulkan::CreateDescriptorSetLayout() {
   VkDescriptorSetLayoutCreateInfo layout_info{};
   VkDescriptorSetLayoutBinding uniform_buffer_object_layout_binding{};
   VkDescriptorSetLayoutBinding sampler_layout_binding{};
@@ -68,7 +68,7 @@ void retro::Vulkan::CreateDescriptorSetLayout() {
   }
 }
 
-void retro::Vulkan::CreateDescriptorSets() {
+void binary::Vulkan::CreateDescriptorSets() {
   std::vector<VkDescriptorSetLayout> layout(k_MaxFramesInFlight,
                                             descriptor_set_layout_);
   std::array<VkWriteDescriptorSet, 2> descriptor_writes{};

@@ -14,7 +14,7 @@
 #include <string>
 #include <functional>
 
-namespace retro::gb {
+namespace binary::gb {
 enum CpuFlags {
   k_0 = 0,
   k_Z = 1,
@@ -434,10 +434,10 @@ enum class BitEnum : uint8_t {
   ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN
 };
 void InitOpcodeTable(
-    std::array<retro::gb::Opcode, 512>& opcode_table_dst, GameBoy* gb);
-}  // namespace retro::gb
+    std::array<binary::gb::Opcode, 512>& opcode_table_dst, GameBoy* gb);
+}  // namespace binary::gb
 
-namespace retro::gb::instructionset{
+namespace binary::gb::instructionset{
 ///Function implementation for the GameBoy CPU instruction set 
 // Reference: https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html
 ///Naming conventions
@@ -1046,4 +1046,4 @@ extern void JumpRelative(GameBoy* gb);
 
 extern void NoOperationFunction(GameBoy* gb);
 
-}// namespace retro::gb::instructionset
+}// namespace binary::gb::instructionset

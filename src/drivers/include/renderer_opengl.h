@@ -2,7 +2,7 @@
 #include "../include/renderer.h"
 #include "imgui_impl_opengl3.h"
 #include <gl/GL.h>
-namespace retro {
+namespace binary {
 class OpenGL : public Renderer{ 
  public:
   OpenGL(SDL* sdl);

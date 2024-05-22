@@ -1,4 +1,4 @@
-# Retro
+# Binary
 Personal project for reverse engineering retro hardware/software
 
 # Building the Project

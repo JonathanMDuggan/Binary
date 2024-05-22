@@ -1,5 +1,5 @@
 #include "include/gb_gui.h"
-namespace retro::gui::mainmenu {
+namespace binary::gui::mainmenu {
 void Start(VulkanViewportInfo* texture) { 
   //
   ImGui::NewFrame(); 

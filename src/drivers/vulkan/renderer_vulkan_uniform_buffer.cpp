@@ -1,6 +1,6 @@
 #include "../include/renderer_vulkan.h"
 
-void retro::Vulkan::CreateUniformBuffers() {
+void binary::Vulkan::CreateUniformBuffers() {
   VkDeviceSize buffer_size = sizeof(UniformBufferObject);
   uniform_buffer_.resize(k_MaxFramesInFlight);
   uniform_buffer_memory_.resize(k_MaxFramesInFlight);
@@ -17,7 +17,7 @@ void retro::Vulkan::CreateUniformBuffers() {
   }
 }
 
-void retro::Vulkan::UpdateUniformBuffer(uint32_t current_frame) {
+void binary::Vulkan::UpdateUniformBuffer(uint32_t current_frame) {
   static auto start_time = std::chrono::high_resolution_clock::now();
   auto current_time = std::chrono::high_resolution_clock::now();
   float time = std::chrono::duration<float, std::chrono::seconds::period>(

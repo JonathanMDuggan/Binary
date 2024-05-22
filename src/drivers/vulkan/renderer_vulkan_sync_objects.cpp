@@ -1,7 +1,7 @@
 #include "../include/renderer_vulkan.h"
 
 
-void retro::Vulkan::CreateSyncObjects() {
+void binary::Vulkan::CreateSyncObjects() {
   semaphore_.image_available_.resize(k_MaxFramesInFlight);
   semaphore_.render_finished_.resize(k_MaxFramesInFlight);
   in_flight_fence_.resize(k_MaxFramesInFlight);

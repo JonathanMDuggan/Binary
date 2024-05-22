@@ -1,6 +1,6 @@
 #include <cstdint>
 #include <array>
-namespace retro::chip8 {
+namespace binary::chip8 {
 enum Constants {
   // Sizes of Registers and Memory
   k_MaxNumberOfGeneralPerposeRegisters = 16,

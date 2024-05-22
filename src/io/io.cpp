@@ -2,7 +2,7 @@
 #include "include/io.h"
 #include <yaml-cpp/yaml.h>
 
-namespace retro {
+namespace binary {
 std::vector<char> LoadRom(std::string file_path) {
   size_t rom_size;
   std::vector<char> ROM; 
@@ -55,4 +55,4 @@ Result LoadMainConfig(const std::string& file_path, Application* app) {
   }
   return k_Success;
 }
-}  // namespace retro
+}  // namespace binary

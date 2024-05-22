@@ -28,7 +28,7 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
   return VK_FALSE;
 }
 
-void retro::Vulkan::SetupDebugMessenger() {
+void binary::Vulkan::SetupDebugMessenger() {
   if (!ValidationLayersEnabled) {
     return;
   }
@@ -41,7 +41,7 @@ void retro::Vulkan::SetupDebugMessenger() {
   }
 }
 
-VkResult retro::Vulkan::CreateDebugUtilsMessengerEXT(
+VkResult binary::Vulkan::CreateDebugUtilsMessengerEXT(
     VkInstance instance_, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
     const VkAllocationCallbacks* pAllocator,
     VkDebugUtilsMessengerEXT* pDebugMessenger) {
@@ -55,7 +55,7 @@ VkResult retro::Vulkan::CreateDebugUtilsMessengerEXT(
   return VK_SUCCESS;
 }
 
-void retro::Vulkan::DestroyDebugUtilsMessengerEXT(
+void binary::Vulkan::DestroyDebugUtilsMessengerEXT(
     VkInstance instance_, VkDebugUtilsMessengerEXT debugMessenger,
     const VkAllocationCallbacks* pAllocator) {
   auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
@@ -66,7 +66,7 @@ void retro::Vulkan::DestroyDebugUtilsMessengerEXT(
   }
 }
 
-void retro::Vulkan::PopulateDebugMessengerCreateInfo(
+void binary::Vulkan::PopulateDebugMessengerCreateInfo(
     VkDebugUtilsMessengerCreateInfoEXT& debug_info) {
   debug_info = {
       .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
@@ -86,7 +86,7 @@ void retro::Vulkan::PopulateDebugMessengerCreateInfo(
   };
 }
 
-bool retro::Vulkan::VulkanValidationLayerSupported() {
+bool binary::Vulkan::VulkanValidationLayerSupported() {
   uint32_t layer_count;
   vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
   std::vector<VkLayerProperties> available_layers(layer_count);
@@ -107,7 +107,7 @@ bool retro::Vulkan::VulkanValidationLayerSupported() {
   return true;
 }
 
-std::string retro::VkResultToString(VkResult result) {
+std::string binary::VkResultToString(VkResult result) {
   switch (result) {
     case VK_SUCCESS:
       return "VK_SUCCESS";

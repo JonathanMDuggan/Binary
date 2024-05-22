@@ -3,7 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
-namespace retro {
+namespace binary {
 // Vulkan graphic device commuication struct
 typedef struct gbVulkanGraphicsHandler {
   VkPhysicalDevice* physical_device;

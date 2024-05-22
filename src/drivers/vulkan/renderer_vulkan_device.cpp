@@ -1,7 +1,7 @@
 #include "../include/renderer_vulkan.h"
 
 // Vulkan Physical Device Functions
-bool retro::Vulkan::IsPhysicalDeviceSuitable(
+bool binary::Vulkan::IsPhysicalDeviceSuitable(
     VkPhysicalDevice phyiscal_device) {
   // Not every device which supports Vulkan can display images to the screen
   // therefore we must check if the physical device is suitable for the
@@ -24,7 +24,7 @@ bool retro::Vulkan::IsPhysicalDeviceSuitable(
          supported_features.samplerAnisotropy;
 }
 
-uint64_t retro::Vulkan::RateDeviceSuitability(VkPhysicalDevice phyiscal_device) {
+uint64_t binary::Vulkan::RateDeviceSuitability(VkPhysicalDevice phyiscal_device) {
   uint64_t score = 0;
   VkPhysicalDeviceProperties device_properties;
   VkPhysicalDeviceFeatures device_features;
@@ -56,7 +56,7 @@ uint64_t retro::Vulkan::RateDeviceSuitability(VkPhysicalDevice phyiscal_device) 
   return score;
 }
 
-bool retro::Vulkan::CheckDeviceExtensionSupport(
+bool binary::Vulkan::CheckDeviceExtensionSupport(
     VkPhysicalDevice physical_device) {
   uint32_t extension_count;
   // The application requires certain extensions. When we created the vulkan
@@ -82,7 +82,7 @@ bool retro::Vulkan::CheckDeviceExtensionSupport(
 }
 
 // Finds a suitable device that supports Vulkan
-void retro::Vulkan::PickPhysicalDevice() {
+void binary::Vulkan::PickPhysicalDevice() {
   // In Vulkan the programmer must choose the physical device in which Vulkan
   // will use to render to the screen
   uint32_t device_count = 0;
@@ -126,7 +126,7 @@ void retro::Vulkan::PickPhysicalDevice() {
   }
 }
 
-void retro::Vulkan::CreateLogicalDevice() {
+void binary::Vulkan::CreateLogicalDevice() {
   // A logical device is a Vulkan Concept where parts of the physical device is
   // allocated for the logical device. The logical device is not the hardware
   // it's an abstraction of resources from the physical device that we can use
@@ -194,7 +194,7 @@ void retro::Vulkan::CreateLogicalDevice() {
 // Vulkan Queue
 
 // Gets queue families from the phyiscal device
-retro::QueueFamilyIndices retro::Vulkan::FindQueueFamilies(
+binary::QueueFamilyIndices binary::Vulkan::FindQueueFamilies(
     VkPhysicalDevice phyiscal_device) {
   VkBool32 present_support;
   QueueFamilyIndices indices;
@@ -236,8 +236,8 @@ retro::QueueFamilyIndices retro::Vulkan::FindQueueFamilies(
   return indices;
 }
 
-retro::Vulkan::SwapChainSupportDetails
-retro::Vulkan::QuerySwapChainSupport(VkPhysicalDevice phyiscal_device) {
+binary::Vulkan::SwapChainSupportDetails
+binary::Vulkan::QuerySwapChainSupport(VkPhysicalDevice phyiscal_device) {
   SwapChainSupportDetails details;
   uint32_t format_count;
   uint32_t present_mode_count;

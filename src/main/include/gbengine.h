@@ -22,7 +22,7 @@
 #include <glm/vec4.hpp>
 
 #include "spdlog/spdlog.h"
-namespace retro{
+namespace binary{
 typedef enum RendererType  { 
   k_None = 0,
   k_Vulkan = 1,
@@ -35,4 +35,4 @@ typedef struct Application {
   uint32_t height;
   RendererType renderer;
 } Application; 
-}  // namespace retro
+}  // namespace binary

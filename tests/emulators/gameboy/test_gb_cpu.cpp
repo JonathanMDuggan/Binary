@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "../../../src/emulation/gameboy/include/gb_instruction.h"
-namespace retro::gb {
+namespace binary::gb {
 class GameBoyTest : public ::testing::Test {
  protected:
   GameBoy gb_;
@@ -37,7 +37,7 @@ class GameBoyTest : public ::testing::Test {
 };
 
 TEST_F(GameBoyTest, LoadRegXfromA) {
-  using namespace retro::gb::instructionset;
+  using namespace binary::gb::instructionset;
   gb_.reg_.a_ = 1;
   LoadRegBFromRegA(&gb_);
   LoadRegDFromRegA(&gb_);
@@ -52,7 +52,7 @@ TEST_F(GameBoyTest, LoadRegXfromA) {
 }
 
 TEST_F(GameBoyTest, LoadRegXfromH) {
-  using namespace retro::gb::instructionset;
+  using namespace binary::gb::instructionset;
   gb_.reg_.h_ = 1;
   LoadRegBFromRegH(&gb_);
   LoadRegDFromRegH(&gb_);
@@ -70,4 +70,4 @@ TEST_F(GameBoyTest, LoadRegXfromH) {
   LoadRegHFromRegH(&gb_);
   EXPECT_EQ(gb_.reg_.hl_, 0x0100);
 }
-}  // namespace retro
+}  // namespace binary

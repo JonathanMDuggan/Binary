@@ -9,7 +9,7 @@
 #include <SDL_vulkan.h>
 #include <SDL_opengl.h>
 #include <SDL_image.h>
-namespace retro {
+namespace binary {
 class SDL {
   typedef struct Texture {
     int height_{};
@@ -40,4 +40,4 @@ class SDL {
   void ClearTexture();
   ~SDL();
 };
-}  // namespace retro 
+}  // namespace binary 

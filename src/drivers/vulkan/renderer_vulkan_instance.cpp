@@ -5,7 +5,7 @@
 // Creates a "Vulkan Instance" taking two parameters:
 // Window: What window will Vulkan renderer to
 // Application: The application Vulkan is under.
-void retro::Vulkan::InitVulkanInstance(SDL_Window* window_,
+void binary::Vulkan::InitVulkanInstance(SDL_Window* window_,
                                           Application app) {
   // The Vulkan Instance sits at the top of the Vulkan hierarchy, the Vulkan
   // instance must be initiated with the application infomation ( name,
@@ -88,7 +88,7 @@ void retro::Vulkan::InitVulkanInstance(SDL_Window* window_,
 
 // Gets extensions from the SDL library to allow Vulkan to do features it
 // otherwise cannot do by itself
-std::vector<const char*> retro::Vulkan::GetExtensions(SDL_Window* window_) {
+std::vector<const char*> binary::Vulkan::GetExtensions(SDL_Window* window_) {
   // Get the number of extensions sdl needs and increase the size of a vector
   // based on the number it gives, then push the extension names inside of
   // vector

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(Retro)
+project(Binary)
 set(CMAKE_CXX_STANDARD 20)
 # Get the imgui stuff
 # ImGui stuff
@@ -40,19 +40,19 @@ find_package(Vulkan REQUIRED)
 find_package(OpenGL REQUIRED)
 
 enable_testing()
-file(GLOB RETRO_SOURCE_CODE
+file(GLOB BINARY_SOURCE_CODE
   ${IMGUI_SRC} 
   ${ALL_CPP_HEADER_FILES}
   ${ALL_CPP_SRC_FILES}
 )
-add_executable(Retro 
-  ${RETRO_SOURCE_CODE}
+add_executable(Binary 
+  ${BINARY_SOURCE_CODE}
 )
 
 # Google Test
 add_subdirectory(dep/googletest)
 
-target_include_directories(Retro PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(Binary PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(REQUIRED_LIBRARIES
   SDL2::SDL2
@@ -73,54 +73,29 @@ set(REQUIRED_LIBRARIES
   # fmt::fmt
 )
 
-target_link_libraries(Retro PRIVATE ${REQUIRED_LIBRARIES})
+target_link_libraries(Binary PRIVATE ${REQUIRED_LIBRARIES})
 
 if(BUILD_TESTING)
-
-  # Test: RETRO
   add_subdirectory(tests)
   get_directory_property(TEST_SOURCE_FILES
                        DIRECTORY ${CMAKE_SOURCE_DIR}/tests
                        DEFINITION TEST_SOURCE_FILES)
 
-  add_executable(Retro_Test
-    ${RETRO_SOURCE_CODE}
+  add_executable(Binary_Test
+    ${BINARY_SOURCE_CODE}
     ${TEST_SOURCE_FILES})
 
-  target_include_directories(Retro_Test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-  target_link_libraries(Retro_Test PRIVATE ${REQUIRED_LIBRARIES})
-  target_compile_definitions(Retro_Test PRIVATE RETRO_TEST)
-
-  # Test: GAMEBOY EMULATOR
-  set(RETRO_GB_SOURCE_DIR src/emulation/gameboy)
-  add_subdirectory(${RETRO_GB_SOURCE_DIR})
-  get_directory_property(RETRO_GB_SOURCE
-                        DIRECTORY ${RETRO_GB_SOURCE_DIR}
-                        DEFINITION RETRO_GB_SOURCE)
-  get_directory_property(RETRO_GB_HEADER
-                        DIRECTORY ${RETRO_GB_SOURCE_DIR}
-                        DEFINITION RETRO_GB_HEADER)
-
-  message("[Google Test] Adding google test to the build system")
-  add_executable(Retro_Gb_Test 
-    ${RETRO_GB_HEADER}
-    ${RETRO_GB_SOURCE}
-  )
-  target_link_libraries(Retro_Gb_Test PRIVATE 
-    GTest::gtest_main
-    GTest::gmock_main
-    spdlog::spdlog
-    spdlog::spdlog_header_only
-  )
+  target_include_directories(Binary_Test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  target_link_libraries(Binary_Test PRIVATE ${REQUIRED_LIBRARIES})
+  target_compile_definitions(Binary_Test PRIVATE RETRO_TEST)
 
   # Include GoogleTest
   include(GoogleTest)
-  gtest_discover_tests(Retro_Gb_Test)
-  gtest_discover_tests(Retro_Test)
+  gtest_discover_tests(Binary_Test)
 endif()
 
 find_path(SDL2_IMAGE_INCLUDE_DIR NAMES SDL2_image.h)
-set_property(TARGET Retro PROPERTY CXX_STANDARD 20)
+set_property(TARGET Binary PROPERTY CXX_STANDARD 20)
 
 # Move the resource folder where the executable is 
 file(COPY resources DESTINATION ${DST_DIR}/)
@@ -129,7 +104,7 @@ file(COPY config DESTINATION ${DST_DIR}/)
 file(COPY ${SDL2_image_DIR}/../lib/x64/SDL2_image.dll DESTINATION ${DST_DIR}/)
 
 message("
-============================== Gameboy_Engine ==============================
+================================== BINARY ==================================
 The Vulkan INCLUDE_DIR: ${Vulkan_INCLUDE_DIR}
 The Vulkan LIBRARY:     ${Vulkan_LIBRARY}
 The Vulkan SDK:         $ENV{VULKAN_SDK}

@@ -1,7 +1,7 @@
 #include "include/chip8_processor.h"
 #include "spdlog/spdlog.h"
 #include <vector>
-namespace retro::chip8 {
+namespace binary::chip8 {
 Register::Register() {
   program_counter_ = k_StackBase;
   status_ = &general_purpose_[k_VF];

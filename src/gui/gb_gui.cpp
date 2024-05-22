@@ -10,27 +10,27 @@ static void IMGUI_CheckVkResult(VkResult result) {
   }
 }
 
-void retro::GUI::StartGUI() { 
+void binary::GUI::StartGUI() { 
   spdlog::critical("GUI class is not pointing to a graphics API");
 }
 
-void retro::GUI::MainMenu() { 
-  using namespace retro::gui::mainmenu;
+void binary::GUI::MainMenu() { 
+  using namespace binary::gui::mainmenu;
   //DrawMenuBar();
 
 }
 
-void retro::VulkanGUI::StartGUI() {
+void binary::VulkanGUI::StartGUI() {
   ImGui_ImplVulkan_NewFrame(); 
   ImGui_ImplSDL2_NewFrame();  
 }
 
-void retro::OpenGLGUI::StartGUI() { 
+void binary::OpenGLGUI::StartGUI() { 
   ImGui_ImplSDL2_NewFrame();
   ImGui_ImplOpenGL3_NewFrame();
 }
  
-void retro::OpenGL::InitIMGUI() {
+void binary::OpenGL::InitIMGUI() {
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
   // Enables features like docking and taking the imgui windows outside the
@@ -53,7 +53,7 @@ void retro::OpenGL::InitIMGUI() {
   DefaultImGuiStyle();
 }
 
-void retro::Vulkan::InitIMGUI(SDL* sdl) {
+void binary::Vulkan::InitIMGUI(SDL* sdl) {
 
   VkDescriptorPoolSize pool_sizes[] = {
       {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
@@ -115,7 +115,7 @@ void retro::Vulkan::InitIMGUI(SDL* sdl) {
 
 }
 
-void retro::DefaultImGuiStyle() {
+void binary::DefaultImGuiStyle() {
   using namespace ImGui;
   ImGuiIO& io = GetIO(); 
   io.Fonts->AddFontFromFileTTF("resources/fonts/Roboto-Regular.ttf", 16.0f);

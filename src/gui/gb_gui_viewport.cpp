@@ -1,5 +1,5 @@
 #include"include/gb_gui.h"
-retro::VulkanViewport::VulkanViewport(gbVulkanGraphicsHandler vulkan,
+binary::VulkanViewport::VulkanViewport(gbVulkanGraphicsHandler vulkan,
                                       SDL* sdl): 
   physical_device_(vulkan.physical_device),
   logical_device_(vulkan.logical_device),
@@ -11,7 +11,7 @@ retro::VulkanViewport::VulkanViewport(gbVulkanGraphicsHandler vulkan,
   sdl_(sdl){
 }
 
-void retro::VulkanViewport::Destroy() {
+void binary::VulkanViewport::Destroy() {
   vkDeviceWaitIdle(*logical_device_);
   vkDestroySampler(*logical_device_, texture_sampler_, allocator_);
   vkDestroyImageView(*logical_device_, texture_image_view_, allocator_);
@@ -22,7 +22,7 @@ void retro::VulkanViewport::Destroy() {
   texture_descriptor_set_ = VK_NULL_HANDLE;
 }
 
-void retro::VulkanViewport::Free() {
+void binary::VulkanViewport::Free() {
   vkDeviceWaitIdle(*logical_device_);
   vkDestroySampler(*logical_device_, texture_sampler_, allocator_);
   vkDestroyImageView(*logical_device_, texture_image_view_, allocator_);
@@ -33,7 +33,7 @@ void retro::VulkanViewport::Free() {
   texture_descriptor_set_ = VK_NULL_HANDLE;
 }
 
-void retro::VulkanViewport::Update(void* array_data) {
+void binary::VulkanViewport::Update(void* array_data) {
   vkDeviceWaitIdle(*logical_device_);
   Free();
   LoadImageFromArray(array_data, array_size_, w_, h_);
@@ -42,14 +42,14 @@ void retro::VulkanViewport::Update(void* array_data) {
   CreateTextureDescriptorSet();
 }
 
-void retro::VulkanViewport::LoadFromPath(const char* file_path) {
+void binary::VulkanViewport::LoadFromPath(const char* file_path) {
   ViewPortCreateTextureImage(file_path);
   CreateTextureImageView();
   CreateTextureSampler();
   CreateTextureDescriptorSet();
 }
 
-void retro::VulkanViewport::LoadFromArray(void* array_data,
+void binary::VulkanViewport::LoadFromArray(void* array_data,
                                              VkDeviceSize array_size,
                                              uint32_t w, uint32_t h){
   LoadImageFromArray(array_data, array_size, w, h);
@@ -58,12 +58,12 @@ void retro::VulkanViewport::LoadFromArray(void* array_data,
   CreateTextureDescriptorSet();
 }
 
-retro::VulkanViewportInfo retro::VulkanViewport::GetViewportInfo() { 
+binary::VulkanViewportInfo binary::VulkanViewport::GetViewportInfo() { 
   if (texture_descriptor_set_ == nullptr) {
     spdlog::critical("No texture has been loaded in vulkan viewport!");
     throw std::runtime_error("No texture has been loaded in vulkan viewport!");
   }
-  retro::VulkanViewportInfo viewport_info{};
+  binary::VulkanViewportInfo viewport_info{};
   viewport_info.mips_levels = &mips_levels_; // TODO: THERE IS NO MIPS_LEVELS!
                                              // THIS IS BAD, FIX THIS!    
   viewport_info.texture_sampler = &texture_sampler_; 
@@ -77,7 +77,9 @@ retro::VulkanViewportInfo retro::VulkanViewport::GetViewportInfo() {
   return viewport_info; 
 }
 
-void retro::VulkanViewport::ViewPortCreateTextureImage(const char* image_path){
+binary::VulkanViewport::~VulkanViewport() { Destroy(); }
+
+void binary::VulkanViewport::ViewPortCreateTextureImage(const char* image_path){
   sdl_->InitSurfaceFromPath(image_path, File::PNG);
   w_ = sdl_->surface_->w;
   h_ = sdl_->surface_->h;
@@ -85,7 +87,7 @@ void retro::VulkanViewport::ViewPortCreateTextureImage(const char* image_path){
   LoadImageFromArray(sdl_->surface_->pixels, array_size_, w_, h_);
 }
 
-void retro::VulkanViewport::LoadImageFromArray(void* image_data,
+void binary::VulkanViewport::LoadImageFromArray(void* image_data,
                                                VkDeviceSize image_size,
                                                uint32_t w, uint32_t h) {
   void* data;
@@ -126,7 +128,7 @@ void retro::VulkanViewport::LoadImageFromArray(void* image_data,
   vkFreeMemory(*logical_device_, staging_buffer_memory, allocator_);
 }
 
-void retro::VulkanViewport::CreateBuffer(VkDeviceSize size,
+void binary::VulkanViewport::CreateBuffer(VkDeviceSize size,
                                          VkBufferUsageFlags usage,
                                          VkMemoryPropertyFlags properties,
                                          VkBuffer& buffer,
@@ -183,7 +185,7 @@ void retro::VulkanViewport::CreateBuffer(VkDeviceSize size,
   vkBindBufferMemory(*logical_device_, buffer, buffer_memory, 0);
 }
 
-void retro::VulkanViewport::CreateImage(uint32_t width, uint32_t height,
+void binary::VulkanViewport::CreateImage(uint32_t width, uint32_t height,
                                         VkFormat format, VkImageTiling tiling,
                                         VkImageUsageFlags usage,
                                         VkMemoryPropertyFlags properties,
@@ -236,7 +238,7 @@ void retro::VulkanViewport::CreateImage(uint32_t width, uint32_t height,
   vkBindImageMemory(*logical_device_, image, image_memory, 0);
 }
 
-uint32_t retro::VulkanViewport::FindMemoryType(uint32_t type_filter,
+uint32_t binary::VulkanViewport::FindMemoryType(uint32_t type_filter,
                                            VkMemoryPropertyFlags properties) {
   VkPhysicalDeviceMemoryProperties memory_properties;
   vkGetPhysicalDeviceMemoryProperties(*physical_device_, &memory_properties);
@@ -251,7 +253,7 @@ uint32_t retro::VulkanViewport::FindMemoryType(uint32_t type_filter,
   throw std::runtime_error("failed to find suitable memory type!");
 }
 
-void retro::VulkanViewport::TransitionImageLayout(VkImage image,
+void binary::VulkanViewport::TransitionImageLayout(VkImage image,
                                                   VkFormat format,
                                                   VkImageLayout old_layout,
                                                   VkImageLayout new_layout) {
@@ -298,7 +300,7 @@ void retro::VulkanViewport::TransitionImageLayout(VkImage image,
 
 }
 
-void retro::VulkanViewport::CopyBufferToImage(VkBuffer buffer, VkImage image,
+void binary::VulkanViewport::CopyBufferToImage(VkBuffer buffer, VkImage image,
                                               uint32_t width, uint32_t height) {
   VkCommandBuffer command_buffer =
       BeginSingleTimeCommands(*command_pool_, *logical_device_);
@@ -318,12 +320,12 @@ void retro::VulkanViewport::CopyBufferToImage(VkBuffer buffer, VkImage image,
                         *graphics_queue_);
 }
 
-void retro::VulkanViewport::CreateTextureImageView() {
+void binary::VulkanViewport::CreateTextureImageView() {
   texture_image_view_ = CreateImageView(
      texture_image_, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);  
 }
 
-void retro::VulkanViewport::CreateTextureSampler() {
+void binary::VulkanViewport::CreateTextureSampler() {
   VkPhysicalDeviceProperties properties{};
   VkSamplerCreateInfo sampler_info{};
   VkResult result;
@@ -354,7 +356,7 @@ void retro::VulkanViewport::CreateTextureSampler() {
   }
 }
 
-VkImageView retro::VulkanViewport::CreateImageView(
+VkImageView binary::VulkanViewport::CreateImageView(
   VkImage image, VkFormat format, VkImageAspectFlags aspect_flag) {
   VkImageViewCreateInfo view_info{};
   VkImageView image_view;
@@ -380,7 +382,7 @@ VkImageView retro::VulkanViewport::CreateImageView(
   return image_view;
 }
 
-void retro::VulkanViewport::CreateTextureDescriptorSet() {
+void binary::VulkanViewport::CreateTextureDescriptorSet() {
   texture_descriptor_set_ =
       ImGui_ImplVulkan_AddTexture(texture_sampler_, texture_image_view_,
                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);

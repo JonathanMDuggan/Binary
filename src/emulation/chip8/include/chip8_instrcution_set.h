@@ -1,7 +1,7 @@
 
 #include"chip8_processor.h"
 #include "../../../drivers/include/peripherals_sdl.h"
-namespace retro::chip8 {
+namespace binary::chip8 {
 enum Opcodes {
   k_SysAddr_0x000 = 0x000,
   k_JPaddr_0x100 = 0x100,
