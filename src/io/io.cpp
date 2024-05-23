@@ -1,7 +1,21 @@
 #pragma once
 #include "include/io.h"
 #include <yaml-cpp/yaml.h>
+#include <spdlog/spdlog.h>
+#include <memory>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
+#define BINARY_LOG_ERROR(message) \
+spdlog::error("{}:{} {} - {}", __FILE__, __LINE__, __FUNCTION__, message)
+#define BINARY_LOG_WARN(message) \
+  spdlog::warn("{}:{} {} - {}", __FILE__, __LINE__, __FUNCTION__, message)
+#define BINARY_LOG_INFO(message) \
+  spdlog::info("{}:{} {} - {}", __FILE__, __LINE__, __FUNCTION__, message)
+#define BINARY_LOG_DEBUG(message) \
+  spdlog::debug("{}:{} {} - {}", __FILE__, __LINE__, __FUNCTION__, message)
+#define BINARY_LOG_TRACE(message) \
+  spdlog::trace("{}:{} {} - {}", __FILE__, __LINE__, __FUNCTION__, message)
 namespace binary {
 std::vector<char> LoadRom(std::string file_path) {
   size_t rom_size;
@@ -19,6 +33,7 @@ std::vector<char> LoadRom(std::string file_path) {
   file.close();
   return ROM;
 }
+
 
 Result LoadMainConfig(const std::string& file_path, Application* app) {
 
@@ -53,6 +68,10 @@ Result LoadMainConfig(const std::string& file_path, Application* app) {
   } else { // If it's not Vulkan then it must be OpenGL
     app->renderer = k_OpenGL;
   }
+  return k_Success;
+}
+Result SetupGlobalLoggers() { 
+  spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [%s:%#] [%!] %v");
   return k_Success;
 }
 }  // namespace binary

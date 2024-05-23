@@ -87,7 +87,7 @@ if(BUILD_TESTING)
 
   target_include_directories(Binary_Test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
   target_link_libraries(Binary_Test PRIVATE ${REQUIRED_LIBRARIES})
-  target_compile_definitions(Binary_Test PRIVATE RETRO_TEST)
+  target_compile_definitions(Binary_Test PRIVATE BINARY_TEST)
 
   # Include GoogleTest
   include(GoogleTest)

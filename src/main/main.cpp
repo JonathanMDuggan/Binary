@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
   // Initialize Google Test
   binary::Result result;
   ::testing::InitGoogleTest(&argc, argv);
-#ifdef RETRO_TEST
+#ifdef BINARY_TEST
   return RUN_ALL_TESTS();
 #else
   // If it doesn't have any arguments, run the program normally.
