@@ -4,6 +4,7 @@
 #define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
 #define _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS
 #define VMA_VULKAN_VERSION 1002000
+#include "../../io/include/io.h"
 #include "../include/renderer_vulkan.h"
 #include "../include/peripherals_sdl.h"
 

@@ -31,8 +31,8 @@ get_directory_property(ALL_CPP_SRC_FILES
                        DIRECTORY ${CMAKE_SOURCE_DIR}/src
                        DEFINITION ALL_CPP_SRC_FILES)
 
-# The programmer must install SDL2 binaries and Vulkan on their own computer
-# and link the external cmake variables to the path of those libraries
+# The programmer must install SDL2 binaries and Vulkan on their computer
+# and link the external CMake variables to the path of those libraries
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
 find_package(SDL2_mixer REQUIRED)

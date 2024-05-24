@@ -18,11 +18,11 @@
 
 int main(int argc, char** argv) {
   // Initialize Google Test
-  binary::Result result;
   ::testing::InitGoogleTest(&argc, argv);
 #ifdef BINARY_TEST
   return RUN_ALL_TESTS();
 #else
+  binary::Result result;
   // If it doesn't have any arguments, run the program normally.
   bool google_test_enabled = false;
   if (argc > 1) {
@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
     render = std::make_unique<binary::Vulkan>(&sdl, app);
     gui = std::make_unique<binary::VulkanGUI>();
   }
-  
+  BINARY_LOG_ERROR("This is a test 123");
   binary::gbVulkanGraphicsHandler vulkan = render->GetGraphicsHandler();
   binary::VulkanViewport texture(vulkan, &sdl);
   texture.LoadFromPath("resources/textures/sunshine.png");
@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
         running = false;
       }
       if (event.key.keysym.sym == SDLK_LEFT) {
-        std::cout << "AHHHHH!\n";
+        std::cout << "SDK:K_LEFT!\n";
         sdl.InitSurfaceFromPath("resources/textures/moonvoid.png", 
           binary::File::PNG);
         texture.Update(sdl.surface_->pixels); 

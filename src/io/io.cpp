@@ -5,17 +5,6 @@
 #include <memory>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-
-#define BINARY_LOG_ERROR(message) \
-spdlog::error("{}:{} {} - {}", __FILE__, __LINE__, __FUNCTION__, message)
-#define BINARY_LOG_WARN(message) \
-  spdlog::warn("{}:{} {} - {}", __FILE__, __LINE__, __FUNCTION__, message)
-#define BINARY_LOG_INFO(message) \
-  spdlog::info("{}:{} {} - {}", __FILE__, __LINE__, __FUNCTION__, message)
-#define BINARY_LOG_DEBUG(message) \
-  spdlog::debug("{}:{} {} - {}", __FILE__, __LINE__, __FUNCTION__, message)
-#define BINARY_LOG_TRACE(message) \
-  spdlog::trace("{}:{} {} - {}", __FILE__, __LINE__, __FUNCTION__, message)
 namespace binary {
 std::vector<char> LoadRom(std::string file_path) {
   size_t rom_size;

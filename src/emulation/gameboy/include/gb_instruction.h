@@ -466,6 +466,7 @@ extern void AndRegB(GameBoy*);                            // 0xA0 AND B
 extern void OrRegB(GameBoy*);                             // 0xB0 OR B
 extern void ReturnIfNotZero(GameBoy*);                    // 0xC0 RET NZ
 extern void ReturnIfNotCarry(GameBoy*);                   // 0xD0 RET NC
+void ReturnFromSubRoutine(binary::gb::GameBoy* gb);
 extern void LoadHighAddressIntoRegA(GameBoy*);            // 0xE0 LDH (A8),A
 extern void LoadRegAIntoHighAddress(GameBoy*);            // 0xF0 LDH A,(A8)
 

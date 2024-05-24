@@ -77,7 +77,13 @@ BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(L, l)
 BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(A, a)
 
 inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Operand){*reg = k_Operand;}
-
+void LoadHighAddressIntoRegA(GameBoy* gb) {
+  const uint8_t k_HighAddress = gb->memory_[gb->reg_.program_counter_];
+  gb->reg_.a_ = k_HighAddress;
+}
+void LoadRegAIntoHighAddress(GameBoy* gb) {
+  gb->memory_[gb->reg_.program_counter_] = gb->reg_.a_;
+}
 void AddRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ + k_Operand; 
   SetFlagZ0HC(gb, k_Result, &gb->reg_.a_, k_Operand);
@@ -90,6 +96,7 @@ inline void AddImmediate8(uint8_t* reg, const uint8_t k_Operand, Flags* flag) {
 void XorRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ ^ k_Operand;
   gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;  // SetFlagZ000
+  gb->flags_.zero_ = static_cast<bool>(gb->reg_.f_);
   gb->reg_.a_ = k_Result;
 }
 void AndRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
@@ -105,6 +112,7 @@ void CompareRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
 void OrRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ | k_Operand;
   gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;  // SetFlagZ000
+  gb->flags_.zero_ = static_cast<bool>(gb->reg_.f_);
   gb->reg_.a_ = k_Result;
 }
 void SubWithCarryRegister(const uint8_t k_Operand, GameBoy* gb) {
@@ -174,7 +182,29 @@ void JumpRelative(GameBoy* gb) {
   gb->reg_.program_counter_ += gb->memory_[gb->reg_.program_counter_ + 1];
   gb->branched = true;
 }
-// Stop instruction
+
+void ReturnIfNotZero(GameBoy* gb) {
+  if (!gb->flags_.zero_) ReturnFromSubRoutine(gb); 
+}
+
+void ReturnIfNotCarry(GameBoy* gb) {
+  if (!gb->flags_.carry_) ReturnFromSubRoutine(gb); 
+}
+
+void ReturnIfCarry(GameBoy* gb) {
+  if (gb->flags_.carry_) ReturnFromSubRoutine(gb); 
+}
+
+void ReturnIfZero(GameBoy* gb) {
+  if (gb->flags_.zero_) ReturnFromSubRoutine(gb);
+}
+void ReturnFromSubRoutine(GameBoy* gb) {
+  const uint8_t k_LowByte = gb->memory_[gb->reg_.stack_pointer_];
+  const uint8_t k_HighByte = gb->memory_[gb->reg_.stack_pointer_ + 1];
+  const uint16_t k_ReturnAddress = (k_HighByte << 8) | k_LowByte;
+  gb->reg_.program_counter_ = k_ReturnAddress;
+}
+    // Stop instruction
 void Stop(GameBoy* gb) {
   // There's no reason to call a helper function for this, since there's only
   // one opcode like this
@@ -259,6 +289,7 @@ void binary::gb::GameBoy::Update16BitRegister(uint16_t& _16bit_reg,
 
 namespace binary::gb {
 
+// :nerd_face: Functions cannot be >30 lines long! :nerd_face:
 void InitOpcodeTable(std::array<Opcode, 512>& opcode_table){
   using namespace binary::gb::instructionset;
 
@@ -299,12 +330,43 @@ void InitOpcodeTable(std::array<Opcode, 512>& opcode_table){
 
   opcode_table[ADD_A_B].opcode_   = "80";
   opcode_table[ADD_A_B].mnemonic_ = "ADD A,B";
-  opcode_table[ADD_A_B].execute_ = AddRegAFromRegB; // TODO: CHANGE TO ADD!
+  opcode_table[ADD_A_B].execute_ = AddRegAFromRegB;
   opcode_table[ADD_A_B].SetMachineCycles(1);
 
   opcode_table[SUB_B].opcode_ = "90";
   opcode_table[SUB_B].mnemonic_ = "SUB B";
   opcode_table[SUB_B].execute_ = SubRegB;
   opcode_table[SUB_B].SetMachineCycles(1);
+
+  opcode_table[AND_B].opcode_ = "A0";
+  opcode_table[AND_B].mnemonic_ = "AND B";
+  opcode_table[AND_B].execute_ = AndRegB;
+  opcode_table[AND_B].SetMachineCycles(1);
+
+  opcode_table[OR_B].opcode_ = "B0";
+  opcode_table[OR_B].mnemonic_ = "OR B";
+  opcode_table[OR_B].execute_ = OrRegB;
+  opcode_table[OR_B].SetMachineCycles(1);
+
+  opcode_table[RET_NZ].opcode_ = "C0";
+  opcode_table[RET_NZ].mnemonic_ = "RET NZ";
+  opcode_table[RET_NZ].execute_ = ReturnIfNotZero;
+  opcode_table[RET_NZ].SetMachineCycles(5,2);
+
+  opcode_table[RET_NC].opcode_ = "D0";
+  opcode_table[RET_NC].mnemonic_ = "RET NC";
+  opcode_table[RET_NC].execute_ = ReturnIfNotCarry;
+  opcode_table[RET_NC].SetMachineCycles(5,2);
+
+  opcode_table[AND_B].opcode_ = "E0";
+  opcode_table[AND_B].mnemonic_ = "LDH %x00,A";
+  opcode_table[AND_B].execute_ = LoadHighAddressIntoRegA;
+  opcode_table[AND_B].SetMachineCycles(2);
+
+  opcode_table[AND_B].opcode_ = "F0";
+  opcode_table[AND_B].mnemonic_ = "LDH A, %x00";
+  opcode_table[AND_B].execute_ = LoadRegAIntoHighAddress;
+  opcode_table[AND_B].SetMachineCycles(2);
+  
 }
 }
