@@ -241,18 +241,18 @@ enum Instruction : uint8_t {
   SET_7_H     = 0xFC, SET_7_L   = 0xFD, SET_7__HL = 0xFE, SET_7_A   = 0xFF
 };
 // Reference: https://gbdev.io/pandocs/Memory_Map.html
-enum class MemoryMap : uint16_t{
-  ROM_BANK_00_START    = 0x0000, ROM_BANK_00_END    = 0x3FFF,
-  ROM_BANK_01_NN_START = 0x4000, ROM_BANK_01_NN_END = 0x7FFF,
-  VIDEO_RAM_START      = 0x8000, VIDEO_RAM_END      = 0x9FFF,
-  EXTERNAL_RAM_START   = 0xA000, EXTERNAL_RAM_END   = 0xBFFF,
-  WORK_RAM_START       = 0xC000, WORK_RAM_END       = 0xCFFF,
-  ECHO_RAM_START       = 0xE000, ECHO_RAM_END       = 0xFDFF,
-  OAM_START            = 0xFE00, OAM_END            = 0xFE9F,
-  NOT_USABLE_START     = 0xFEA0, NOT_USABLE_END     = 0xFEFF,
-  IO_REGISTERS_START   = 0xFF00, IO_REGISTERS_END   = 0xFF7F,
-  HIGH_RAM_START       = 0xFF80, HIGH_RAM_END       = 0xFFFE,
-  INTERRUPT_ENABLE     = 0xFFFF
+enum class MemoryMap : uint16_t {
+  k_RomBank00Start   = 0x0000, k_RomBank00End   = 0x3FFF,
+  k_RomBank01NnStart = 0x4000, k_RomBank01NnEnd = 0x7FFF,
+  k_VideoRamStart    = 0x8000, k_VideoRamEnd    = 0x9FFF,
+  k_ExternalRamStart = 0xA000, k_ExternalRamEnd = 0xBFFF,
+  k_WorkRamStart     = 0xC000, k_WorkRamEnd     = 0xCFFF,
+  k_EchoRamStart     = 0xE000, k_EchoRamEnd     = 0xFDFF,
+  k_OamStart         = 0xFE00, k_OamEnd         = 0xFE9F,
+  k_NotUsableStart   = 0xFEA0, k_NotUsableEnd   = 0xFEFF,
+  k_IoRegistersStart = 0xFF00, k_IoRegistersEnd = 0xFF7F,
+  k_HighRamStart     = 0xFF80, k_HighRamEnd     = 0xFFFE,
+  k_InterruptEnable  = 0xFFFF
 };
 // Reference: https://gbdev.io/pandocs/Memory_Map.html
 enum class IORanges : uint16_t {
@@ -433,8 +433,7 @@ enum class AddressingModes{
 enum class BitEnum : uint8_t {
   ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN
 };
-void InitOpcodeTable(
-    std::array<binary::gb::Opcode, 512>& opcode_table_dst, GameBoy* gb);
+void Init8BitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table);
 }  // namespace binary::gb
 
 namespace binary::gb::instructionset{
@@ -739,6 +738,7 @@ extern void RestartAtAddress08(GameBoy*);                 // 0xCF RST 08H
 extern void RestartAtAddress18(GameBoy*);                 // 0xDF RST 18H
 extern void RestartAtAddress28(GameBoy*);                 // 0xEF RST 28H
 extern void RestartAtAddress38(GameBoy*);                 // 0xFF RST 38H
+
 // PREFIX CB
 // Nibble 0
 extern void RotateLeftCarryRegB(GameBoy*);               // 0xCB00 RLC B

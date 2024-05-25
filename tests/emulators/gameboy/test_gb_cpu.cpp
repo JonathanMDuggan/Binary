@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <memory>
 #include "../../../src/emulation/gameboy/include/gb_instruction.h"
 namespace binary::gb {
 class GameBoyTest : public ::testing::Test {
@@ -70,4 +71,17 @@ TEST_F(GameBoyTest, LoadRegXfromH) {
   LoadRegHFromRegH(&gb_);
   EXPECT_EQ(gb_.reg_.hl_, 0x0100);
 }
+TEST_F(GameBoyTest, LoadRegDirectOpcodeTable) {
+  using namespace binary::gb::instructionset;
+  std::unique_ptr<std::array<Opcode, 512>> opcode_table;
+  opcode_table = std::make_unique<std::array<Opcode, 512>>();
+  Init8BitLoadInstructionsTable(*opcode_table);
+  EXPECT_EQ(opcode_table->at(0x40).mnemonic_, "LD B,B");
+  EXPECT_EQ(opcode_table->at(0x41).mnemonic_, "LD B,C");
+  EXPECT_EQ(opcode_table->at(0x42).mnemonic_, "LD B,D");
+  EXPECT_EQ(opcode_table->at(0x43).mnemonic_, "LD B,E");
+  EXPECT_EQ(opcode_table->at(0x44).mnemonic_, "LD B,H");
+  EXPECT_EQ(opcode_table->at(0x45).mnemonic_, "LD B,L");
+}
 }  // namespace binary
+

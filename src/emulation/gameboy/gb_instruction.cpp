@@ -1,4 +1,5 @@
 #include "include/gb_instruction.h"
+#include <format>
 #include <memory>
 
 const uint8_t binary::gb::k_FlagZ = 0x80;
@@ -167,15 +168,11 @@ inline void OrImmediate8(uint8_t* reg, const uint8_t k_Operand, Flags* flag) {
   flag->zero_ = true;
 }
 void JumpRelativeSignedIfNotZero(GameBoy* gb) {
-  if (!gb->flags_.zero_) {
-    JumpRelative(gb);
-  }
+  if (!gb->flags_.zero_) JumpRelative(gb);
 }
 
 void JumpRelativeSignedIfNotCarry(GameBoy* gb) {
-  if (!gb->flags_.carry_) {
-    JumpRelative(gb);
-  }
+  if (!gb->flags_.carry_) JumpRelative(gb);
 }
 
 void JumpRelative(GameBoy* gb) {
@@ -198,13 +195,15 @@ void ReturnIfCarry(GameBoy* gb) {
 void ReturnIfZero(GameBoy* gb) {
   if (gb->flags_.zero_) ReturnFromSubRoutine(gb);
 }
+
 void ReturnFromSubRoutine(GameBoy* gb) {
   const uint8_t k_LowByte = gb->memory_[gb->reg_.stack_pointer_];
   const uint8_t k_HighByte = gb->memory_[gb->reg_.stack_pointer_ + 1];
-  const uint16_t k_ReturnAddress = (k_HighByte << 8) | k_LowByte;
+  const uint16_t k_ReturnAddress =
+      static_cast<uint8_t>((k_HighByte << 8) | k_LowByte);
   gb->reg_.program_counter_ = k_ReturnAddress;
 }
-    // Stop instruction
+  // Stop instruction
 void Stop(GameBoy* gb) {
   // There's no reason to call a helper function for this, since there's only
   // one opcode like this
@@ -262,7 +261,7 @@ void binary::gb::GameBoy::UpdateAll16BitReg() {
 }
 
 void binary::gb::GameBoy::SetFlags(CpuFlags Z, CpuFlags N,
-                                  CpuFlags H, CpuFlags C) {
+                                   CpuFlags H, CpuFlags C) {
 
   // If the CpuFlag type equals k_Same , then set the value to
   // the current flag, else, set the value to the fuction parameters
@@ -288,85 +287,48 @@ void binary::gb::GameBoy::Update16BitRegister(uint16_t& _16bit_reg,
 }
 
 namespace binary::gb {
+#define BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(upper)\
+opcode_table[LD_A_##upper].execute_ = LoadRegAFromReg##upper;\
+opcode_table[LD_B_##upper].execute_ = LoadRegBFromReg##upper;\
+opcode_table[LD_C_##upper].execute_ = LoadRegCFromReg##upper;\
+opcode_table[LD_D_##upper].execute_ = LoadRegDFromReg##upper;\
+opcode_table[LD_E_##upper].execute_ = LoadRegEFromReg##upper;\
+opcode_table[LD_H_##upper].execute_ = LoadRegHFromReg##upper;\
+opcode_table[LD_L_##upper].execute_ = LoadRegLFromReg##upper;
 
-// :nerd_face: Functions cannot be >30 lines long! :nerd_face:
-void InitOpcodeTable(std::array<Opcode, 512>& opcode_table){
+void Init8BitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table){
   using namespace binary::gb::instructionset;
+  const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
+                                               "H", "L", "HL", "A"};
+  uint8_t opcode_letter = 0;
+  for (uint8_t opcode = 0x40; opcode < 0x80; opcode++) {
+    // Opcodes that end with 0x6 or 0xE are not Register Direct instructions
+    // So we skip them.
+    if (((~opcode & 0x6) == 0) || ((~opcode & 0xE) == 0)) {
+      continue; 
+    }
+    // Init Register Direct Instructions
+    if (opcode > 0x77 || opcode < 0x70) {
+      opcode_table[opcode].SetMachineCycles(1);
+      opcode_table[opcode].opcode_ = std::format("{:x}", opcode);
+      opcode_table[opcode].mnemonic_ = "LD ";
 
-  opcode_table[NOP].opcode_ = "00";
-  opcode_table[NOP].mnemonic_ = "NOP";
-  opcode_table[NOP].execute_ = NoOperation;
-  opcode_table[NOP].SetMachineCycles(1);
+      opcode_table[opcode].mnemonic_.append(k_Letter[opcode_letter].c_str());
+      opcode_table[opcode].mnemonic_.append(",");
+      opcode_table[opcode].mnemonic_.append(k_Letter[opcode % 8].c_str());
+    } 
 
-  opcode_table[STOP].opcode_ = "00 10";
-  opcode_table[STOP].mnemonic_ = "STOP";
-  opcode_table[STOP].execute_ = Stop;
-  opcode_table[STOP].SetMachineCycles(2);
-
-  opcode_table[JR_NZ_R8].opcode_ = "20 %x00";
-  opcode_table[JR_NZ_R8].mnemonic_ = "JR NZ,";
-  opcode_table[JR_NZ_R8].execute_ = JumpRelativeSignedIfNotZero;
-  opcode_table[JR_NZ_R8].SetMachineCycles(12,8);
-
-  opcode_table[JR_NC_R8].opcode_ = "30 %x00";
-  opcode_table[JR_NC_R8].mnemonic_ = "JR NZ,";
-  opcode_table[JR_NC_R8].execute_ = JumpRelativeSignedIfNotCarry;
-  opcode_table[JR_NC_R8].SetMachineCycles(12,8);
-
-  opcode_table[LD_B_B].opcode_ = "40";
-  opcode_table[LD_B_B].mnemonic_ = "LD B,B";
-  opcode_table[LD_B_B].execute_ = LoadRegBFromRegB;
-  opcode_table[LD_B_B].SetMachineCycles(1);
-
-  opcode_table[LD_D_B].opcode_ = "50";
-  opcode_table[LD_D_B].mnemonic_ = "LD D,B";
-  opcode_table[LD_D_B].execute_ = LoadRegDFromRegB;
-  opcode_table[LD_D_B].SetMachineCycles(1);
-
-  opcode_table[LD_H_B].opcode_ = "60";
-  opcode_table[LD_H_B].mnemonic_ = "LD H,B";
-  opcode_table[LD_H_B].execute_ = LoadRegHFromRegB;
-  opcode_table[LD_H_B].SetMachineCycles(1);
-
-  opcode_table[ADD_A_B].opcode_   = "80";
-  opcode_table[ADD_A_B].mnemonic_ = "ADD A,B";
-  opcode_table[ADD_A_B].execute_ = AddRegAFromRegB;
-  opcode_table[ADD_A_B].SetMachineCycles(1);
-
-  opcode_table[SUB_B].opcode_ = "90";
-  opcode_table[SUB_B].mnemonic_ = "SUB B";
-  opcode_table[SUB_B].execute_ = SubRegB;
-  opcode_table[SUB_B].SetMachineCycles(1);
-
-  opcode_table[AND_B].opcode_ = "A0";
-  opcode_table[AND_B].mnemonic_ = "AND B";
-  opcode_table[AND_B].execute_ = AndRegB;
-  opcode_table[AND_B].SetMachineCycles(1);
-
-  opcode_table[OR_B].opcode_ = "B0";
-  opcode_table[OR_B].mnemonic_ = "OR B";
-  opcode_table[OR_B].execute_ = OrRegB;
-  opcode_table[OR_B].SetMachineCycles(1);
-
-  opcode_table[RET_NZ].opcode_ = "C0";
-  opcode_table[RET_NZ].mnemonic_ = "RET NZ";
-  opcode_table[RET_NZ].execute_ = ReturnIfNotZero;
-  opcode_table[RET_NZ].SetMachineCycles(5,2);
-
-  opcode_table[RET_NC].opcode_ = "D0";
-  opcode_table[RET_NC].mnemonic_ = "RET NC";
-  opcode_table[RET_NC].execute_ = ReturnIfNotCarry;
-  opcode_table[RET_NC].SetMachineCycles(5,2);
-
-  opcode_table[AND_B].opcode_ = "E0";
-  opcode_table[AND_B].mnemonic_ = "LDH %x00,A";
-  opcode_table[AND_B].execute_ = LoadHighAddressIntoRegA;
-  opcode_table[AND_B].SetMachineCycles(2);
-
-  opcode_table[AND_B].opcode_ = "F0";
-  opcode_table[AND_B].mnemonic_ = "LDH A, %x00";
-  opcode_table[AND_B].execute_ = LoadRegAIntoHighAddress;
-  opcode_table[AND_B].SetMachineCycles(2);
-  
+    if (((opcode + 1) % 8) == 0){
+      opcode_letter++;
+    }
+  }
+  // We cannot algorithmically set std::functions to opcode table
+  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(A)
+  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(B)
+  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(C)
+  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(D)
+  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(E)
+  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(H)
+  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(L)
 }
 }
