@@ -77,7 +77,8 @@ BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(H, h)
 BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(L, l)
 BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(A, a)
 
-inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Operand){*reg = k_Operand;}
+inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Operand)
+{*reg = k_Operand;}
 void LoadHighAddressIntoRegA(GameBoy* gb) {
   const uint8_t k_HighAddress = gb->memory_[gb->reg_.program_counter_];
   gb->reg_.a_ = k_HighAddress;
@@ -90,8 +91,11 @@ void AddRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   SetFlagZ0HC(gb, k_Result, &gb->reg_.a_, k_Operand);
   gb->reg_.a_ = k_Result;
 }
-inline void AddImmediate8(uint8_t* reg, const uint8_t k_Operand, Flags* flag) {
-
+inline void AddImmediate8(GameBoy* gb) {
+  const uint8_t k_Operand = gb->memory_[gb->reg_.program_counter_ + 1];
+  const uint8_t k_Result = gb->reg_.a_ + k_Operand;
+  SetFlagZ0HC(gb, k_Result, &gb->reg_.a_, k_Operand);
+  gb->reg_.a_ = k_Result;
 }
 
 void XorRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
@@ -295,8 +299,11 @@ opcode_table[LD_D_##upper].execute_ = LoadRegDFromReg##upper;\
 opcode_table[LD_E_##upper].execute_ = LoadRegEFromReg##upper;\
 opcode_table[LD_H_##upper].execute_ = LoadRegHFromReg##upper;\
 opcode_table[LD_L_##upper].execute_ = LoadRegLFromReg##upper;
+void InitOpcodeTable(std::array<Opcode, 512>& opcode_table) {
+  Init8BitLoadInstructionsTable(opcode_table);
+}
 
-void Init8BitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table){
+void Init8BitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
   const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
                                                "H", "L", "HL", "A"};

@@ -433,7 +433,9 @@ enum class AddressingModes{
 enum class BitEnum : uint8_t {
   ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN
 };
-void Init8BitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table);
+extern void InitOpcodeTable(std::array<Opcode, 512>&);
+extern void Init8BitLoadInstructionsTable(
+    std::array<Opcode, 512>& opcode_table);
 }  // namespace binary::gb
 
 namespace binary::gb::instructionset{
@@ -1020,7 +1022,7 @@ extern inline void AddRegisterDirect8(const uint8_t k_Reg,
                                       GameBoy* gb);
 void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t* reg,
                  const uint8_t k_Reg);
-extern inline void AddImmediate8(uint8_t* reg, GameBoy* gb);
+extern inline void AddImmediate8(GameBoy* gb);
 extern inline void AddImmediate16(uint16_t* reg, const uint16_t k_Operand,
                                   Flags* flag);
 extern inline void AddStackPointer();

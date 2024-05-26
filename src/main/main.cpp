@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
     render = std::make_unique<binary::Vulkan>(&sdl, app);
     gui = std::make_unique<binary::VulkanGUI>();
   }
-  BINARY_LOG_ERROR("This is a test 123");
+
   binary::gbVulkanGraphicsHandler vulkan = render->GetGraphicsHandler();
   binary::VulkanViewport texture(vulkan, &sdl);
   texture.LoadFromPath("resources/textures/sunshine.png");
