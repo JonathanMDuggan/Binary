@@ -75,9 +75,6 @@ enum CpuFlags {
   void AddReg##upper(GameBoy* gb) {                                            \
     AddRegisterDirect8(gb->reg_.lower##_, gb);                                 \
   }                                                                            \
-  void SubWithCarryRegAFromReg##upper(GameBoy* gb) {                           \
-    SubWithCarryRegister(gb->reg_.lower##_, gb);                               \
-  }                                                                            \
   void SubReg##upper(GameBoy* gb) {                                            \
     SubRegisterDirect8(gb->reg_.lower##_, gb);                                 \
   }                                                                            \
@@ -91,10 +88,10 @@ enum CpuFlags {
   void CompareReg##upper(GameBoy* gb) {                                        \
     OrRegisterDirect8(gb->reg_.lower##_, gb);                                  \
   }                                                                            \
-  void AddWithCarry##upper(GameBoy* gb) {                                       \
+  void AddWithCarryReg##upper(GameBoy* gb) {                                       \
      AddWithCarryRegisterDirect8(gb->reg_.lower##_, gb);                          \
   }                                                                             \
-  void SubWithCarry##upper(GameBoy* gb) {                                       \
+  void SubWithCarryReg##upper(GameBoy* gb) {                                       \
      SubWithCarryRegisterDirect8(gb->reg_.lower##_, gb);                      \
   }    
   
@@ -1110,8 +1107,8 @@ extern inline void AndImmediate16Function(uint16_t* reg);
 extern inline void ReadMemory(GameBoy* gb);
 extern inline void SubRegisterDirect8(const uint8_t k_Reg, GameBoy* gb);
 extern inline void SubImmediate8Function(GameBoy* gb);
-extern inline void SubWithCarryRegister(const uint8_t k_Reg,
-                                        GameBoy* gb);
+extern inline void SubWithCarryRegisterDirect8(const uint8_t k_Operand,
+                                               GameBoy* gb);
 extern inline void SubWithCarry(GameBoy& gb);
 extern inline void AndRegisterDirect8(GameBoy* gb);
 extern inline void CompareRegisterDirect8(GameBoy* gb);
