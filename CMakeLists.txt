@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(Binary)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 # Get the imgui stuff
 # ImGui stuff
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)

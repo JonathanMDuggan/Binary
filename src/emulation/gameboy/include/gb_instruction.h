@@ -13,7 +13,7 @@
 #include <array>
 #include <string>
 #include <functional>
-
+#include <bitset>
 namespace binary::gb {
 enum CpuFlags {
   k_0 = 0,
@@ -24,10 +24,89 @@ enum CpuFlags {
   k_Same = 2  // Nothing
 };
 
-extern const uint8_t k_FlagZ;
-extern const uint8_t k_FlagN;
-extern const uint8_t k_FlagH;
-extern const uint8_t k_FlagC;
+#define BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(upper) \
+  opcode_table[LD_A_##upper].execute_ = LoadRegAFromReg##upper;         \
+  opcode_table[LD_B_##upper].execute_ = LoadRegBFromReg##upper;         \
+  opcode_table[LD_C_##upper].execute_ = LoadRegCFromReg##upper;         \
+  opcode_table[LD_D_##upper].execute_ = LoadRegDFromReg##upper;         \
+  opcode_table[LD_E_##upper].execute_ = LoadRegEFromReg##upper;         \
+  opcode_table[LD_H_##upper].execute_ = LoadRegHFromReg##upper;         \
+  opcode_table[LD_L_##upper].execute_ = LoadRegLFromReg##upper;
+
+#define BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_OPERATION_REG(upper) \
+  opcode_table[ADD_##upper].execute_ = AddReg##upper;              \
+  opcode_table[ADC_##upper].execute_ = AddWithCarryReg##upper;     \
+  opcode_table[SUB_##upper].execute_ = SubReg##upper;              \
+  opcode_table[SBC_##upper].execute_ = SubWithCarryReg##upper;     \
+  opcode_table[AND_##upper].execute_ = AndReg##upper;              \
+  opcode_table[OR_##upper].execute_  = OrReg##upper;               \
+  opcode_table[XOR_##upper].execute_ = XorReg##upper;              \
+  opcode_table[CP_##upper].execute_  = CompareReg##upper;   
+
+#define BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(upper, lower)              \
+  void LoadRegBFromReg##upper(GameBoy* gb) {                                   \
+    LoadRegisterDirect(&gb->reg_.b_, gb->reg_.lower##_);                       \
+    gb->UpdateRegBC();                                                         \
+  }                                                                            \
+  void LoadRegDFromReg##upper(GameBoy* gb) {                                   \
+    LoadRegisterDirect(&gb->reg_.d_, gb->reg_.lower##_);                       \
+    gb->UpdateRegDE();                                                         \
+  }                                                                            \
+  void LoadRegHFromReg##upper(GameBoy* gb) {                                   \
+    LoadRegisterDirect(&gb->reg_.h_, gb->reg_.lower##_);                       \
+    gb->UpdateRegHL();                                                         \
+  }                                                                            \
+  void LoadRegLFromReg##upper(GameBoy* gb) {                                   \
+    LoadRegisterDirect(&gb->reg_.l_, gb->reg_.lower##_);                       \
+    gb->UpdateRegHL();                                                         \
+  }                                                                            \
+  void LoadRegAFromReg##upper(GameBoy* gb) {                                   \
+    LoadRegisterDirect(&gb->reg_.a_, gb->reg_.lower##_);                       \
+    gb->UpdateRegAF();                                                         \
+  }                                                                            \
+  void LoadRegCFromReg##upper(GameBoy* gb) {                                   \
+    LoadRegisterDirect(&gb->reg_.c_, gb->reg_.lower##_);                       \
+    gb->UpdateRegBC();                                                         \
+  }                                                                            \
+  void LoadRegEFromReg##upper(GameBoy* gb) {                                   \
+    LoadRegisterDirect(&gb->reg_.e_, gb->reg_.lower##_);                       \
+    gb->UpdateRegDE();                                                         \
+  }                                                                            \
+  void AddReg##upper(GameBoy* gb) {                                            \
+    AddRegisterDirect8(gb->reg_.lower##_, gb);                                 \
+  }                                                                            \
+  void SubWithCarryRegAFromReg##upper(GameBoy* gb) {                           \
+    SubWithCarryRegister(gb->reg_.lower##_, gb);                               \
+  }                                                                            \
+  void SubReg##upper(GameBoy* gb) {                                            \
+    SubRegisterDirect8(gb->reg_.lower##_, gb);                                 \
+  }                                                                            \
+  void XorReg##upper(GameBoy* gb) {                                            \
+    XorRegisterDirect8(gb->reg_.lower##_, gb);                                 \
+  }                                                                            \
+  void AndReg##upper(GameBoy* gb) {                                            \
+    XorRegisterDirect8(gb->reg_.lower##_, gb);                                 \
+  }                                                                            \
+  void OrReg##upper(GameBoy* gb) { OrRegisterDirect8(gb->reg_.lower##_, gb); } \
+  void CompareReg##upper(GameBoy* gb) {                                        \
+    OrRegisterDirect8(gb->reg_.lower##_, gb);                                  \
+  }                                                                            \
+  void AddWithCarry##upper(GameBoy* gb) {                                       \
+     AddWithCarryRegisterDirect8(gb->reg_.lower##_, gb);                          \
+  }                                                                             \
+  void SubWithCarry##upper(GameBoy* gb) {                                       \
+     SubWithCarryRegisterDirect8(gb->reg_.lower##_, gb);                      \
+  }    
+  
+constexpr uint8_t k_FlagZ = 0x80;
+constexpr uint8_t k_FlagN = 0x40;
+constexpr uint8_t k_FlagH = 0x20;
+constexpr uint8_t k_FlagC = 0x10;
+
+constexpr uint8_t k_BitIndexZ  = 8;
+constexpr uint8_t k_BitIndexN  = 7;
+constexpr uint8_t k_BitIndexH  = 6;
+constexpr uint8_t k_BitIndexC  = 6;
 
 typedef struct Flags {
   bool zero_{};
@@ -45,14 +124,14 @@ public:
   typedef struct Register {
     // 8 Bit general purpose Registers
     uint8_t a_{};
-    uint8_t f_{};
     uint8_t b_{};
     uint8_t c_{};
     uint8_t d_{};
     uint8_t e_{};
     uint8_t h_{};
     uint8_t l_{};
-
+    std::bitset<8> f_{};
+     
     uint16_t hl_{};
     uint16_t bc_{};
     uint16_t de_{};
@@ -61,22 +140,19 @@ public:
     uint16_t stack_pointer_{};
     uint16_t IDU_{};
     uint8_t instruction_{};
-    uint8_t accumulator_{};
     uint8_t interrupt_{};
   } Register;
+
   bool branched;
   Register reg_{};
-  Flags flags_{};
   std::array<uint8_t, 8000> memory_; 
   void ClearRegisters();
   void UpdateRegHL();
   void UpdateRegBC();
   void UpdateRegDE();
   void UpdateRegAF();
-  void UpdateFlags();
   void UpdateAll16BitReg();
-  void SetFlags(CpuFlags Z, CpuFlags N, CpuFlags H,
-                CpuFlags C);
+
  private:
   inline void Update16BitRegister(uint16_t& _16bit_reg, const uint8_t& high_reg,
                                   const uint8_t& low_reg);
@@ -109,9 +185,9 @@ enum Instruction : uint8_t {
   LD_D_B      = 0x50, LD_D_C    = 0x51, LD_D_D    = 0x52, LD_D_E    = 0x53,
   LD_H_B      = 0x60, LD_H_C    = 0x61, LD_H_D    = 0x62, LD_H_E    = 0x63,
   LD__HL_B    = 0x70, LD__HL_C  = 0x71, LD__HL_D  = 0x72, LD__HL_E  = 0x73,
-  ADD_A_B     = 0x80, ADD_A_C   = 0x81, ADD_A_D   = 0x82, ADD_A_E   = 0x83,
+  ADD_B       = 0x80, ADD_C     = 0x81, ADD_D     = 0x82, ADD_E     = 0x83,
   SUB_B       = 0x90, SUB_C     = 0x91, SUB_D     = 0x92, SUB_E     = 0x93,
-  AND_B       = 0xA0, AND_C     = 0xA1, ADD_D     = 0xA2, ADD_E     = 0xA3,
+  AND_B       = 0xA0, AND_C     = 0xA1, AND_D     = 0xA2, AND_E     = 0xA3,
   OR_B        = 0xB0, OR_C      = 0xB1, OR_D      = 0xB2, OR_E      = 0xB3,
   RET_NZ      = 0xC0, POP_BC    = 0xC1, JP_NZ_A16 = 0xC2, JP_A16    = 0xC3,
   RET_NC      = 0xD0, POP_DE    = 0xD1, JP_NC_A16 = 0xD2, NUL_D3    = 0xD3,
@@ -126,7 +202,7 @@ enum Instruction : uint8_t {
   LD_D_H      = 0x54, LD_D_L    = 0x55, LD_D__HL  = 0x56, LD_D_A    = 0x57,
   LD_H_H      = 0x64, LD_H_L    = 0x65, LD_H__HL  = 0x66, LD_H_A    = 0x67,
   LD__HL_H    = 0x74, LD__HL_L  = 0x75, HALT      = 0x76, LD__HL_A  = 0x77,
-  ADD_A_H     = 0x84, ADD_A_L   = 0x85, ADD_A__HL = 0x86, ADD_A_A   = 0x87,
+  ADD_H       = 0x84, ADD_L     = 0x85, ADD__HL   = 0x86, ADD_A     = 0x87,
   SUB_H       = 0x94, SUB_L     = 0x95, SUB__HL   = 0x96, SUB_A     = 0x97,
   AND_H       = 0xA4, AND_L     = 0xA5, AND__HL   = 0xA6, AND_A     = 0xA7,
   OR_H        = 0xB4, OR_L      = 0xB5, OR__HL    = 0xB6, OR_A      = 0xB7,
@@ -143,8 +219,8 @@ enum Instruction : uint8_t {
   LD_E_B      = 0x58, LD_E_C    = 0x59, LD_E_D    = 0x5A, LD_E_E    = 0x5B,
   LD_L_B      = 0x68, LD_L_C    = 0x69, LD_L_D    = 0x6A, LD_L_E    = 0x6B,
   LD_A_B      = 0x78, LD_A_C    = 0x79, LD_A_D    = 0x7A, LD_A_E    = 0x7B,
-  ADC_A_B     = 0x88, ADC_A_C   = 0x89, ADC_A_D   = 0x8A, ADC_A_E   = 0x8B,
-  SBC_A_B     = 0x98, SBC_A_C   = 0x99, SBC_A_D   = 0x9A, SBC_A_E   = 0x9B,
+  ADC_B       = 0x88, ADC_C     = 0x89, ADC_D     = 0x8A, ADC_E     = 0x8B,
+  SBC_B       = 0x98, SBC_C     = 0x99, SBC_D     = 0x9A, SBC_E     = 0x9B,
   XOR_B       = 0xA8, XOR_C     = 0xA9, XOR_D     = 0xAA, XOR_E     = 0xAB,
   CP_B        = 0xB8, CP_C      = 0xB9, CP_D      = 0xBA, CP_E      = 0xBB,
   RET_Z       = 0xC8, RET       = 0xC9, JP_Z_A16  = 0xCA, PREFIX_CB = 0xCB,
@@ -160,8 +236,8 @@ enum Instruction : uint8_t {
   LD_E_H      = 0x5C, LD_E_L    = 0x5D, LD_E__HL  = 0x5E, LD_E_A    = 0x5F,
   LD_L_H      = 0x6C, LD_L_L    = 0x6D, LD_L__HL  = 0x6E, LD_L_A    = 0x6F,
   LD_A_H      = 0x7C, LD_A_L    = 0x7D, LD_A__HL  = 0x7E, LD_A_A    = 0x7F,
-  ADC_A_H     = 0x8C, ADC_A_L   = 0x8D, ADC_A__HL = 0x8E, ADC_A_A   = 0x8F,
-  SBC_A_H     = 0x9C, SBC_A_L   = 0x9D, SBC_A__HL = 0x9E, SBC_A_A   = 0x9F,
+  ADC_H       = 0x8C, ADC_L     = 0x8D, ADC__HL   = 0x8E, ADC_A     = 0x8F,
+  SBC_H       = 0x9C, SBC_L     = 0x9D, SBC__HL   = 0x9E, SBC_A     = 0x9F,
   XOR_H       = 0xAC, XOR_L     = 0xAD, XOR__HL   = 0xAE, XOR_A     = 0xAF,
   CP_H        = 0xBC, CP_L      = 0xBD, CP__HL    = 0xBE, CP_A      = 0xBF,
   CALL_Z_A16  = 0xCC, CALL_A16  = 0xCD, ADC_A_D8  = 0xCE, RST_08H   = 0xCF,
@@ -254,84 +330,83 @@ enum class MemoryMap : uint16_t {
   k_HighRamStart     = 0xFF80, k_HighRamEnd     = 0xFFFE,
   k_InterruptEnable  = 0xFFFF
 };
+
 // Reference: https://gbdev.io/pandocs/Memory_Map.html
 enum class IORanges : uint16_t {
-  JOYPAD_INPUT          = 0xFF00,
-  SERIAL_TRANSFER_START = 0xFF01, SERIAL_TRANSFER_END = 0xFF02,
-  TIMER_DIVIDER_START   = 0xFF04, TIMER_DIVIDER_END   = 0xFF07,
-  AUDIO_START           = 0xFF10, AUDIO_END           = 0xFF26,
-  WAVE_PATTERN_START    = 0xFF30, WAVE_PATTERN_END    = 0xFF3F,
-  VRAM_BANK_SELECT      = 0xFF4F,
-  DISABLE_BOOT_ROM      = 0xFF50, 
-  VRAM_DMA_START        = 0xFF51, VRAM_DMA_END        = 0xFF55,
-  BG_OBJ_PALETTES_START = 0xFF68, BG_OBJ_PALETTES_END = 0xFF6B,
-  WRAM_BANK_SELECT      = 0xFF70
+  k_JoypadInput          = 0xFF00,
+  k_SerialTransferStart  = 0xFF01, k_SerialTransferEnd  = 0xFF02,
+  k_TimerDividerStart    = 0xFF04, k_TimerDividerEnd    = 0xFF07,
+  k_AudioStart           = 0xFF10, k_AudioEnd           = 0xFF26,
+  k_WavePatternStart     = 0xFF30, k_WavePatternEnd     = 0xFF3F,
+  k_VramBankSelect       = 0xFF4F,
+  k_DisableBootRom       = 0xFF50, 
+  k_VramDmaStart         = 0xFF51, k_VramDmaEnd         = 0xFF55,
+  k_BgObjPalettesStart   = 0xFF68, k_BgObjPalettesEnd   = 0xFF6B,
+  k_WramBankSelect       = 0xFF70
 };
 // Reference: https://gbdev.io/pandocs/Hardware_Reg_List.html
 enum class HardwareRegistersName : uint16_t {
-  P1_JOYP   = 0xFF00, // JoyPad
-  SB        = 0xFF01, // Serial Transfer Data
-  SC        = 0xFF02, // Serial Transfer Control
-  DIV       = 0xFF04, // Divider Register
-  TIMA      = 0xFF05, // Timer Counter
-  TMA       = 0xFF06, // Timer Modulo
-  TAC       = 0xFF07, // Timer Control
-  IF        = 0xFF0F, // Interrupt Flag
-  NR10      = 0xFF10, // Sound Channel 1 Sweep
-  NR11      = 0xFF11, // Sound Channel 1 length timer & duty cycle
-  NR12      = 0xFF12, // Sound Channel 1 volume & envelope
-  NR13      = 0xFF13, // Sound Channel 1 period low
-  NR14      = 0xFF14, // Sound Channel 1 period high & control
-  NR21      = 0xFF16, // Sound Channel 2 length timer & duty cycle
-  NR22      = 0xFF17, // Sound Channel 2 volume & envelope
-  NR23      = 0xFF18, // Sound Channel 2 period low
-  NR24      = 0xFF19, // Sound Channel 2 period high & control
-  NR30      = 0xFF1A, // Sound Channel 3 DAC enable
-  NR31      = 0xFF1B, // Sound Channel 3 length timer
-  NR32      = 0xFF1C, // Sound Channel 3 output level
-  NR33      = 0xFF1D, // Sound Channel 3 period low
-  NR34      = 0xFF1E, // Sound Channel 3 period high & control
-  NR41      = 0xFF20, // Sound Channel 4 length timer
-  NR42      = 0xFF21, // Sound Channel 4 volume & envelope
-  NR43      = 0xFF22, // Sound Channel 4 frequency & randomness
-  NR44      = 0xFF23, // Sound Channel 4 control
-  NR50      = 0xFF24, // Master volume & VIN panning
-  NR51      = 0xFF25, // Sound panning
-  NR52      = 0xFF26, // Sound on/off
-  WAVE_RAM  = 0xFF30, // Wave RAM
-  LCDC      = 0xFF40, // LCD control
-  STAT      = 0xFF41, // LCD status
-  SCY       = 0xFF42, // Viewport Y position
-  SCX       = 0xFF43, // Viewport X position
-  LY        = 0xFF44, // LCD Y coordinate
-  LYC       = 0xFF45, // LY compare
-  DMA       = 0xFF46, // OAM DMA source address & start
-  BGP       = 0xFF47, // BG palette data
-  OBP0      = 0xFF48, // OBJ palette 0 data
-  OBP1      = 0xFF49, // OBJ palette 1 data
-  WY        = 0xFF4A, // Window Y position
-  WX        = 0xFF4B, // Window X position plus 7
-  KEY1      = 0xFF4D, // Prepare speed switch
-  VBK       = 0xFF4F, // VRAM bank
-  HDMA1     = 0xFF51, // VRAM DMA source high
-  HDMA2     = 0xFF52, // VRAM DMA source low
-  HDMA3     = 0xFF53, // VRAM DMA destination high
-  HDMA4     = 0xFF54, // VRAM DMA destination low
-  HDMA5     = 0xFF55, // VRAM DMA length/mode/start
-  RP        = 0xFF56, // Infrared communications port
-  BCPS_BGPI = 0xFF68, // Background color palette specification / Background
-                      // palette index
-  BCPD_BGPD = 0xFF69, // Background color palette data / Background palette data
-  OCPS_OBPI = 0xFF6A, // OBJ color palette specification / OBJ palette index
-  OCPD_OBPD = 0xFF6B, // OBJ color palette data / OBJ palette data
-  OPRI      = 0xFF6C, // Object priority mode
-  SVBK      = 0xFF70, // WRAM bank
-  PCM12     = 0xFF76, // Audio digital outputs 1 & 2
-  PCM34     = 0xFF77, // Audio digital outputs 3 & 4
-  IE        = 0xFFFF  // Interrupt enable
+  k_P1Joyp   = 0xFF00, // JoyPad
+  k_Sb       = 0xFF01, // Serial Transfer Data
+  k_Sc       = 0xFF02, // Serial Transfer Control
+  k_Div      = 0xFF04, // Divider Register
+  k_Tima     = 0xFF05, // Timer Counter
+  k_Tma      = 0xFF06, // Timer Modulo
+  k_Tac      = 0xFF07, // Timer Control
+  k_If       = 0xFF0F, // Interrupt Flag
+  k_Nr10     = 0xFF10, // Sound Channel 1 Sweep
+  k_Nr11     = 0xFF11, // Sound Channel 1 length timer & duty cycle
+  k_Nr12     = 0xFF12, // Sound Channel 1 volume & envelope
+  k_Nr13     = 0xFF13, // Sound Channel 1 period low
+  k_Nr14     = 0xFF14, // Sound Channel 1 period high & control
+  k_Nr21     = 0xFF16, // Sound Channel 2 length timer & duty cycle
+  k_Nr22     = 0xFF17, // Sound Channel 2 volume & envelope
+  k_Nr23     = 0xFF18, // Sound Channel 2 period low
+  k_Nr24     = 0xFF19, // Sound Channel 2 period high & control
+  k_Nr30     = 0xFF1A, // Sound Channel 3 DAC enable
+  k_Nr31     = 0xFF1B, // Sound Channel 3 length timer
+  k_Nr32     = 0xFF1C, // Sound Channel 3 output level
+  k_Nr33     = 0xFF1D, // Sound Channel 3 period low
+  k_Nr34     = 0xFF1E, // Sound Channel 3 period high & control
+  k_Nr41     = 0xFF20, // Sound Channel 4 length timer
+  k_Nr42     = 0xFF21, // Sound Channel 4 volume & envelope
+  k_Nr43     = 0xFF22, // Sound Channel 4 frequency & randomness
+  k_Nr44     = 0xFF23, // Sound Channel 4 control
+  k_Nr50     = 0xFF24, // Master volume & VIN panning
+  k_Nr51     = 0xFF25, // Sound panning
+  k_Nr52     = 0xFF26, // Sound on/off
+  k_WaveRam  = 0xFF30, // Wave RAM
+  k_Lcdc     = 0xFF40, // LCD control
+  k_Stat     = 0xFF41, // LCD status
+  k_Scy      = 0xFF42, // Viewport Y position
+  k_Scx      = 0xFF43, // Viewport X position
+  k_Ly       = 0xFF44, // LCD Y coordinate
+  k_Lyc      = 0xFF45, // LY compare
+  k_Dma      = 0xFF46, // OAM DMA source address & start
+  k_Bgp      = 0xFF47, // BG palette data
+  k_Obp0     = 0xFF48, // OBJ palette 0 data
+  k_Obp1     = 0xFF49, // OBJ palette 1 data
+  k_Wy       = 0xFF4A, // Window Y position
+  k_Wx       = 0xFF4B, // Window X position plus 7
+  k_Key1     = 0xFF4D, // Prepare speed switch
+  k_Vbk      = 0xFF4F, // VRAM bank
+  k_Hdma1    = 0xFF51, // VRAM DMA source high
+  k_Hdma2    = 0xFF52, // VRAM DMA source low
+  k_Hdma3    = 0xFF53, // VRAM DMA destination high
+  k_Hdma4    = 0xFF54, // VRAM DMA destination low
+  k_Hdma5    = 0xFF55, // VRAM DMA length/mode/start
+  k_Rp       = 0xFF56, // Infrared communications port
+  k_BcpsBgpi = 0xFF68, // Background color palette specification / Background 
+                       // palette index
+  k_BcpdBgpd = 0xFF69, // Background color palette data / Background palette data
+  k_OcpsObpi = 0xFF6A, // OBJ color palette specification / OBJ palette index
+  k_OcpdObpd = 0xFF6B, // OBJ color palette data / OBJ palette data
+  k_Opri     = 0xFF6C, // Object priority mode
+  k_Svbk     = 0xFF70, // WRAM bank
+  k_Pcm12    = 0xFF76, // Audio digital outputs 1 & 2
+  k_Pcm34    = 0xFF77, // Audio digital outputs 3 & 4
+  k_Ie       = 0xFFFF  // Interrupt enable
 };
-
-
 
 typedef struct FlagInfo {
   CpuFlags z_ = k_Same;
@@ -353,88 +428,87 @@ typedef class Opcode {
 
 // Reference: https://gbdev.io/pandocs/The_Cartridge_Header.html
 enum class NewPublisherCodeIndex {
-  NONE                                   = 0,
-  NINTENDO_RESEARCH_AND_DEVELOPMENT_1    = 1,
-  CAPCOM                                 = 2,
-  EA                                     = 3,
-  HUDSON_SOFT                            = 4,
-  B_AI                                   = 5,
-  KSS                                    = 6,
-  PLANNING_OFFICE_WADA                   = 7,
-  PCM_COMPLETE                           = 8,
-  SAN_X                                  = 9,
-  KEMCO                                  = 10,
-  SETA_CORPORATION                       = 11,
-  VIACOM                                 = 12,
-  NINTENDO                               = 13,
-  BANDAI                                 = 14,
-  OCEAN_SOFTWARE_ACCLAIM_ENTERTAINMENT   = 15,
-  KONAMI                                 = 16,
-  HECTOR_SOFT                            = 17,
-  TAITO                                  = 18,
-  HUDSON_SOFT_2                          = 19,
-  BANPRESTO                              = 20,
-  UBI_SOFT                               = 21,
-  ATLUS                                  = 22,
-  MALIBU_INTERACTIVE                     = 23,
-  ANGEL                                  = 24,
-  BULLET_PROOF_SOFTWARE                  = 25,
-  IREM                                   = 26,
-  ABSOLUTE                               = 27,
-  ACCLAIM_ENTERTAINMENT_2                = 28,
-  ACTIVISION                             = 29,
-  SAMMY_USA_CORPORATION                  = 30,
-  KONAMI_2                               = 31,
-  HI_TECH_EXPRESSIONS                    = 32,
-  LJN                                    = 33,
-  MATCHBOX                               = 34,
-  MATTEL                                 = 35,
-  MILTON_BRADLEY_COMPANY                 = 36,
-  TITUS_INTERACTIVE                      = 37,
-  VIRGIN_GAMES_LTD                       = 38,
-  LUCASFILM_GAMES                        = 39,
-  OCEAN_SOFTWARE_2                       = 40,
-  EA_2                                   = 41,
-  INFOGRAMES                             = 42,
-  INTERPLAY_ENTERTAINMENT                = 43,
-  BRODERBUND                             = 44,
-  SCULPTURED_SOFTWARE                    = 45,
-  THE_SALES_CURVE_LIMITED                = 46,
-  THQ                                    = 47,
-  ACCOLADE                               = 48,
-  MISAWA_ENTERTAINMENT                   = 49,
-  LOZC                                   = 50,
-  TOKUMA_SHOTEN                          = 51,
-  TSUKUDA_ORIGINAL                       = 52,
-  CHUNSOFT_CO                            = 53,
-  VIDEO_SYSTEM                           = 54,
-  OCEAN_SOFTWARE_ACCLAIM_ENTERTAINMENT_2 = 55,
-  VARIE                                  = 56,
-  YONEZAWA_S_PAL                         = 57,
-  KANEKO                                 = 58,
-  PACK_IN_VIDEO                          = 59,
-  BOTTOM_UP                              = 60,
-  KONAMI_YU_GI_OH                        = 61,
-  MTO                                    = 62,
-  KODANSHA                               = 63
+  k_None                                   = 0,
+  k_NintendoResearchAndDevelopment1        = 1,
+  k_Capcom                                 = 2,
+  k_Ea                                     = 3,
+  k_HudsonSoft                             = 4,
+  k_BAi                                    = 5,
+  k_Kss                                    = 6,
+  k_PlanningOfficeWada                     = 7,
+  k_PcmComplete                            = 8,
+  k_SanX                                   = 9,
+  k_Kemco                                  = 10,
+  k_SetaCorporation                        = 11,
+  k_Viacom                                 = 12,
+  k_Nintendo                               = 13,
+  k_Bandai                                 = 14,
+  k_OceanSoftwareAcclaimEntertainment      = 15,
+  k_Konami                                 = 16,
+  k_HectorSoft                             = 17,
+  k_Taito                                  = 18,
+  k_HudsonSoft2                            = 19,
+  k_Banpresto                              = 20,
+  k_UbiSoft                                = 21,
+  k_Atlus                                  = 22,
+  k_MalibuInteractive                      = 23,
+  k_Angel                                  = 24,
+  k_BulletProofSoftware                    = 25,
+  k_Irem                                   = 26,
+  k_Absolute                               = 27,
+  k_AcclaimEntertainment2                  = 28,
+  k_Activision                             = 29,
+  k_SammyUsaCorporation                    = 30,
+  k_Konami2                                = 31,
+  k_HiTechExpressions                      = 32,
+  k_Ljn                                    = 33,
+  k_Matchbox                               = 34,
+  k_Mattel                                 = 35,
+  k_MiltonBradleyCompany                   = 36,
+  k_TitusInteractive                       = 37,
+  k_VirginGamesLtd                         = 38,
+  k_LucasfilmGames                         = 39,
+  k_OceanSoftware2                         = 40,
+  k_Ea2                                    = 41,
+  k_Infogrames                             = 42,
+  k_InterplayEntertainment                 = 43,
+  k_Broderbund                             = 44,
+  k_SculpturedSoftware                     = 45,
+  k_TheSalesCurveLimited                   = 46,
+  k_Thq                                    = 47,
+  k_Accolade                               = 48,
+  k_MisawaEntertainment                    = 49,
+  k_Lozc                                   = 50,
+  k_TokumaShoten                           = 51,
+  k_TsukudaOriginal                        = 52,
+  k_ChunsoftCo                             = 53,
+  k_VideoSystem                            = 54,
+  k_OceanSoftwareAcclaimEntertainment2     = 55,
+  k_Varie                                  = 56,
+  k_YonezawaSPal                           = 57,
+  k_Kaneko                                 = 58,
+  k_PackInVideo                            = 59,
+  k_BottomUp                               = 60,
+  k_KonamiYuGiOh                           = 61,
+  k_Mto                                    = 62,
+  k_Kodansha                               = 63
 };
 // TODO: Fill the PublisherCodeString with the codes corrsponding with the index
 const std::string k_PublisherCodeString{"0"};
-enum class AddressingModes{
-  NONE,
-  ADDRESS_8,   ADDRESS_16,
-  DIRECT,      REGISTER_DIRECT,
-  INDEXED,
-  IMMEDIATE_8, IMMEDIATE_16,
-  INDIRECT,    REGISTER_INDIRECT,
-  RELATIVE,
+enum class AddressingModes {
+  k_None,
+  k_Address8,   k_Address16,
+  k_Direct,     k_RegisterDirect,
+  k_Indexed,
+  k_Immediate8, k_Immediate16,
+  k_Indirect,   k_RegisterIndirect,
+  k_Relative,
 };
 
-enum class BitEnum : uint8_t {
-  ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN
-};
 extern void InitOpcodeTable(std::array<Opcode, 512>&);
 extern void Init8BitLoadInstructionsTable(
+    std::array<Opcode, 512>& opcode_table);
+void Init8BitArithmeticLogicRegisterDirectTable(
     std::array<Opcode, 512>& opcode_table);
 }  // namespace binary::gb
 
@@ -450,7 +524,7 @@ namespace binary::gb::instructionset{
 // The Register that is first mention is the location where the data is stored
 // Examples: 
 // * LoadRegDFromRegB is equivalent to: D = B
-// * AddRegAFromRegD is equivalent to:  A += D
+// * AddRegD is equivalent to:  A += D
 //   
 // Nibble 0
 extern void NoOperation(GameBoy*);                        // 0x00 NOP
@@ -461,13 +535,12 @@ extern void LoadRegBFromRegB(GameBoy*);                   // 0x40 LD B,B
 extern void LoadRegDFromRegB(GameBoy*);                   // 0x50 LD D,B
 extern void LoadRegHFromRegB(GameBoy*);                   // 0x60 LD H,B
 extern void LoadRegIndirectHLFromRegB(GameBoy*);          // 0x70 LD (HL),B
-extern void AddRegAFromRegB(GameBoy*);                    // 0x80 ADD A,B
+extern void AddFromRegB(GameBoy*);                        // 0x80 ADD B
 extern void SubRegB(GameBoy*);                            // 0x90 SUB B
 extern void AndRegB(GameBoy*);                            // 0xA0 AND B
 extern void OrRegB(GameBoy*);                             // 0xB0 OR B
 extern void ReturnIfNotZero(GameBoy*);                    // 0xC0 RET NZ
 extern void ReturnIfNotCarry(GameBoy*);                   // 0xD0 RET NC
-void ReturnFromSubRoutine(binary::gb::GameBoy* gb);
 extern void LoadHighAddressIntoRegA(GameBoy*);            // 0xE0 LDH (A8),A
 extern void LoadRegAIntoHighAddress(GameBoy*);            // 0xF0 LDH A,(A8)
 
@@ -498,7 +571,7 @@ extern void LoadRegBFromRegD(GameBoy*);                   // 0x42 LD B,D
 extern void LoadRegDFromRegD(GameBoy*);                   // 0x52 LD D,D
 extern void LoadRegHFromRegD(GameBoy*);                   // 0x62 LD H,D
 extern void LoadIndirectRegHLFromRegD(GameBoy*);          // 0x72 LD (HL),D
-extern void AddRegAFromRegD(GameBoy*);                    // 0x82 ADD A,D
+extern void AddRegD(GameBoy*);                            // 0x82 ADD D
 extern void SubRegD(GameBoy*);                            // 0x92 SUB D
 extern void AndRegD(GameBoy*);                            // 0xA2 AND D
 extern void OrRegD(GameBoy*);                             // 0xB2 OR D
@@ -516,7 +589,7 @@ extern void LoadRegBFromRegE(GameBoy*);                   // 0x43 LD B,E
 extern void LoadRegDFromRegE(GameBoy*);                   // 0x53 LD D,E
 extern void LoadRegHFromRegE(GameBoy*);                   // 0x63 LD H,E
 extern void LoadIndirectRegHLFromRegE(GameBoy*);          // 0x73 LD (HL),E
-extern void AddRegAFromRegE(GameBoy*);                    // 0x83 ADD A,E
+extern void AddRegE(GameBoy*);                            // 0x83 ADD E
 extern void SubRegE(GameBoy*);                            // 0x93 SUB E
 extern void AndRegE(GameBoy*);                            // 0xA3 AND E
 extern void OrRegE(GameBoy*);                             // 0xB3 OR E
@@ -534,7 +607,7 @@ extern void LoadRegBFromRegH(GameBoy*);                   // 0x44 LD B, H
 extern void LoadRegDFromRegH(GameBoy*);                   // 0x54 LD D, H
 extern void LoadRegHFromRegH(GameBoy*);                   // 0x64 LD H, H
 extern void LoadIndirectRegHLFromRegH(GameBoy*);          // 0x74 LD (HL),H
-extern void AddRegAFromRegH(GameBoy*);                    // 0x84 ADD A,H
+extern void AddRegH(GameBoy*);                            // 0x84 ADD H
 extern void SubRegH(GameBoy*);                            // 0x94 SUB H 
 extern void AndRegH(GameBoy*);                            // 0xA4 AND H
 extern void OrRegH(GameBoy*);                             // 0xB4 OR H
@@ -552,7 +625,7 @@ extern void LoadRegBFromRegL(GameBoy*);                   // 0x45 LD B, L
 extern void LoadRegDFromRegL(GameBoy*);                   // 0x55 LD D, L
 extern void LoadRegHFromRegL(GameBoy*);                   // 0x65 LD H, L
 extern void LoadIndirectRegHFromRegL(GameBoy*);           // 0x75 LD (HL),L
-extern void AddRegAFromRegL(GameBoy*);                    // 0x85 ADD A,L
+extern void AddRegL(GameBoy*);                            // 0x85 ADD A,L
 extern void SubRegL(GameBoy*);                            // 0x95 SUB L
 extern void AndRegL(GameBoy*);                            // 0xA5 AND L
 extern void OrRegL(GameBoy*);                             // 0xB5 OR L
@@ -570,7 +643,7 @@ extern void LoadRegB(GameBoy*);                           // 0x46 LD B,(HL)
 extern void LoadRegD(GameBoy*);                           // 0x56 LD D,(HL)
 extern void LoadRegH(GameBoy*);                           // 0x66 LD H,(HL)
 extern void Halt(GameBoy*);                               // 0x76 HALT
-extern void AddRegAFromIndirectRegHL(GameBoy*);           // 0x86 ADD A,(HL)
+extern void AddIndirectRegHL(GameBoy*);                   // 0x86 ADD A,(HL)
 extern void SubIndirectRegHL(GameBoy*);                   // 0x96 SUB (HL)
 extern void AndIndirectRegHL(GameBoy*);                   // 0xA6 AND (HL)
 extern void OrIndirectRegHL(GameBoy*);                    // 0xB6 OR (HL)
@@ -588,7 +661,7 @@ extern void LoadRegBFromRegA(GameBoy*);                   // 0x57 LD B,A
 extern void LoadRegDFromRegA(GameBoy*);                   // 0x67 LD D,A
 extern void LoadRegHFromRegA(GameBoy*);                   // 0x77 LD H,A
 extern void LoadIndirectHLFromRegA(GameBoy*);             // 0x47 LD (HL),A
-extern void AddRegAFromRegA(GameBoy*);                    // 0x87 ADD A,A
+extern void AddRegA(GameBoy*);                            // 0x87 ADD A,A
 extern void SubRegA(GameBoy*);                            // 0x97 SUB A
 extern void AndRegA(GameBoy*);                            // 0xA7 AND A
 extern void OrRegA(GameBoy*);                             // 0xB7 OR A
@@ -606,8 +679,8 @@ extern void LoadRegCFromRegB(GameBoy*);                   // 0x48 LD C,B
 extern void LoadRegEFromRegB(GameBoy*);                   // 0x58 LD E,B
 extern void LoadRegLFromRegB(GameBoy*);                   // 0x68 LD L,B
 extern void LoadRegAFromRegB(GameBoy*);                   // 0x78 LD A,B
-extern void AddWithCarryRegAFromRegB(GameBoy*);           // 0x88 ADC A,B
-extern void SubWithCarryRegAFromRegB(GameBoy*);           // 0x98 SBC A,B
+extern void AddWithCarryRegB(GameBoy*);                   // 0x88 ADC A,B
+extern void SubWithCarryRegB(GameBoy*);                   // 0x98 SBC A,B
 extern void XorRegB(GameBoy*);                            // 0xA8 XOR B
 extern void CompareRegB(GameBoy*);                        // 0xB8 CP B
 extern void ReturnIfZero(GameBoy*);                       // 0xC8 RET Z
@@ -624,8 +697,8 @@ extern void LoadRegCFromRegC(GameBoy*);                   // 0x49 LD C,C
 extern void LoadRegEFromRegC(GameBoy*);                   // 0x59 LD E,C
 extern void LoadRegLFromRegC(GameBoy*);                   // 0x69 LD L,C
 extern void LoadRegAFromRegC(GameBoy*);                   // 0x79 LD A,C
-extern void AddWithCarryRegAFromRegC(GameBoy*);           // 0x89 ADC A,C
-extern void SubWithCarryRegAFromRegC(GameBoy*);           // 0x99 SBC A.C
+extern void AddWithCarryRegC(GameBoy*);                   // 0x89 ADC A,C
+extern void SubWithCarryRegC(GameBoy*);                   // 0x99 SBC A.C
 extern void XorRegC(GameBoy*);                            // 0xA9 XOR C
 extern void CompareRegC(GameBoy*);                        // 0xB9 CP C
 extern void Return(GameBoy*);                             // 0xC9 RET
@@ -642,8 +715,8 @@ extern void LoadRegCFromRegD(GameBoy*);                   // 0x4A LD C,D
 extern void LoadRegEFromRegD(GameBoy*);                   // 0x5A LD E,D
 extern void LoadRegLFromRegD(GameBoy*);                   // 0x6A LD L,D
 extern void LoadRegAFromRegD(GameBoy*);                   // 0x7A LD A,D
-extern void AddWithCarryRegAFromRegD(GameBoy*);           // 0x8A ADC A,(HL)
-extern void SubWithCarryRegAFromRegD(GameBoy*);           // 0x9A SBC A,(HL)
+extern void AddWithCarryRegD(GameBoy*);                   // 0x8A ADC A,(HL)
+extern void SubWithCarryRegD(GameBoy*);                   // 0x9A SBC A,(HL)
 extern void XorRegD(GameBoy*);                            // 0xAA XOR (HL)
 extern void CompareRegD(GameBoy*);                        // 0xBA CP (HL)
 extern void JumpIfZeroAddress16(GameBoy*);                // 0xCA ADC A,d8
@@ -660,8 +733,8 @@ extern void LoadRegCFromE(GameBoy*);                      // 0x4B LD C,E
 extern void LoadRegEFromE(GameBoy*);                      // 0x5B LD E,E
 extern void LoadRegLFromE(GameBoy*);                      // 0x6B LD L,E
 extern void LoadRegAFromE(GameBoy*);                      // 0x7B LD A,E
-extern void AddWithCarryRegAFromRegE(GameBoy*);           // 0x8B ADC A,E
-extern void SubWithCarryRegAFromRegE(GameBoy*);           // 0x9B SBC A,E
+extern void AddWithCarryRegE(GameBoy*);                   // 0x8B ADC A,E
+extern void SubWithCarryRegE(GameBoy*);                   // 0x9B SBC A,E
 extern void XorRegE(GameBoy*);                            // 0xAB XOR E
 extern void CompareRegE(GameBoy*);                        // 0xBB CP E
 extern void Prefix(GameBoy*);                             // 0xCB PREFIX CB
@@ -678,8 +751,8 @@ extern void LoadRegCFromRegH(GameBoy*);                   // 0x4C LD C,(HL)
 extern void LoadRegEFromRegH(GameBoy*);                   // 0x5C LD E,(HL)
 extern void LoadRegLFromRegH(GameBoy*);                   // 0x6C LD L,(HL)
 extern void LoadRegAFromRegH(GameBoy*);                   // 0x7C LD A,(HL)
-extern void AddWithCarryRegAFromRegH(GameBoy*);           // 0x8C ADC A,(HL)
-extern void SubWithCarryRegAFromRegH(GameBoy*);           // 0x9C SBC A,(HL)
+extern void AddWithCarryRegH(GameBoy*);                   // 0x8C ADC A,(HL)
+extern void SubWithCarryRegH(GameBoy*);                   // 0x9C SBC A,(HL)
 extern void XorRegH(GameBoy*);                            // 0xAC XOR (HL)
 extern void CompareH(GameBoy*);                           // 0xBC CP (HL)
 extern void CallIfZeroAddress16(GameBoy*);                // 0xCC ADC A,d8
@@ -696,8 +769,8 @@ extern void LoadRegCFromRegL(GameBoy*);                   // 0x4D LD C,L
 extern void LoadRegEFromRegL(GameBoy*);                   // 0x5D LD E,L
 extern void LoadRegLFromRegL(GameBoy*);                   // 0x6D LD L,L
 extern void LoadRegAFromRegL(GameBoy*);                   // 0x7D LD A,L
-extern void AddWithCarryRegAFromRegL(GameBoy*);           // 0x8D ADC A,L
-extern void SubWithCarryRegAFromRegL(GameBoy*);           // 0x9D SBC A,L
+extern void AddWithCarryRegL(GameBoy*);                   // 0x8D ADC A,L
+extern void SubWithCarryRegL(GameBoy*);                   // 0x9D SBC A,L
 extern void XorRegL(GameBoy*);                            // 0xAD XOR L
 extern void CompareRegL(GameBoy*);                        // 0xBD CP L
 extern void CallAddress16(GameBoy*);                      // 0xCD CALL a16
@@ -714,8 +787,8 @@ extern void LoadRegCIndirectHL(GameBoy*);                 // 0x4E LD C,(HL)
 extern void LoadRegEIndirectHL(GameBoy*);                 // 0x5E LD E,(HL)
 extern void LoadRegLIndirectHL(GameBoy*);                 // 0x6E LD L,(HL)
 extern void LoadRegAIndirectHL(GameBoy*);                 // 0x7E LD A,(HL)
-extern void AddWithCarryRegAFromIndirectRegHL(GameBoy*);  // 0x8E ADC A,(HL)
-extern void SubWithCarryRegAFromIndirectRegHL(GameBoy*);  // 0x9E SBC A,(HL)
+extern void AddWithCarryIndirectRegHL(GameBoy*);          // 0x8E ADC A,(HL)
+extern void SubWithCarryIndirectRegHL(GameBoy*);          // 0x9E SBC A,(HL)
 extern void XorRegL(GameBoy*);                            // 0xAE XOR (HL)
 extern void CompareRegL(GameBoy*);                        // 0xBE CP (HL)
 extern void AddWithCarryRegAFromImmediate8(GameBoy*);     // 0xCE ADC A,d8
@@ -732,8 +805,8 @@ extern void LoadRegCFromRegA(GameBoy*);                   // 0x4F LD C,A
 extern void LoadRegEFromRegA(GameBoy*);                   // 0x5F LD E,A
 extern void LoadRegLFromRegA(GameBoy*);                   // 0x6F LD L,A
 extern void LoadRegAFromRegA(GameBoy*);                   // 0x7F LD A,A
-extern void AddWithCarryRegAFromRegA(GameBoy*);           // 0x8F ADC A,A
-extern void SubWithCarryRegAFromRegA(GameBoy*);           // 0x9F SBC A,A
+extern void AddWithCarryRegA(GameBoy*);                   // 0x8F ADC A,A
+extern void SubWithCarryRegA(GameBoy*);                   // 0x9F SBC A,A
 extern void XorRegA(GameBoy*);                            // 0xAF XOR A
 extern void CompareRegA(GameBoy*);                        // 0xBF CP A
 extern void RestartAtAddress08(GameBoy*);                 // 0xCF RST 08H
@@ -997,9 +1070,9 @@ extern void Set7RegA(GameBoy*);                          // 0xCBFF SET 7,A
 // Addressing different processor address modes 
 //
 // Prefix CB Instructions 
-extern inline void Set(const BitEnum k_Bit, uint8_t* reg);
-extern inline void Bit(const BitEnum k_Bit, uint8_t* reg);
-extern inline void Reset(const BitEnum k_Bit, uint8_t* reg);
+extern inline void Set(const uint8_t k_Bit, uint8_t* reg);
+extern inline void Bit(const uint8_t k_Bit, uint8_t* reg);
+extern inline void Reset(const uint8_t k_Bit, uint8_t* reg);
 extern inline void RotateRightCarry(uint8_t* reg);
 extern inline void RotateRight(uint8_t* reg);
 extern inline void RotateLeft(uint8_t* reg);
@@ -1025,6 +1098,8 @@ void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t* reg,
 extern inline void AddImmediate8(GameBoy* gb);
 extern inline void AddImmediate16(uint16_t* reg, const uint16_t k_Operand,
                                   Flags* flag);
+extern inline void AddWithCarryRegisterDirect8(const uint8_t k_Operand,
+                                               GameBoy* gb);
 extern inline void AddStackPointer();
 extern inline void XorImmediate8(uint8_t* reg, Flags* flag);
 extern inline void XorImmediate16(uint16_t* reg, Flags* flag);
@@ -1037,6 +1112,7 @@ extern inline void SubRegisterDirect8(const uint8_t k_Reg, GameBoy* gb);
 extern inline void SubImmediate8Function(GameBoy* gb);
 extern inline void SubWithCarryRegister(const uint8_t k_Reg,
                                         GameBoy* gb);
+extern inline void SubWithCarry(GameBoy& gb);
 extern inline void AndRegisterDirect8(GameBoy* gb);
 extern inline void CompareRegisterDirect8(GameBoy* gb);
 void SetFlagZ000(GameBoy* gb, const bool k_IsZero);
@@ -1046,7 +1122,7 @@ extern inline void SubImmediate8Function(uint8_t* reg, GameBoy* gb);
 extern inline void SubImmediate16Function(uint16_t* reg);
 extern inline void Fetch(GameBoy* gb);
 extern void JumpRelative(GameBoy* gb);
-
+void ReturnFromSubRoutine(binary::gb::GameBoy* gb);
 extern void NoOperationFunction(GameBoy* gb);
 
 }// namespace binary::gb::instructionset
