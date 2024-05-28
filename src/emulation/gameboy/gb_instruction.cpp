@@ -19,8 +19,6 @@ namespace binary::gb::instructionset {
 void NoOperationFunction(GameBoy* gb) { return; }
 void NoOperation(GameBoy* gb) { NoOperationFunction(gb); }
 
-
-
 // Load Register Direct Functions Macros
 BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(B, b)
 BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(C, c)
@@ -235,6 +233,34 @@ void InitOpcodeTable(std::array<Opcode, 512>& opcode_table) {
   Init8BitArithmeticLogicRegisterDirectTable(opcode_table);
 }
 
+void Init8BitPrefixTable(std::array<Opcode, 512>& opcode_table) {
+  using namespace binary::gb::instructionset;
+  const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
+                                               "H", "L", "HL", "A"};
+  const std::array<std::string, 32> k_Mnemonic = {
+  "RLC",    "RRC",   "RL",     "RR",     "SLA",    "SRA",    "SWAP",   "SRL", 
+  "BIT 0,", "BIT 1," "BIT 2,", "BIT 3,", "BIT 4," ,"BIT 5,", "BIT 6,", "BIT 7,",
+  "RES 0," ,"RES 1," "RES 2,", "RES 3,", "RES 4,", "RES 5,", "RES 6,", "RES 7,",
+  "SET 0,", "SET 1," "SET 2,", "SET 3,", "SET 4,", "SET 5,", "SET 6,", "SET 7,"
+  };
+  uint8_t mnemonic = 0;
+
+  for (size_t opcode = 0x100; opcode < 0x200; opcode++) {
+    // Skip the indirect instructions
+    if (((~opcode & 0x6) == 0) || ((~opcode & 0xE) == 0)) {
+      continue;
+    }
+    opcode_table[opcode].SetMachineCycles(2);
+    opcode_table[opcode].opcode_ = std::format("CB {:X}", opcode);
+    opcode_table[opcode].mnemonic_ =
+        std::format("{} {}", k_Mnemonic[mnemonic], k_Letter[opcode % 8]);
+
+    if (((opcode + 1) % 8) == 0) {
+      mnemonic++;
+    }
+  }
+  
+}
 void Init8BitArithmeticLogicRegisterDirectTable(
     std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
@@ -244,6 +270,7 @@ void Init8BitArithmeticLogicRegisterDirectTable(
                                                  "AND", "XOR", "OR", "CP"};
   uint8_t mnemonic = 0;
   for (size_t opcode = 0x80; opcode < 0xC0; opcode++) {
+    // Skip the indirect instructions
     if (((~opcode & 0x6) == 0) || ((~opcode & 0xE) == 0)) {
       continue;
     }
@@ -254,25 +281,19 @@ void Init8BitArithmeticLogicRegisterDirectTable(
         std::format("{} {}", k_Mnemonic[mnemonic], k_Letter[opcode % 8]);
     if (((opcode + 1) % 8) == 0) {
       mnemonic++;
-    }
+    }     
   }
   // We cannot algorithmically set std::functions to opcode table
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_OPERATION_REG(A)
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_OPERATION_REG(B)
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_OPERATION_REG(C)
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_OPERATION_REG(D)
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_OPERATION_REG(E)
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_OPERATION_REG(H)
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_OPERATION_REG(L)
+  BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_EQUALS_OPERATION_REG)
 }
+
 void Init8BitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
   const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
                                                "H", "L", "HL", "A"};
   uint8_t opcode_letter = 0;
   for (uint8_t opcode = 0x40; opcode < 0x80; opcode++) {
-    // Opcodes that end with 0x6 or 0xE are not Register Direct instructions
-    // So we skip them.
+    // Skip the indirect instructions
     if (((~opcode & 0x6) == 0) || ((~opcode & 0xE) == 0)) {
       continue; 
     }
@@ -289,12 +310,6 @@ void Init8BitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
     }
   }
   // We cannot algorithmically set std::functions to opcode table
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(A)
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(B)
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(C)
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(D)
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(E)
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(H)
-  BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(L)
+  BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_EQUALS_LOAD_REGX_FROM_REG)
 }
 }

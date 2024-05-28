@@ -23,8 +23,9 @@ enum CpuFlags {
   k_C = 1,
   k_Same = 2  // Nothing
 };
-
-#define BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(upper) \
+#define BINARY_GB_ALL_REG(MACRO)\
+MACRO(B) MACRO(C) MACRO(D) MACRO(E) MACRO(H) MACRO(L) MACRO(A)
+#define BINARY_GB_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(upper) \
   opcode_table[LD_A_##upper].execute_ = LoadRegAFromReg##upper;         \
   opcode_table[LD_B_##upper].execute_ = LoadRegBFromReg##upper;         \
   opcode_table[LD_C_##upper].execute_ = LoadRegCFromReg##upper;         \
@@ -33,7 +34,7 @@ enum CpuFlags {
   opcode_table[LD_H_##upper].execute_ = LoadRegHFromReg##upper;         \
   opcode_table[LD_L_##upper].execute_ = LoadRegLFromReg##upper;
 
-#define BINARY_GB_OPCODE_TABLE_EXECUTE_EQUALS_OPERATION_REG(upper) \
+#define BINARY_GB_EXECUTE_EQUALS_OPERATION_REG(upper) \
   opcode_table[ADD_##upper].execute_ = AddReg##upper;              \
   opcode_table[ADC_##upper].execute_ = AddWithCarryReg##upper;     \
   opcode_table[SUB_##upper].execute_ = SubReg##upper;              \
@@ -88,11 +89,11 @@ enum CpuFlags {
   void CompareReg##upper(GameBoy* gb) {                                        \
     OrRegisterDirect8(gb->reg_.lower##_, gb);                                  \
   }                                                                            \
-  void AddWithCarryReg##upper(GameBoy* gb) {                                       \
-     AddWithCarryRegisterDirect8(gb->reg_.lower##_, gb);                          \
-  }                                                                             \
-  void SubWithCarryReg##upper(GameBoy* gb) {                                       \
-     SubWithCarryRegisterDirect8(gb->reg_.lower##_, gb);                      \
+  void AddWithCarryReg##upper(GameBoy* gb) {                                   \
+     AddWithCarryRegisterDirect8(gb->reg_.lower##_, gb);                       \
+  }                                                                            \
+  void SubWithCarryReg##upper(GameBoy* gb) {                                   \
+     SubWithCarryRegisterDirect8(gb->reg_.lower##_, gb);                       \
   }    
   
 constexpr uint8_t k_FlagZ = 0x80;
@@ -100,17 +101,11 @@ constexpr uint8_t k_FlagN = 0x40;
 constexpr uint8_t k_FlagH = 0x20;
 constexpr uint8_t k_FlagC = 0x10;
 
-constexpr uint8_t k_BitIndexZ  = 8;
-constexpr uint8_t k_BitIndexN  = 7;
-constexpr uint8_t k_BitIndexH  = 6;
-constexpr uint8_t k_BitIndexC  = 6;
+constexpr uint8_t k_BitIndexZ  = 7;
+constexpr uint8_t k_BitIndexN  = 6;
+constexpr uint8_t k_BitIndexH  = 5;
+constexpr uint8_t k_BitIndexC  = 4;
 
-typedef struct Flags {
-  bool zero_{};
-  bool subtract_{};
-  bool h_carry_{};
-  bool carry_{};
-} Flags;
 class GameBoy {
 public:
   uint64_t cycles_{};
@@ -1067,9 +1062,23 @@ extern void Set7RegA(GameBoy*);                          // 0xCBFF SET 7,A
 // Addressing different processor address modes 
 //
 // Prefix CB Instructions 
-extern inline void Set(const uint8_t k_Bit, uint8_t* reg);
-extern inline void Bit(const uint8_t k_Bit, uint8_t* reg);
-extern inline void Reset(const uint8_t k_Bit, uint8_t* reg);
+template <typename T, uint8_t T::*Field, const uint8_t BitPos>
+void Set(T& instance) {
+  const uint8_t k_Bit = (1 << BitPos);
+  instance.*Field |= k_Bit;
+}
+
+template <typename T, uint8_t T::*Field, const uint8_t BitPos>
+void Bit(uint8_t* reg) {
+  const uint8_t k_Bit = (1 << BitPos);
+  *reg ^= k_Bit;
+}
+
+template <typename T, uint8_t T::*Field, const uint8_t BitPos>
+void Reset(uint8_t* reg) {
+  const uint8_t k_Bit = (1 << BitPos);
+  *reg &= ~k_Bit;
+}
 extern inline void RotateRightCarry(uint8_t* reg);
 extern inline void RotateRight(uint8_t* reg);
 extern inline void RotateLeft(uint8_t* reg);
@@ -1093,13 +1102,12 @@ extern inline void AddRegisterDirect8(const uint8_t k_Reg,
 void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t* reg,
                  const uint8_t k_Reg);
 extern inline void AddImmediate8(GameBoy* gb);
-extern inline void AddImmediate16(uint16_t* reg, const uint16_t k_Operand,
-                                  Flags* flag);
+extern inline void AddImmediate16(const uint8_t );
 extern inline void AddWithCarryRegisterDirect8(const uint8_t k_Operand,
                                                GameBoy* gb);
 extern inline void AddStackPointer();
-extern inline void XorImmediate8(uint8_t* reg, Flags* flag);
-extern inline void XorImmediate16(uint16_t* reg, Flags* flag);
+extern inline void XorImmediate8(GameBoy* gb);
+extern inline void XorImmediate16(GameBoy* gb);
 extern inline void XorRegisterDirect8(const uint8_t k_Reg, GameBoy* gb);
 extern inline void OrRegisterDirect8(const uint8_t k_Reg, GameBoy* gb);
 extern inline void AndImmediate8Function(uint8_t* reg);
