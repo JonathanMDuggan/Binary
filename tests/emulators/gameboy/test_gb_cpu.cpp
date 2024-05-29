@@ -147,5 +147,27 @@ TEST_F(GameBoyTest, LoadRegDirectOpcodeTable) {
   EXPECT_EQ(gb_.reg_.l_, k_TestValue)
       << "Register L should be equal to" << std::format("0x{:X}", 0x98);
 }
+TEST_F(GameBoyTest, AddRegXtoRegYTable) {
+  std::unique_ptr<std::array<Opcode, 512>> opcode_table;
+  opcode_table = std::make_unique <std::array<Opcode, 512>>();
+  const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
+                                               "H", "L", "HL", "A"};
+  Init8BitArithmeticLogicRegisterDirectTable(*opcode_table);
+
+  // Test Add Mnemonics 
+  for (size_t i = 0x80; i < 0x88; i++) {
+    if (((~i & 0x6) == 0) || ((~i & 0xE) == 0)) {
+      continue;
+    }
+
+    EXPECT_EQ(opcode_table->at(i).mnemonic_,
+              std::format("ADD {}", k_Letter[i % 8]));
+  }
+  // Test Adding two registers
+  gb_.reg_.a_ = 2;
+  gb_.reg_.b_ = 4;
+  opcode_table->at(ADD_B).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 6);
+}
 }  // namespace binary
 

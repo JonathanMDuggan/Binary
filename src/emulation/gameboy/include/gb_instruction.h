@@ -106,6 +106,28 @@ constexpr uint8_t k_BitIndexN  = 6;
 constexpr uint8_t k_BitIndexH  = 5;
 constexpr uint8_t k_BitIndexC  = 4;
 
+typedef struct Register {
+  // 8 Bit general purpose Registers
+  uint8_t a_{};
+  uint8_t b_{};
+  uint8_t c_{};
+  uint8_t d_{};
+  uint8_t e_{};
+  uint8_t h_{};
+  uint8_t l_{};
+  std::bitset<8> f_{};
+
+  uint16_t hl_{};
+  uint16_t bc_{};
+  uint16_t de_{};
+  uint16_t af_{};  // Only for Pushing and Popping
+  uint16_t program_counter_{};
+  uint16_t stack_pointer_{};
+  uint16_t IDU_{};
+  uint8_t instruction_{};
+  uint8_t interrupt_{};
+} Register;
+
 class GameBoy {
 public:
   uint64_t cycles_{};
@@ -1062,23 +1084,35 @@ extern void Set7RegA(GameBoy*);                          // 0xCBFF SET 7,A
 // Addressing different processor address modes 
 //
 // Prefix CB Instructions 
-template <typename T, uint8_t T::*Field, const uint8_t BitPos>
-void Set(T& instance) {
-  const uint8_t k_Bit = (1 << BitPos);
-  instance.*Field |= k_Bit;
+
+template <typename Outer, typename Inner, uint8_t Inner::*Field, 
+  Inner Outer::*InnerMember, const uint8_t BitPos>
+void Bit(Outer& instance) {
+    const uint8_t kBit = (1 << BitPos);
+    instance.*InnerMember.*Field ^= kBit;
 }
 
-template <typename T, uint8_t T::*Field, const uint8_t BitPos>
-void Bit(uint8_t* reg) {
-  const uint8_t k_Bit = (1 << BitPos);
-  *reg ^= k_Bit;
+template <typename Outer, typename Inner, uint8_t Inner::*Field,
+  Inner Outer::*InnerMember, const uint8_t BitPos>
+void Set(Outer& instance) {
+    const uint8_t kBit = (1 << BitPos);
+    instance.*InnerMember.*Field |= kBit;
 }
 
-template <typename T, uint8_t T::*Field, const uint8_t BitPos>
-void Reset(uint8_t* reg) {
-  const uint8_t k_Bit = (1 << BitPos);
-  *reg &= ~k_Bit;
+template <typename Outer, typename Inner, uint8_t Inner::*Field,
+          Inner Outer::*InnerMember, const uint8_t BitPos>
+void Reset(Outer& instance) {
+  const uint8_t kBit = (1 << BitPos);
+  instance.*InnerMember.*Field &= ~kBit;
 }
+
+template <typename Outer, typename Opcode, typename Operand,
+          uint8_t Opcode::*RegX, uint8_t Operand::*RegY,
+          Opcode Outer::*InnerMember>
+void LoadRegisterDirect8(Outer* instance) {
+  instance.*InnerMember.*RegX = instance.*InnerMember.*RegY;
+}
+
 extern inline void RotateRightCarry(uint8_t* reg);
 extern inline void RotateRight(uint8_t* reg);
 extern inline void RotateLeft(uint8_t* reg);
