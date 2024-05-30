@@ -57,12 +57,15 @@ inline void AddImmediate8(GameBoy* gb) {
 
 void XorRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ ^ k_Operand;
-  gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;  // SetFlagZ000
+  // SetFlagZ000
+  gb->reg_.f_ = (static_cast<uint8_t>(k_Result) != 0) ? false : k_FlagZ; 
   gb->reg_.a_ = k_Result;
 }
 void AndRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ & k_Operand;
-  gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH); // SetFlagZ010
+  // SetFlagZ010
+  gb->reg_.f_ = (static_cast<uint8_t>(k_Result) != 0) ? k_FlagH : 
+    (k_FlagZ | k_FlagH);
   gb->reg_.a_ = k_Result;
 }
 void CompareRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
@@ -72,7 +75,8 @@ void CompareRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
 }
 void OrRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ | k_Operand;
-  gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;  // SetFlagZ000
+  // SetFlagZ000
+  gb->reg_.f_ = (static_cast<uint8_t>(k_Result) != 0) ? false : k_FlagZ;
   gb->reg_.a_ = k_Result;
 }
 void SubWithCarryRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
@@ -160,7 +164,7 @@ void ReturnFromSubRoutine(GameBoy* gb) {
   const uint8_t k_LowByte = gb->memory_[gb->reg_.stack_pointer_];
   const uint8_t k_HighByte = gb->memory_[gb->reg_.stack_pointer_ + 1];
   const uint16_t k_ReturnAddress = 
-    static_cast<uint8_t>((k_HighByte << 8) | k_LowByte);
+    static_cast<uint16_t>((k_HighByte << 8) | k_LowByte);
   gb->reg_.program_counter_ = k_ReturnAddress;
 }
   // Stop instruction
