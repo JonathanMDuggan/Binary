@@ -96,7 +96,7 @@ void SubImmediate8Function(GameBoy* gb) {
 
 void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result, const uint8_t k_Reg,
                  const uint8_t k_Operand) {
-  const bool k_IsZero   = (k_Result == 0);
+  const bool k_IsZero   = (static_cast<uint8_t>(k_Result) == 0);
   const bool k_IsHCarry = ((k_Reg & 0x0f) + (k_Operand & 0x0f) > 0x0f);
   const bool k_IsCarry  = ((k_Result & 0x100) != 0);
 
@@ -107,7 +107,7 @@ void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result, const uint8_t k_Reg,
 }
 void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t* reg,
                  const uint8_t k_Operand) {
-  const bool k_IsZero   = (k_Result == 0);
+  const bool k_IsZero = (static_cast<uint8_t>(k_Result) == 0);
   const bool k_IsHCarry = ((*reg & 0x0f) + (k_Operand & 0x0f) > 0x0f);
   const bool k_IsCarry  = ((k_Result & 0x100) != 0);
 

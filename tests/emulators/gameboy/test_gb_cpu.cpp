@@ -167,7 +167,24 @@ TEST_F(GameBoyTest, AddRegXtoRegYTable) {
   gb_.reg_.a_ = 2;
   gb_.reg_.b_ = 4;
   opcode_table->at(ADD_B).execute_(&gb_);
+
   EXPECT_EQ(gb_.reg_.a_, 6);
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false) << "Zero flag wasn't set";
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexN], false) << "Negative flag wasn't set";
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexH], false) << "Half Carry flag wasn 't set";
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], false) << "Carry flag wasn't set";
+
+  gb_.reg_.a_ = 255;
+  gb_.reg_.c_ = 255;
+  opcode_table->at(ADD_C).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 0xFE);
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], true) << "Carry flag wasn't set";
+
+  gb_.reg_.d_ = 2;
+  opcode_table->at(ADD_D).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 0);
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], true) << "Carry flag wasn't set";
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], true) << "Zero flag wasn't set";
 }
 }  // namespace binary
 
