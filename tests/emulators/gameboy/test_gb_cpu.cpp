@@ -215,5 +215,67 @@ TEST_F(GameBoyTest, SubRegXTable) {
   EXPECT_EQ(gb_.reg_.a_, 0xFF);
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], true) << "Carry flag wasn't set";
 }
+
+TEST_F(GameBoyTest, OrRegXTable) {
+  std::unique_ptr<std::array<Opcode, 512>> opcode_table;
+  opcode_table = std::make_unique<std::array<Opcode, 512>>();
+  const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
+                                               "H", "L", "HL", "A"};
+  Init8BitArithmeticLogicRegisterDirectTable(*opcode_table);
+
+  gb_.reg_.a_ = 0b00001111;
+  gb_.reg_.b_ = 0b11110000;
+  opcode_table->at(OR_B).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 0xFF) << "0b00001111 OR 0b11110000 does not equal: " 
+                               << gb_.reg_.a_;
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false);
+  gb_.reg_.a_ = 0b00000000;
+  gb_.reg_.c_ = 0b00000000;
+  opcode_table->at(OR_C).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 0);
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], true);
+}
+
+TEST_F(GameBoyTest, XorRegXTable) {
+  std::unique_ptr<std::array<Opcode, 512>> opcode_table;
+  opcode_table = std::make_unique<std::array<Opcode, 512>>();
+  const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
+                                               "H", "L", "HL", "A"};
+  Init8BitArithmeticLogicRegisterDirectTable(*opcode_table);
+
+  gb_.reg_.a_ = 0b11111111;
+  gb_.reg_.b_ = 0b11110000;
+  opcode_table->at(XOR_B).execute_(&gb_) ;
+  EXPECT_EQ(gb_.reg_.a_, 0x0F) << "0b11111111 XOR 0b11110000 does not equal: "
+                               << gb_.reg_.a_;
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false) << " Zero flag was set when register a was "
+                                             << gb_.reg_.a_;
+  gb_.reg_.a_ = 0b00000000;
+  gb_.reg_.c_ = 0b00000000;
+  opcode_table->at(XOR_C).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 0);
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], true);
+}
+
+TEST_F(GameBoyTest, AndRegXTable) {
+  std::unique_ptr<std::array<Opcode, 512>> opcode_table;
+  opcode_table = std::make_unique<std::array<Opcode, 512>>();
+  const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
+                                               "H", "L", "HL", "A"};
+  Init8BitArithmeticLogicRegisterDirectTable(*opcode_table);
+  gb_.reg_.a_ = 0b11111111;
+  gb_.reg_.b_ = 0b11110000;
+  opcode_table->at(AND_B).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 0xF0)
+      << "0b11111111 AND 0b11110000 does not equal: " << gb_.reg_.a_;
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false) 
+    << " Zero flag was set when register a was " << gb_.reg_.a_;
+  gb_.reg_.a_ = 0b00000000;
+  gb_.reg_.c_ = 0b00000000;
+  opcode_table->at(AND_C).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 0);
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], true);
+
+}
 }  // namespace binary
 
