@@ -202,7 +202,7 @@ TEST_F(GameBoyTest, SubRegXTable) {
   EXPECT_EQ(gb_.reg_.a_, 2);
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false) << "Zero flag wasn't set";
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexN], true) << "Negative flag wasn't set";
-  EXPECT_EQ(gb_.reg_.f_[k_BitIndexH], false) << "Half Carry flag wasn 't set";
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexH], false) << "Half Carry flag wasn't set";
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], false) << "Carry flag wasn't set";
   gb_.reg_.a_ = 255;
   gb_.reg_.c_ = 255;
@@ -226,7 +226,7 @@ TEST_F(GameBoyTest, OrRegXTable) {
   gb_.reg_.a_ = 0b00001111;
   gb_.reg_.b_ = 0b11110000;
   opcode_table->at(OR_B).execute_(&gb_);
-  EXPECT_EQ(gb_.reg_.a_, 0xFF) << "0b00001111 OR 0b11110000 does not equal: " 
+  EXPECT_EQ(gb_.reg_.a_, 0xFF) << "0b00001111 OR 0b11110000 does not equal: "
                                << gb_.reg_.a_;
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false);
   gb_.reg_.a_ = 0b00000000;
@@ -245,11 +245,11 @@ TEST_F(GameBoyTest, XorRegXTable) {
 
   gb_.reg_.a_ = 0b11111111;
   gb_.reg_.b_ = 0b11110000;
-  opcode_table->at(XOR_B).execute_(&gb_) ;
-  EXPECT_EQ(gb_.reg_.a_, 0x0F) << "0b11111111 XOR 0b11110000 does not equal: "
-                               << gb_.reg_.a_;
-  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false) << " Zero flag was set when register a was "
-                                             << gb_.reg_.a_;
+  opcode_table->at(XOR_B).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 0x0F)
+      << "0b11111111 XOR 0b11110000 does not equal: " << gb_.reg_.a_;
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false)
+      << " Zero flag was set when register a was " << gb_.reg_.a_;
   gb_.reg_.a_ = 0b00000000;
   gb_.reg_.c_ = 0b00000000;
   opcode_table->at(XOR_C).execute_(&gb_);
@@ -267,14 +267,43 @@ TEST_F(GameBoyTest, AndRegXTable) {
   gb_.reg_.b_ = 0b11110000;
   opcode_table->at(AND_B).execute_(&gb_);
   EXPECT_EQ(gb_.reg_.a_, 0xF0)
-      << "0b11111111 AND 0b11110000 does not equal: " << gb_.reg_.a_;
+    << "0b11111111 AND 0b11110000 does not equal: " << gb_.reg_.a_;
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false) 
     << " Zero flag was set when register a was " << gb_.reg_.a_;
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexH], true);
   gb_.reg_.a_ = 0b00000000;
   gb_.reg_.c_ = 0b00000000;
   opcode_table->at(AND_C).execute_(&gb_);
   EXPECT_EQ(gb_.reg_.a_, 0);
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], true);
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexH], true);
+}
+
+TEST_F(GameBoyTest, CompareRegXTable) {
+  std::unique_ptr<std::array<Opcode, 512>> opcode_table;
+  opcode_table = std::make_unique<std::array<Opcode, 512>>();
+  const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
+                                               "H", "L", "HL", "A"};
+  Init8BitArithmeticLogicRegisterDirectTable(*opcode_table);
+  // This is just subtraction instruction with a different context.
+  gb_.reg_.a_ = 6;
+  gb_.reg_.b_ = 4;
+  opcode_table->at(SUB_B).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 2);
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false) << "Zero flag wasn't set";
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexN], true) << "Negative flag wasn't set";
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexH], false) << "Half Carry flag wasn't set";
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], false) << "Carry flag wasn't set";
+  gb_.reg_.a_ = 255;
+  gb_.reg_.c_ = 255;
+  opcode_table->at(SUB_C).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 0);
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], true) << "Zero flag wasn't set";
+  gb_.reg_.a_ = 10;
+  gb_.reg_.d_ = 11;
+  opcode_table->at(SUB_D).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 0xFF);
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], true) << "Carry flag wasn't set";
 
 }
 }  // namespace binary
