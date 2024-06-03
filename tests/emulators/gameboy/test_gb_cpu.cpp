@@ -266,8 +266,8 @@ TEST_F(GameBoyTest, AndRegXTable) {
   gb_.reg_.a_ = 0b11111111;
   gb_.reg_.b_ = 0b11110000;
   opcode_table->at(AND_B).execute_(&gb_);
-  EXPECT_EQ(gb_.reg_.a_, 0xF0)
-    << "0b11111111 AND 0b11110000 does not equal: " << gb_.reg_.a_;
+  EXPECT_EQ(gb_.reg_.a_, 0xF0) << "0b11111111 AND 0b11110000 does not equal: "
+                               << std::format("{:8b}", gb_.reg_.a_);
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false) 
     << " Zero flag was set when register a was " << gb_.reg_.a_;
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexH], true);

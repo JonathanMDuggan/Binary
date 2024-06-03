@@ -56,16 +56,15 @@ inline void AddImmediate8(GameBoy* gb) {
 }
 
 void XorRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ ^ k_Operand;
+  const uint8_t k_Result = gb->reg_.a_ ^ k_Operand;
   // SetFlagZ000
-  gb->reg_.f_ = (static_cast<uint8_t>(k_Result) != 0) ? false : k_FlagZ; 
+  gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ; 
   gb->reg_.a_ = k_Result;
 }
 void AndRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ & k_Operand;
+  const uint8_t k_Result = gb->reg_.a_ & k_Operand;
   // SetFlagZ010
-  gb->reg_.f_ = (static_cast<uint8_t>(k_Result) != 0) ? k_FlagH : 
-    (k_FlagZ | k_FlagH);
+  gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH);
   gb->reg_.a_ = k_Result;
 }
 void CompareRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
@@ -74,9 +73,9 @@ void CompareRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   gb->reg_.f_ = k_Result;
 }
 void OrRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ | k_Operand;
+  const uint8_t k_Result = gb->reg_.a_ | k_Operand;
   // SetFlagZ000
-  gb->reg_.f_ = (static_cast<uint8_t>(k_Result) != 0) ? false : k_FlagZ;
+  gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ; 
   gb->reg_.a_ = k_Result;
 }
 void SubWithCarryRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
@@ -238,6 +237,7 @@ void InitOpcodeTable(std::array<Opcode, 512>& opcode_table) {
 }
 
 void Init8BitPrefixTable(std::array<Opcode, 512>& opcode_table) {
+  GameBoy cpu = {};
   using namespace binary::gb::instructionset;
   const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
                                                "H", "L", "HL", "A"};
@@ -263,7 +263,8 @@ void Init8BitPrefixTable(std::array<Opcode, 512>& opcode_table) {
       mnemonic++;
     }
   }
-  
+  opcode_table[BIT_0_A].execute_ =
+    Bit<GameBoy, Register, &Register::a_, &GameBoy::reg_, 2>;
 }
 void Init8BitArithmeticLogicRegisterDirectTable(
     std::array<Opcode, 512>& opcode_table) {

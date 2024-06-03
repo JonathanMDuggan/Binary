@@ -135,28 +135,6 @@ public:
   uint8_t read_signal_{};
   uint8_t address_bus_{};
   uint8_t data_bus_{};
-  typedef struct Register {
-    // 8 Bit general purpose Registers
-    uint8_t a_{};
-    uint8_t b_{};
-    uint8_t c_{};
-    uint8_t d_{};
-    uint8_t e_{};
-    uint8_t h_{};
-    uint8_t l_{};
-    std::bitset<8> f_{};
-     
-    uint16_t hl_{};
-    uint16_t bc_{};
-    uint16_t de_{};
-    uint16_t af_{}; // Only for Pushing and Popping
-    uint16_t program_counter_{};
-    uint16_t stack_pointer_{};
-    uint16_t IDU_{};
-    uint8_t instruction_{};
-    uint8_t interrupt_{};
-  } Register;
-
   bool branched;
   Register reg_{};
   std::array<uint8_t, 8000> memory_; 
@@ -435,7 +413,7 @@ typedef class Opcode {
   std::string mnemonic_{};
   std::uint8_t machine_cycles_{};
   std::uint8_t machine_cycles_branch_{};
-  std::function<void(GameBoy*)> execute_{};
+  std::function<void(GameBoy*)> execute_;
   void SetMachineCycles(uint8_t machine_cycles, uint8_t machine_cycles_branch);
   void SetMachineCycles(uint8_t machine_cycles);
 }Opcode;
@@ -1084,33 +1062,32 @@ extern void Set7RegA(GameBoy*);                          // 0xCBFF SET 7,A
 // Addressing different processor address modes 
 //
 // Prefix CB Instructions 
-
-template <typename Outer, typename Inner, uint8_t Inner::*Field, 
-  Inner Outer::*InnerMember, const uint8_t BitPos>
-void Bit(Outer& instance) {
-    const uint8_t kBit = (1 << BitPos);
-    instance.*InnerMember.*Field ^= kBit;
+template <typename Outer, typename Inner, uint8_t Inner::*Field,
+          Inner Outer::*InnerMember, const uint8_t BitPos>
+void Bit(Outer* instance) {
+  const uint8_t kBit = (1 << BitPos);
+  instance->*InnerMember.*Field ^= kBit;
 }
 
 template <typename Outer, typename Inner, uint8_t Inner::*Field,
   Inner Outer::*InnerMember, const uint8_t BitPos>
-void Set(Outer& instance) {
+void Set(Outer* instance) {
     const uint8_t kBit = (1 << BitPos);
-    instance.*InnerMember.*Field |= kBit;
+    instance->*InnerMember.*Field |= kBit;
 }
 
 template <typename Outer, typename Inner, uint8_t Inner::*Field,
           Inner Outer::*InnerMember, const uint8_t BitPos>
-void Reset(Outer& instance) {
+void Reset(Outer* instance) {
   const uint8_t kBit = (1 << BitPos);
-  instance.*InnerMember.*Field &= ~kBit;
+  instance->*InnerMember.*Field &= ~kBit;
 }
 
 template <typename Outer, typename Opcode, typename Operand,
           uint8_t Opcode::*RegX, uint8_t Operand::*RegY,
           Opcode Outer::*InnerMember>
 void LoadRegisterDirect8(Outer* instance) {
-  instance.*InnerMember.*RegX = instance.*InnerMember.*RegY;
+  instance->*InnerMember.*RegX = instance.*InnerMember.*RegY;
 }
 
 extern inline void RotateRightCarry(uint8_t* reg);
@@ -1122,6 +1099,7 @@ extern inline void Swap(uint8_t* reg);
 // Load Instructions
 
 // LD r, r;
+extern void Init8BitPrefixTable();
 extern inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Reg);  
 
 extern inline void LoadRegisterIndirect8(uint8_t* reg, const uint8_t k_Reg);
