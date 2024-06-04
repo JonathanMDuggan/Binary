@@ -263,8 +263,7 @@ void Init8BitPrefixTable(std::array<Opcode, 512>& opcode_table) {
       mnemonic++;
     }
   }
-  opcode_table[BIT_0_A].execute_ =
-    Bit<GameBoy, Register, &Register::a_, &GameBoy::reg_, 2>;
+  BINARY_GB_REPEAT_FOR_ALL_PREFIX(BINARY_GB_EXECUTE_PREFIX)
 }
 void Init8BitArithmeticLogicRegisterDirectTable(
     std::array<Opcode, 512>& opcode_table) {
