@@ -39,19 +39,19 @@ void LoadRegAIntoHighAddress(GameBoy* gb) {
 }
 void AddRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ + k_Operand; 
-  SetFlagZ0HC(gb, k_Result, &gb->reg_.a_, k_Operand);
+  SetFlagZ0HC(gb, k_Result, gb->reg_.a_, k_Operand);
   gb->reg_.a_ = k_Result;
 }
 void AddWithCarryRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   uint8_t k_RegFValue = static_cast<uint8_t>(gb->reg_.f_.to_ulong());
   const uint16_t k_Result = k_RegFValue + k_Operand + gb->reg_.f_[k_BitIndexC];
   gb->reg_.f_ = k_Result;
-  SetFlagZ0HC(gb, k_Result, &gb->reg_.a_, k_Operand);
+  SetFlagZ0HC(gb, k_Result, gb->reg_.a_, k_Operand);
 }
 inline void AddImmediate8(GameBoy* gb) {
   const uint8_t k_Operand = gb->memory_[gb->reg_.program_counter_ + 1];
   const uint8_t k_Result = gb->reg_.a_ + k_Operand;
-  SetFlagZ0HC(gb, k_Result, &gb->reg_.a_, k_Operand);
+  SetFlagZ0HC(gb, k_Result, gb->reg_.a_, k_Operand);
   gb->reg_.a_ = k_Result;
 }
 
@@ -108,10 +108,10 @@ void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result, const uint8_t k_Reg,
   gb->reg_.f_[k_BitIndexH] = k_IsHCarry;
   gb->reg_.f_[k_BitIndexC] = k_IsCarry;
 }
-void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t* reg,
+void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
                  const uint8_t k_Operand) {
   const bool k_IsZero = (static_cast<uint8_t>(k_Result) == 0);
-  const bool k_IsHCarry = ((*reg & 0x0f) + (k_Operand & 0x0f) > 0x0f);
+  const bool k_IsHCarry = ((reg & 0x0f) + (k_Operand & 0x0f) > 0x0f);
   const bool k_IsCarry  = ((k_Result & 0x100) != 0);
 
   gb->reg_.f_[k_BitIndexZ] = k_IsZero;
@@ -288,7 +288,11 @@ void Init8BitArithmeticLogicRegisterDirectTable(
     }     
   }
   // We cannot algorithmically set std::functions to opcode table
-  BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_EQUALS_OPERATION_REG)
+  BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_EQUALS_OPERATION_REG);
+
+  // We are testing the opcodes 
+  opcode_table[ADD_B].execute_ = Add<GameBoy, Register, &Register::a_,
+                                     &Register::b_, &GameBoy::reg_>;
 }
 
 void Init8BitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {

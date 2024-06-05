@@ -940,25 +940,35 @@ extern void ShiftRightLogicalRegA(GameBoy*);             // 0xCB3F SRL A
 // Addressing different processor address modes 
 //
 // Prefix CB Instructions 
+
+
+void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
+                 const uint8_t k_Operand);
+extern void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
+                        const uint8_t k_Reg);
+extern void SetFlagZ000(GameBoy* gb, const bool k_IsZero);
+extern void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result,
+                        const uint8_t k_Reg, const uint8_t k_Operand);
+
 template <typename Outer, typename Inner, uint8_t Inner::*Field,
           Inner Outer::*InnerMember, const uint8_t BitPos>
 void Bit(Outer* instance) {
-  const uint8_t kBit = (1 << BitPos);
-  instance->*InnerMember.*Field ^= kBit;
+  const uint8_t k_Bit = (1 << BitPos);
+  instance->*InnerMember.*Field ^= k_Bit;
 }
 
 template <typename Outer, typename Inner, uint8_t Inner::*Field,
   Inner Outer::*InnerMember, const uint8_t BitPos>
 void Set(Outer* instance) {
-  const uint8_t kBit = (1 << BitPos);
-  instance->*InnerMember.*Field |= kBit;
+  const uint8_t k_Bit = (1 << BitPos);
+  instance->*InnerMember.*Field |= k_Bit;
 }
 
 template <typename Outer, typename Inner, uint8_t Inner::*Field,
           Inner Outer::*InnerMember, const uint8_t BitPos>
 void Reset(Outer* instance) {
-  const uint8_t kBit = (1 << BitPos);
-  instance->*InnerMember.*Field &= ~kBit;
+  const uint8_t k_Bit = (1 << BitPos);
+  instance->*InnerMember.*Field &= ~k_Bit;
 }
 
 template <typename Outer, typename Opcode, typename Operand,
@@ -968,6 +978,18 @@ void LoadRegisterDirect8(Outer* instance) {
   instance->*InnerMember.*RegX = instance->*InnerMember.*RegY;
 }
 
+template <typename Outer, 
+          typename Inner,
+          uint8_t Inner::*RegX, 
+          uint8_t Inner::*RegY, 
+          Inner Outer::*InnerMember>
+void Add(Outer* instance) {
+  const uint16_t k_Result =
+      instance->*InnerMember.*RegX + instance->*InnerMember.*RegY;
+  SetFlagZ0HC(instance, k_Result, instance->*InnerMember.*RegX,
+              instance->*InnerMember.*RegY);
+  instance->*InnerMember.*RegX = k_Result;
+}
 template <typename Outer, typename Opcode, typename Operand,
           uint8_t Opcode::*RegX, uint8_t Operand::*RegY,
           Opcode Outer::*InnerMember>
@@ -995,8 +1017,7 @@ extern inline void LoadHighImmediate16(uint16_t* reg, const uint16_t k_Data);
  // Operation Instructions 
 extern inline void AddRegisterDirect8(const uint8_t k_Reg,
                                       GameBoy* gb);
-void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t* reg,
-                 const uint8_t k_Reg);
+                
 extern inline void AddImmediate8(GameBoy* gb);
 extern inline void AddImmediate16(const uint8_t );
 extern inline void AddWithCarryRegisterDirect8(const uint8_t k_Operand,
@@ -1016,9 +1037,7 @@ extern inline void SubWithCarryRegisterDirect8(const uint8_t k_Operand,
 extern inline void SubWithCarry(GameBoy& gb);
 extern inline void AndRegisterDirect8(GameBoy* gb);
 extern inline void CompareRegisterDirect8(GameBoy* gb);
-void SetFlagZ000(GameBoy* gb, const bool k_IsZero);
-void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result, const uint8_t k_Reg,
-                 const uint8_t k_Operand); 
+
 extern inline void SubImmediate8Function(uint8_t* reg, GameBoy* gb);
 extern inline void SubImmediate16Function(uint16_t* reg);
 extern inline void Fetch(GameBoy* gb);
