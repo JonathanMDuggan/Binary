@@ -71,7 +71,7 @@ void CompareRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ - k_Operand;
   SetFlagZ1HC(gb, k_Result, gb->reg_.a_, k_Operand);
   gb->reg_.f_ = k_Result;
-}
+} 
 void OrRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
   const uint8_t k_Result = gb->reg_.a_ | k_Operand;
   // SetFlagZ000

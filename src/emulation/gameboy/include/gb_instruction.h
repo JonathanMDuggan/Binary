@@ -950,50 +950,66 @@ extern void SetFlagZ000(GameBoy* gb, const bool k_IsZero);
 extern void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result,
                         const uint8_t k_Reg, const uint8_t k_Operand);
 
-template <typename Outer, typename Inner, uint8_t Inner::*Field,
-          Inner Outer::*InnerMember, const uint8_t BitPos>
-void Bit(Outer* instance) {
+template <typename GameBoy, typename Register, uint8_t Register::*Field,
+          Register GameBoy::*Reg, const uint8_t BitPos>
+void Bit(GameBoy* gb) {
   const uint8_t k_Bit = (1 << BitPos);
-  instance->*InnerMember.*Field ^= k_Bit;
+  gb->*Reg.*Field ^= k_Bit;
 }
 
-template <typename Outer, typename Inner, uint8_t Inner::*Field,
-  Inner Outer::*InnerMember, const uint8_t BitPos>
-void Set(Outer* instance) {
+template <typename GameBoy, typename Register, uint8_t Register::*Field,
+  Register GameBoy::*Reg, const uint8_t BitPos>
+void Set(GameBoy* gb) {
   const uint8_t k_Bit = (1 << BitPos);
-  instance->*InnerMember.*Field |= k_Bit;
+  gb->*Reg.*Field |= k_Bit;
 }
 
-template <typename Outer, typename Inner, uint8_t Inner::*Field,
-          Inner Outer::*InnerMember, const uint8_t BitPos>
-void Reset(Outer* instance) {
+template <typename GameBoy, typename Register, uint8_t Register::*Field,
+          Register GameBoy::*Reg, const uint8_t BitPos>
+void Reset(GameBoy* gb) {
   const uint8_t k_Bit = (1 << BitPos);
-  instance->*InnerMember.*Field &= ~k_Bit;
+  gb->*Reg.*Field &= ~k_Bit;
 }
 
-template <typename Outer, typename Opcode, typename Operand,
-          uint8_t Opcode::*RegX, uint8_t Operand::*RegY,
-          Opcode Outer::*InnerMember>
-void LoadRegisterDirect8(Outer* instance) {
-  instance->*InnerMember.*RegX = instance->*InnerMember.*RegY;
+template <typename GameBoy, typename Opcode, typename Operand,
+          uint8_t Opcode::*X, uint8_t Operand::*Y,
+          Opcode GameBoy::*Reg>
+void LoadRegisterDirect8(GameBoy* gb) {
+  gb->*Reg.*X = gb->*Reg.*Y;
 }
 
-template <typename Outer, 
-          typename Inner,
-          uint8_t Inner::*RegX, 
-          uint8_t Inner::*RegY, 
-          Inner Outer::*InnerMember>
-void Add(Outer* instance) {
+template <typename GameBoy, typename Register,
+          uint8_t Register::*X, uint8_t Register::*Y, 
+          Register GameBoy::*Reg>
+void Add(GameBoy* gb) {
   const uint16_t k_Result =
-      instance->*InnerMember.*RegX + instance->*InnerMember.*RegY;
-  SetFlagZ0HC(instance, k_Result, instance->*InnerMember.*RegX,
-              instance->*InnerMember.*RegY);
-  instance->*InnerMember.*RegX = k_Result;
+      gb->*Reg.*X + gb->*Reg.*Y;
+  SetFlagZ0HC(gb, k_Result, gb->*Reg.*X,
+              gb->*Reg.*Y);
+  gb->*Reg.*X = k_Result;
 }
-template <typename Outer, typename Opcode, typename Operand,
-          uint8_t Opcode::*RegX, uint8_t Operand::*RegY,
-          Opcode Outer::*InnerMember>
-void RotateCarryRegisterDirect8(Outer* instance) {
+
+template <typename GameBoy, typename Register, uint8_t Register::*X,
+          uint8_t Register::*Y, Register GameBoy::*Reg>
+
+void Sub(GameBoy* gb) {
+  const uint16_t k_Result = gb->*Reg.*X - gb->*Reg.*Y;
+  SetFlagZ1HC(gb, k_Result, gb->*Reg.*X, gb->*Reg.*Y);
+  gb->*Reg.*X = k_Result;
+}
+
+template <typename GameBoy, typename Register, uint8_t Register::*X,
+          uint8_t Register::*Y, Register GameBoy::*Reg>
+void Xor(GameBoy* gb) {
+  const uint16_t k_Result = gb->*Reg.*X ^ gb->*Reg.*Y;
+  gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH);
+  gb->*Reg.*X = k_Result;
+}
+
+template <typename GameBoy, typename Opcode, typename Operand,
+          uint8_t Opcode::*X, uint8_t Operand::*Y,
+          Opcode GameBoy::*Reg>
+void RotateCarryRegisterDirect8(GameBoy* instance) {
 }
 
 extern inline void RotateRightCarry(uint8_t* reg);
