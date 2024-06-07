@@ -293,6 +293,8 @@ void Init8BitArithmeticLogicRegisterDirectTable(
   // We are testing the opcodes 
   opcode_table[ADD_B].execute_ = Add<GameBoy, Register, &Register::a_,
                                      &Register::b_, &GameBoy::reg_>;
+  opcode_table[XOR_B].execute_ = Xor<&Register::b_>;
+  opcode_table[OR_B].execute_ = Or<GameBoy, Register, &Register::b_>;
 }
 
 void Init8BitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {

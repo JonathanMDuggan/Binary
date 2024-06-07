@@ -991,19 +991,40 @@ void Add(GameBoy* gb) {
 
 template <typename GameBoy, typename Register, uint8_t Register::*X,
           uint8_t Register::*Y, Register GameBoy::*Reg>
+void AddWithCarry(GameBoy* gb) {
+  uint8_t k_RegFValue = static_cast<uint8_t>(gb->reg_.f_.to_ulong());
+  const uint8_t k_Result = k_RegFValue + gb->*Reg.*Y + gb->reg_.f_[k_BitIndexC];
+  gb->reg_.f_ = k_Result;
+  SetFlagZ0HC(gb, k_Result, gb->reg_.a_, gb->*Reg.*Y);
+}
 
+template <typename GameBoy, typename Register, uint8_t Register::*X,
+          uint8_t Register::*Y, Register GameBoy::*Reg>
 void Sub(GameBoy* gb) {
   const uint16_t k_Result = gb->*Reg.*X - gb->*Reg.*Y;
   SetFlagZ1HC(gb, k_Result, gb->*Reg.*X, gb->*Reg.*Y);
   gb->*Reg.*X = k_Result;
 }
+template <typename GameBoy, typename Register, uint8_t Register::*x_, Register GameBoy::*reg_>
+void SubWithCarry(GameBoy* gb) {
+  const uint16_t k_Result = gb->reg_.a_ - gb->*reg_.*x_;
+  SetFlagZ1HC(gb, k_Result, gb->reg_.a_, gb->*reg_.*x_);
+  gb->reg_.a_ = k_Result;
+}
 
-template <typename GameBoy, typename Register, uint8_t Register::*X,
-          uint8_t Register::*Y, Register GameBoy::*Reg>
+template <uint8_t Register::*x_>
 void Xor(GameBoy* gb) {
-  const uint16_t k_Result = gb->*Reg.*X ^ gb->*Reg.*Y;
+  const uint16_t k_Result = gb->reg_.a_ ^ gb->reg_.*x_;
   gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH);
-  gb->*Reg.*X = k_Result;
+  gb->reg_.a_ = k_Result;
+}
+
+template <typename GameBoy, typename Register, uint8_t Register::*x_>
+void Or(GameBoy* gb) {
+  const uint8_t k_Result = gb->reg_.a_ | gb->reg_.*x_;
+  // SetFlagZ000
+  gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;
+  gb->reg_.a_ = k_Result;
 }
 
 template <typename GameBoy, typename Opcode, typename Operand,
