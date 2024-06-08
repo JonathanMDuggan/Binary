@@ -19,17 +19,7 @@ namespace binary::gb::instructionset {
 void NoOperationFunction(GameBoy* gb) { return; }
 void NoOperation(GameBoy* gb) { NoOperationFunction(gb); }
 
-// Load Register Direct Functions Macros
-BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(B, b)
-BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(C, c)
-BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(D, d)
-BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(E, e)
-BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(H, h)
-BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(L, l)
-BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(A, a)
 
-inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Operand)
-{*reg = k_Operand;}
 void LoadHighAddressIntoRegA(GameBoy* gb) {
   const uint8_t k_HighAddress = gb->memory_[gb->reg_.program_counter_ + 2];
   gb->reg_.a_ = k_HighAddress;
@@ -37,56 +27,12 @@ void LoadHighAddressIntoRegA(GameBoy* gb) {
 void LoadRegAIntoHighAddress(GameBoy* gb) {
   gb->memory_[gb->reg_.program_counter_] = gb->reg_.a_;
 }
-void AddRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ + k_Operand; 
-  SetFlagZ0HC(gb, k_Result, gb->reg_.a_, k_Operand);
-  gb->reg_.a_ = k_Result;
-}
-void AddWithCarryRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
-  uint8_t k_RegFValue = static_cast<uint8_t>(gb->reg_.f_.to_ulong());
-  const uint16_t k_Result = k_RegFValue + k_Operand + gb->reg_.f_[k_BitIndexC];
-  gb->reg_.f_ = k_Result;
-  SetFlagZ0HC(gb, k_Result, gb->reg_.a_, k_Operand);
-}
+
+
 inline void AddImmediate8(GameBoy* gb) {
   const uint8_t k_Operand = gb->memory_[gb->reg_.program_counter_ + 1];
   const uint8_t k_Result = gb->reg_.a_ + k_Operand;
   SetFlagZ0HC(gb, k_Result, gb->reg_.a_, k_Operand);
-  gb->reg_.a_ = k_Result;
-}
-
-void XorRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
-  const uint8_t k_Result = gb->reg_.a_ ^ k_Operand;
-  // SetFlagZ000
-  gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ; 
-  gb->reg_.a_ = k_Result;
-}
-void AndRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
-  const uint8_t k_Result = gb->reg_.a_ & k_Operand;
-  // SetFlagZ010
-  gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH);
-  gb->reg_.a_ = k_Result;
-}
-void CompareRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ - k_Operand;
-  SetFlagZ1HC(gb, k_Result, gb->reg_.a_, k_Operand);
-  gb->reg_.f_ = k_Result;
-} 
-void OrRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
-  const uint8_t k_Result = gb->reg_.a_ | k_Operand;
-  // SetFlagZ000
-  gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ; 
-  gb->reg_.a_ = k_Result;
-}
-void SubWithCarryRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
-  uint8_t k_RegFValue = static_cast<uint8_t>(gb->reg_.f_.to_ulong());
-  const uint16_t k_Result = k_RegFValue - k_Operand - gb->reg_.f_[k_BitIndexC];
-  gb->reg_.f_ = k_Result;
-  SetFlagZ1HC(gb, k_Result, k_RegFValue, k_Operand);
-}
-void SubRegisterDirect8(const uint8_t k_Operand, GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ - k_Operand;
-  SetFlagZ1HC(gb, k_Result, gb->reg_.a_, k_Operand);
   gb->reg_.a_ = k_Result;
 }
 
@@ -291,10 +237,10 @@ void Init8BitArithmeticLogicRegisterDirectTable(
   BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_EQUALS_OPERATION_REG);
 
   // We are testing the opcodes 
-  opcode_table[ADD_B].execute_ = Add<GameBoy, Register, &Register::a_,
-                                     &Register::b_, &GameBoy::reg_>;
+  opcode_table[ADD_B].execute_ = Add<&Register::b_>;
   opcode_table[XOR_B].execute_ = Xor<&Register::b_>;
-  opcode_table[OR_B].execute_ = Or<GameBoy, Register, &Register::b_>;
+  opcode_table[OR_B].execute_ = Or<&Register::b_>;
+  opcode_table[OR_C].execute_ = Or<&Register::c_>;
 }
 
 void Init8BitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {

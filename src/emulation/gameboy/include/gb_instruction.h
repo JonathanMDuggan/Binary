@@ -26,11 +26,11 @@ enum CpuFlags {
 
 #define BINARY_GB_EXECUTE_PREFIX(upper, lower, num)                           \
   opcode_table[BIT_##num##_##upper].execute_ =                                \
-      Bit<GameBoy, Register, &Register::lower##_, &GameBoy::reg_, ##num##>;   \
+      Bit<&Register::lower##_, ##num##>;                                       \
   opcode_table[RES_##num##_##upper].execute_ =                                \
-      Reset<GameBoy, Register, &Register::lower##_, &GameBoy::reg_, ##num##>; \
+      Reset<&Register::lower##_, ##num##>;                                     \
   opcode_table[SET_##num##_##upper].execute_ =                                \
-      Set<GameBoy, Register, &Register::lower##_, &GameBoy::reg_, ##num##>;   
+      Set<&Register::lower##_, ##num##>;   
 
 #define BINARY_GB_REPEAT_FOR_ALL_PREFIX(MACRO)\
 MACRO(B,b,0) MACRO(C,c,0) MACRO(D,d,0) MACRO(E,e,0) MACRO(H,h,0) MACRO(L,l,0)\
@@ -53,78 +53,26 @@ MACRO(A,a,7)\
 
 
 #define BINARY_GB_ALL_REG(MACRO)\
-MACRO(B) MACRO(C) MACRO(D) MACRO(E) MACRO(H) MACRO(L) MACRO(A)
-#define BINARY_GB_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(upper) \
-  opcode_table[LD_A_##upper].execute_ = LoadRegAFromReg##upper;         \
-  opcode_table[LD_B_##upper].execute_ = LoadRegBFromReg##upper;         \
-  opcode_table[LD_C_##upper].execute_ = LoadRegCFromReg##upper;         \
-  opcode_table[LD_D_##upper].execute_ = LoadRegDFromReg##upper;         \
-  opcode_table[LD_E_##upper].execute_ = LoadRegEFromReg##upper;         \
-  opcode_table[LD_H_##upper].execute_ = LoadRegHFromReg##upper;         \
-  opcode_table[LD_L_##upper].execute_ = LoadRegLFromReg##upper;
+MACRO(B, b) MACRO(C, c) MACRO(D, d) MACRO(E, e) MACRO(H, h) MACRO(L, l) MACRO(A, a)
+#define BINARY_GB_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(upper, lower) \
+  opcode_table[LD_A_##upper].execute_ = Load<&Register::a_,&Register::lower##_>;\
+  opcode_table[LD_B_##upper].execute_ = Load<&Register::b_,&Register::lower##_>;\
+  opcode_table[LD_C_##upper].execute_ = Load<&Register::c_,&Register::lower##_>;\
+  opcode_table[LD_D_##upper].execute_ = Load<&Register::d_,&Register::lower##_>;\
+  opcode_table[LD_E_##upper].execute_ = Load<&Register::e_,&Register::lower##_>;\
+  opcode_table[LD_H_##upper].execute_ = Load<&Register::h_,&Register::lower##_>;\
+  opcode_table[LD_L_##upper].execute_ = Load<&Register::l_,&Register::lower##_>;
 
-#define BINARY_GB_EXECUTE_EQUALS_OPERATION_REG(upper) \
-  opcode_table[ADD_##upper].execute_ = AddReg##upper;              \
-  opcode_table[ADC_##upper].execute_ = AddWithCarryReg##upper;     \
-  opcode_table[SUB_##upper].execute_ = SubReg##upper;              \
-  opcode_table[SBC_##upper].execute_ = SubWithCarryReg##upper;     \
-  opcode_table[AND_##upper].execute_ = AndReg##upper;              \
-  opcode_table[OR_##upper].execute_  = OrReg##upper;               \
-  opcode_table[XOR_##upper].execute_ = XorReg##upper;              \
-  opcode_table[CP_##upper].execute_  = CompareReg##upper;   
+#define BINARY_GB_EXECUTE_EQUALS_OPERATION_REG(upper, lower) \
+  opcode_table[ADD_##upper].execute_ = Add<&Register::lower##_>;              \
+  opcode_table[ADC_##upper].execute_ = AddWithCarry<&Register::lower##_>;     \
+  opcode_table[SUB_##upper].execute_ = Sub<&Register::lower##_>;              \
+  opcode_table[SBC_##upper].execute_ = SubWithCarry<&Register::lower##_>;     \
+  opcode_table[AND_##upper].execute_ = And<&Register::lower##_>;              \
+  opcode_table[OR_##upper].execute_ = Or<&Register::lower##_>;               \
+  opcode_table[XOR_##upper].execute_ = Xor<&Register::lower##_>;              \
+  opcode_table[CP_##upper].execute_ = Compare<&Register::lower##_>;   
 
-#define BINARY_GB_CREATE_8BIT_REG_ARITHMETIC_OPCODE(upper, lower)              \
-  void LoadRegBFromReg##upper(GameBoy* gb) {                                   \
-    LoadRegisterDirect(&gb->reg_.b_, gb->reg_.lower##_);                       \
-    gb->UpdateRegBC();                                                         \
-  }                                                                            \
-  void LoadRegDFromReg##upper(GameBoy* gb) {                                   \
-    LoadRegisterDirect(&gb->reg_.d_, gb->reg_.lower##_);                       \
-    gb->UpdateRegDE();                                                         \
-  }                                                                            \
-  void LoadRegHFromReg##upper(GameBoy* gb) {                                   \
-    LoadRegisterDirect(&gb->reg_.h_, gb->reg_.lower##_);                       \
-    gb->UpdateRegHL();                                                         \
-  }                                                                            \
-  void LoadRegLFromReg##upper(GameBoy* gb) {                                   \
-    LoadRegisterDirect(&gb->reg_.l_, gb->reg_.lower##_);                       \
-    gb->UpdateRegHL();                                                         \
-  }                                                                            \
-  void LoadRegAFromReg##upper(GameBoy* gb) {                                   \
-    LoadRegisterDirect(&gb->reg_.a_, gb->reg_.lower##_);                       \
-    gb->UpdateRegAF();                                                         \
-  }                                                                            \
-  void LoadRegCFromReg##upper(GameBoy* gb) {                                   \
-    LoadRegisterDirect(&gb->reg_.c_, gb->reg_.lower##_);                       \
-    gb->UpdateRegBC();                                                         \
-  }                                                                            \
-  void LoadRegEFromReg##upper(GameBoy* gb) {                                   \
-    LoadRegisterDirect(&gb->reg_.e_, gb->reg_.lower##_);                       \
-    gb->UpdateRegDE();                                                         \
-  }                                                                            \
-  void AddReg##upper(GameBoy* gb) {                                            \
-    AddRegisterDirect8(gb->reg_.lower##_, gb);                                 \
-  }                                                                            \
-  void SubReg##upper(GameBoy* gb) {                                            \
-    SubRegisterDirect8(gb->reg_.lower##_, gb);                                 \
-  }                                                                            \
-  void XorReg##upper(GameBoy* gb) {                                            \
-    XorRegisterDirect8(gb->reg_.lower##_, gb);                                 \
-  }                                                                            \
-  void AndReg##upper(GameBoy* gb) {                                            \
-    XorRegisterDirect8(gb->reg_.lower##_, gb);                                 \
-  }                                                                            \
-  void OrReg##upper(GameBoy* gb) { OrRegisterDirect8(gb->reg_.lower##_, gb); } \
-  void CompareReg##upper(GameBoy* gb) {                                        \
-    OrRegisterDirect8(gb->reg_.lower##_, gb);                                  \
-  }                                                                            \
-  void AddWithCarryReg##upper(GameBoy* gb) {                                   \
-     AddWithCarryRegisterDirect8(gb->reg_.lower##_, gb);                       \
-  }                                                                            \
-  void SubWithCarryReg##upper(GameBoy* gb) {                                   \
-     SubWithCarryRegisterDirect8(gb->reg_.lower##_, gb);                       \
-  }    
-  
 constexpr uint8_t k_FlagZ = 0x80;
 constexpr uint8_t k_FlagN = 0x40;
 constexpr uint8_t k_FlagH = 0x20;
@@ -552,14 +500,7 @@ extern void NoOperation(GameBoy*);                        // 0x00 NOP
 extern void Stop(GameBoy*);                               // 0x10 STOP
 extern void JumpRelativeSignedIfNotZero(GameBoy*);        // 0x20 JR NZ R8
 extern void JumpRelativeSignedIfNotCarry(GameBoy*);       // 0x30 JR NC R8
-extern void LoadRegBFromRegB(GameBoy*);                   // 0x40 LD B,B
-extern void LoadRegDFromRegB(GameBoy*);                   // 0x50 LD D,B
-extern void LoadRegHFromRegB(GameBoy*);                   // 0x60 LD H,B
 extern void LoadRegIndirectHLFromRegB(GameBoy*);          // 0x70 LD (HL),B
-extern void AddFromRegB(GameBoy*);                        // 0x80 ADD B
-extern void SubRegB(GameBoy*);                            // 0x90 SUB B
-extern void AndRegB(GameBoy*);                            // 0xA0 AND B
-extern void OrRegB(GameBoy*);                             // 0xB0 OR B
 extern void ReturnIfNotZero(GameBoy*);                    // 0xC0 RET NZ
 extern void ReturnIfNotCarry(GameBoy*);                   // 0xD0 RET NC
 extern void LoadHighAddressIntoRegA(GameBoy*);            // 0xE0 LDH (A8),A
@@ -570,14 +511,7 @@ extern void LoadRegBCImmediate16(GameBoy*);               // 0x01 LD BC,d16
 extern void LoadRegDEImmediate16(GameBoy*);               // 0x11 LD DE,d16
 extern void LoadRegHLImmediate16(GameBoy*);               // 0x21 LD HL,d16
 extern void LoadStackPointerImmediate16(GameBoy*);        // 0x31 LD SP,d16
-extern void LoadRegBFromRegC(GameBoy*);                   // 0x41 LD B,C
-extern void LoadRegDFromRegC(GameBoy*);                   // 0x51 LD D,C
-extern void LoadRegHFromRegC(GameBoy*);                   // 0x61 LD H,C
 extern void LoadIndirectRegHLFromRegC(GameBoy*);          // 0x71 LD (HL),C
-extern void AddRegAFromRegC(GameBoy*);                    // 0x81 ADD A,C
-extern void SubRegC(GameBoy*);                            // 0x91 SUB C
-extern void AndRegC(GameBoy*);                            // 0xA1 AND C
-extern void OrRegC(GameBoy*);                             // 0xB1 OR C
 extern void PopRegBC(GameBoy*);                           // 0xC1 POP BC
 extern void PopRegDE(GameBoy*);                           // 0xD1 POP DE
 extern void PopRegHL(GameBoy*);                           // 0xE1 POP HL
@@ -587,15 +521,7 @@ extern void PopRegAF(GameBoy*);                           // 0xF1 POP AF
 extern void LoadIndirectRegBCFromRegA(GameBoy*);          // 0x02 LD (BC),A 
 extern void LoadIndirectRegDEFromRegA(GameBoy*);          // 0x12 LD (DE),A
 extern void LoadIndirectIncrementRegHLFromRegA(GameBoy*); // 0x22 LD (HL+),A
-extern void LoadIndirectDecrementRegHLFromRegA(GameBoy*); // 0x32 LD (HL-),A
-extern void LoadRegBFromRegD(GameBoy*);                   // 0x42 LD B,D
-extern void LoadRegDFromRegD(GameBoy*);                   // 0x52 LD D,D
-extern void LoadRegHFromRegD(GameBoy*);                   // 0x62 LD H,D
 extern void LoadIndirectRegHLFromRegD(GameBoy*);          // 0x72 LD (HL),D
-extern void AddRegD(GameBoy*);                            // 0x82 ADD D
-extern void SubRegD(GameBoy*);                            // 0x92 SUB D
-extern void AndRegD(GameBoy*);                            // 0xA2 AND D
-extern void OrRegD(GameBoy*);                             // 0xB2 OR D
 extern void JumpToAddress16IfNotZero(GameBoy*);           // 0xC2 RET NZ
 extern void JumpToAddress16IfNotCarry(GameBoy*);          // 0xD2 RET NC
 extern void LoadIndirectRegCFromRegA(GameBoy*);           // 0xE2 LD (C),A
@@ -606,14 +532,7 @@ extern void IncrementRegBC(GameBoy*);                     // 0x03 INC BC
 extern void IncrementRegDE(GameBoy*);                     // 0x13 INC DE
 extern void IncrementRegHL(GameBoy*);                     // 0x23 INC HL
 extern void IncrementStackPointer(GameBoy*);              // 0x33 INC SP
-extern void LoadRegBFromRegE(GameBoy*);                   // 0x43 LD B,E
-extern void LoadRegDFromRegE(GameBoy*);                   // 0x53 LD D,E
-extern void LoadRegHFromRegE(GameBoy*);                   // 0x63 LD H,E
 extern void LoadIndirectRegHLFromRegE(GameBoy*);          // 0x73 LD (HL),E
-extern void AddRegE(GameBoy*);                            // 0x83 ADD E
-extern void SubRegE(GameBoy*);                            // 0x93 SUB E
-extern void AndRegE(GameBoy*);                            // 0xA3 AND E
-extern void OrRegE(GameBoy*);                             // 0xB3 OR E
 extern void JumpToAddress16(GameBoy*);                    // 0xC3 JP a16
 extern void NoInstructionD3(GameBoy*);                    // 0xD3 NUL
 extern void NoInstructionE3(GameBoy*);                    // 0xE3 NUL
@@ -624,14 +543,7 @@ extern void IncrementRegB(GameBoy*);                      // 0x04 INC B
 extern void IncrementRegD(GameBoy*);                      // 0x14 INC D
 extern void IncrementRegH(GameBoy*);                      // 0x24 INC H
 extern void IncrementIndirectRegHL(GameBoy*);             // 0x34 INC (HL)
-extern void LoadRegBFromRegH(GameBoy*);                   // 0x44 LD B, H
-extern void LoadRegDFromRegH(GameBoy*);                   // 0x54 LD D, H
-extern void LoadRegHFromRegH(GameBoy*);                   // 0x64 LD H, H
 extern void LoadIndirectRegHLFromRegH(GameBoy*);          // 0x74 LD (HL),H
-extern void AddRegH(GameBoy*);                            // 0x84 ADD H
-extern void SubRegH(GameBoy*);                            // 0x94 SUB H 
-extern void AndRegH(GameBoy*);                            // 0xA4 AND H
-extern void OrRegH(GameBoy*);                             // 0xB4 OR H
 extern void CallAddress16IfNotZero(GameBoy*);             // 0xC4 CALL NZ,a16
 extern void CallAddress16IfNotCarry(GameBoy*);            // 0xD4 CALL NC,a16
 extern void NoInstructionE4(GameBoy*);                    // 0xE4 NUL
@@ -642,14 +554,7 @@ extern void DecrementRegB(GameBoy*);                      // 0x05 DEC B
 extern void DecrementRegD(GameBoy*);                      // 0x15 DEC D
 extern void DecrementRegH(GameBoy*);                      // 0x25 DEC H
 extern void DecrementIndirectRegHL(GameBoy*);             // 0x35 DEC (HL)
-extern void LoadRegBFromRegL(GameBoy*);                   // 0x45 LD B, L
-extern void LoadRegDFromRegL(GameBoy*);                   // 0x55 LD D, L
-extern void LoadRegHFromRegL(GameBoy*);                   // 0x65 LD H, L
 extern void LoadIndirectRegHFromRegL(GameBoy*);           // 0x75 LD (HL),L
-extern void AddRegL(GameBoy*);                            // 0x85 ADD A,L
-extern void SubRegL(GameBoy*);                            // 0x95 SUB L
-extern void AndRegL(GameBoy*);                            // 0xA5 AND L
-extern void OrRegL(GameBoy*);                             // 0xB5 OR L
 extern void PushRegBC(GameBoy*);                          // 0xC5 PUSH BC
 extern void PushRegDE(GameBoy*);                          // 0xD5 PUSH DE
 extern void PushRegHL(GameBoy*);                          // 0xE5 PUSH HL
@@ -678,14 +583,7 @@ extern void RotateLeftCarryRegA(GameBoy*);                // 0x07 RLCA
 extern void RotateLeftRegA(GameBoy*);                     // 0x17 RLA
 extern void DecimalAdjectAccumulator(GameBoy*);           // 0x27 DAA
 extern void SetCarryFlag(GameBoy*);                       // 0x37 SCF
-extern void LoadRegBFromRegA(GameBoy*);                   // 0x57 LD B,A
-extern void LoadRegDFromRegA(GameBoy*);                   // 0x67 LD D,A
-extern void LoadRegHFromRegA(GameBoy*);                   // 0x77 LD H,A
 extern void LoadIndirectHLFromRegA(GameBoy*);             // 0x47 LD (HL),A
-extern void AddRegA(GameBoy*);                            // 0x87 ADD A,A
-extern void SubRegA(GameBoy*);                            // 0x97 SUB A
-extern void AndRegA(GameBoy*);                            // 0xA7 AND A
-extern void OrRegA(GameBoy*);                             // 0xB7 OR A
 extern void RestartAtAddress00(GameBoy*);                 // 0xC7 RST 00H
 extern void RestartAtAddress10(GameBoy*);                 // 0xD7 RST 10H
 extern void RestartAtAddress20(GameBoy*);                 // 0xE7 RST 20H
@@ -695,15 +593,7 @@ extern void RestartAtAddress30(GameBoy*);                 // 0xF7 RST 30H
 extern void LoadIndirect16FromStackPointer(GameBoy*);     // 0x08 LD (a16),SP
 extern void JumpRelativeSigned8(GameBoy*);                // 0x18 JR r8
 extern void JumpRelativeSigned8IfZero(GameBoy*);          // 0x28 JR Z,r8
-extern void JumpRelativeSigned8IfCarry(GameBoy*);         // 0x38 JR C.r8
-extern void LoadRegCFromRegB(GameBoy*);                   // 0x48 LD C,B
-extern void LoadRegEFromRegB(GameBoy*);                   // 0x58 LD E,B
-extern void LoadRegLFromRegB(GameBoy*);                   // 0x68 LD L,B
-extern void LoadRegAFromRegB(GameBoy*);                   // 0x78 LD A,B
-extern void AddWithCarryRegB(GameBoy*);                   // 0x88 ADC A,B
-extern void SubWithCarryRegB(GameBoy*);                   // 0x98 SBC A,B
-extern void XorRegB(GameBoy*);                            // 0xA8 XOR B
-extern void CompareRegB(GameBoy*);                        // 0xB8 CP B
+extern void JumpRelativeSigned8IfCarry(GameBoy*);         // 0x38 JR C,r8
 extern void ReturnIfZero(GameBoy*);                       // 0xC8 RET Z
 extern void ReturnIfCarry(GameBoy*);                      // 0xD8 RET C
 extern void AddStackPointerFromSigned8(GameBoy*);         // 0xE8 ADD SP,r8
@@ -714,14 +604,6 @@ extern void AddRegHLFromRegBC(GameBoy*);                  // 0x09 ADD HL.BC
 extern void AddRegHLFromRegDE(GameBoy*);                  // 0x19 ADD HL,DE
 extern void AddRegHLFromRegHL(GameBoy*);                  // 0x29 ADD HL,HL
 extern void AddRegHLFromRegSP(GameBoy*);                  // 0x39 ADD HL,SP
-extern void LoadRegCFromRegC(GameBoy*);                   // 0x49 LD C,C
-extern void LoadRegEFromRegC(GameBoy*);                   // 0x59 LD E,C
-extern void LoadRegLFromRegC(GameBoy*);                   // 0x69 LD L,C
-extern void LoadRegAFromRegC(GameBoy*);                   // 0x79 LD A,C
-extern void AddWithCarryRegC(GameBoy*);                   // 0x89 ADC A,C
-extern void SubWithCarryRegC(GameBoy*);                   // 0x99 SBC A.C
-extern void XorRegC(GameBoy*);                            // 0xA9 XOR C
-extern void CompareRegC(GameBoy*);                        // 0xB9 CP C
 extern void Return(GameBoy*);                             // 0xC9 RET
 extern void ReturnIndex(GameBoy*);                        // 0xD9 RETI
 extern void JumpToIndirectRegHL(GameBoy*);                // 0xE9 JP (HL)
@@ -732,14 +614,6 @@ extern void LoadRegAFromIndirectRegBC(GameBoy*);          // 0x0A LD A,(BC)
 extern void LoadRegAFromIndirectRegDE(GameBoy*);          // 0x1A LD A,(DE)
 extern void LoadRegAFromIncrementIndirectRegHL(GameBoy*); // 0x2A LD A,(HL+)
 extern void LoadRegAFromDecrementIndirectRegHL(GameBoy*); // 0x3A LD A,(HL-)
-extern void LoadRegCFromRegD(GameBoy*);                   // 0x4A LD C,D
-extern void LoadRegEFromRegD(GameBoy*);                   // 0x5A LD E,D
-extern void LoadRegLFromRegD(GameBoy*);                   // 0x6A LD L,D
-extern void LoadRegAFromRegD(GameBoy*);                   // 0x7A LD A,D
-extern void AddWithCarryRegD(GameBoy*);                   // 0x8A ADC A,(HL)
-extern void SubWithCarryRegD(GameBoy*);                   // 0x9A SBC A,(HL)
-extern void XorRegD(GameBoy*);                            // 0xAA XOR (HL)
-extern void CompareRegD(GameBoy*);                        // 0xBA CP (HL)
 extern void JumpIfZeroAddress16(GameBoy*);                // 0xCA ADC A,d8
 extern void JumpIfCarryAddress16(GameBoy*);               // 0xDA SBC A,d8
 extern void LoadAddress16FromRegA(GameBoy*);              // 0xEA XOR d8
@@ -750,14 +624,6 @@ extern void DecrementRegBC(GameBoy*);                     // 0x0B DEC BC
 extern void DecrementRegDE(GameBoy*);                     // 0x1B DEC DE
 extern void DecrementRegHL(GameBoy*);                     // 0x2B DEC HL
 extern void DecrementStackPointer(GameBoy*);              // 0x3B DEC SP
-extern void LoadRegCFromE(GameBoy*);                      // 0x4B LD C,E
-extern void LoadRegEFromE(GameBoy*);                      // 0x5B LD E,E
-extern void LoadRegLFromE(GameBoy*);                      // 0x6B LD L,E
-extern void LoadRegAFromE(GameBoy*);                      // 0x7B LD A,E
-extern void AddWithCarryRegE(GameBoy*);                   // 0x8B ADC A,E
-extern void SubWithCarryRegE(GameBoy*);                   // 0x9B SBC A,E
-extern void XorRegE(GameBoy*);                            // 0xAB XOR E
-extern void CompareRegE(GameBoy*);                        // 0xBB CP E
 extern void Prefix(GameBoy*);                             // 0xCB PREFIX CB
 extern void NoInstructionDB(GameBoy*);                    // 0xDB NUL
 extern void NoInstructionEB(GameBoy*);                    // 0xEB NUL
@@ -786,14 +652,6 @@ extern void DecrementRegC(GameBoy*);                      // 0x0D DEC C
 extern void DecrementRegE(GameBoy*);                      // 0x1D DEC E
 extern void DecrementRegL(GameBoy*);                      // 0x2D DEC L
 extern void DecrementRegA(GameBoy*);                      // 0x3D DEC A
-extern void LoadRegCFromRegL(GameBoy*);                   // 0x4D LD C,L
-extern void LoadRegEFromRegL(GameBoy*);                   // 0x5D LD E,L
-extern void LoadRegLFromRegL(GameBoy*);                   // 0x6D LD L,L
-extern void LoadRegAFromRegL(GameBoy*);                   // 0x7D LD A,L
-extern void AddWithCarryRegL(GameBoy*);                   // 0x8D ADC A,L
-extern void SubWithCarryRegL(GameBoy*);                   // 0x9D SBC A,L
-extern void XorRegL(GameBoy*);                            // 0xAD XOR L
-extern void CompareRegL(GameBoy*);                        // 0xBD CP L
 extern void CallAddress16(GameBoy*);                      // 0xCD CALL a16
 extern void NoInstructionDD(GameBoy*);                    // 0xDD NUL DD
 extern void NoInstructionED(GameBoy*);                    // 0xED NUL ED
@@ -822,14 +680,6 @@ extern void RotateRightCarryRegA(GameBoy*);               // 0x0F RRCA
 extern void RotateLeftRegA(GameBoy*);                     // 0x1F RRA
 extern void ComplementAccumulator(GameBoy*);              // 0x2F CPL
 extern void ComplementCarryFlag(GameBoy*);                // 0x3F CCF
-extern void LoadRegCFromRegA(GameBoy*);                   // 0x4F LD C,A
-extern void LoadRegEFromRegA(GameBoy*);                   // 0x5F LD E,A
-extern void LoadRegLFromRegA(GameBoy*);                   // 0x6F LD L,A
-extern void LoadRegAFromRegA(GameBoy*);                   // 0x7F LD A,A
-extern void AddWithCarryRegA(GameBoy*);                   // 0x8F ADC A,A
-extern void SubWithCarryRegA(GameBoy*);                   // 0x9F SBC A,A
-extern void XorRegA(GameBoy*);                            // 0xAF XOR A
-extern void CompareRegA(GameBoy*);                        // 0xBF CP A
 extern void RestartAtAddress08(GameBoy*);                 // 0xCF RST 08H
 extern void RestartAtAddress18(GameBoy*);                 // 0xDF RST 18H
 extern void RestartAtAddress28(GameBoy*);                 // 0xEF RST 28H
@@ -950,66 +800,58 @@ extern void SetFlagZ000(GameBoy* gb, const bool k_IsZero);
 extern void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result,
                         const uint8_t k_Reg, const uint8_t k_Operand);
 
-template <typename GameBoy, typename Register, uint8_t Register::*Field,
-          Register GameBoy::*Reg, const uint8_t BitPos>
+template <uint8_t Register::*x_, const uint8_t BitPos>
 void Bit(GameBoy* gb) {
   const uint8_t k_Bit = (1 << BitPos);
-  gb->*Reg.*Field ^= k_Bit;
+  gb->reg_.*x_ ^= k_Bit;
 }
 
-template <typename GameBoy, typename Register, uint8_t Register::*Field,
-  Register GameBoy::*Reg, const uint8_t BitPos>
+template <uint8_t Register::*x_, const uint8_t BitPos>
 void Set(GameBoy* gb) {
   const uint8_t k_Bit = (1 << BitPos);
-  gb->*Reg.*Field |= k_Bit;
+  gb->reg_.*x_ |= k_Bit;
 }
 
-template <typename GameBoy, typename Register, uint8_t Register::*Field,
-          Register GameBoy::*Reg, const uint8_t BitPos>
+template <uint8_t Register::*x_, const uint8_t BitPos>
 void Reset(GameBoy* gb) {
   const uint8_t k_Bit = (1 << BitPos);
-  gb->*Reg.*Field &= ~k_Bit;
+  gb->reg_.*x_ &= ~k_Bit;
 }
 
-template <typename GameBoy, typename Opcode, typename Operand,
-          uint8_t Opcode::*X, uint8_t Operand::*Y,
-          Opcode GameBoy::*Reg>
-void LoadRegisterDirect8(GameBoy* gb) {
-  gb->*Reg.*X = gb->*Reg.*Y;
+template <auto Register::*x_, uint8_t Register::*y_>
+void Load(GameBoy* gb) {
+  gb->reg_.*x_ = gb->reg_.*y_;
 }
 
-template <typename GameBoy, typename Register,
-          uint8_t Register::*X, uint8_t Register::*Y, 
-          Register GameBoy::*Reg>
+template <uint8_t Register::*x_>
 void Add(GameBoy* gb) {
-  const uint16_t k_Result =
-      gb->*Reg.*X + gb->*Reg.*Y;
-  SetFlagZ0HC(gb, k_Result, gb->*Reg.*X,
-              gb->*Reg.*Y);
-  gb->*Reg.*X = k_Result;
+  const uint16_t k_Result = gb->reg_.a_ + gb->reg_.*x_;
+  SetFlagZ0HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
+  gb->reg_.a_ = k_Result;
 }
 
-template <typename GameBoy, typename Register, uint8_t Register::*X,
-          uint8_t Register::*Y, Register GameBoy::*Reg>
+template <uint8_t Register::*x_>
 void AddWithCarry(GameBoy* gb) {
   uint8_t k_RegFValue = static_cast<uint8_t>(gb->reg_.f_.to_ulong());
-  const uint8_t k_Result = k_RegFValue + gb->*Reg.*Y + gb->reg_.f_[k_BitIndexC];
+  const uint8_t k_Result = k_RegFValue + gb->reg_.*x_ + gb->reg_.f_[k_BitIndexC];
   gb->reg_.f_ = k_Result;
-  SetFlagZ0HC(gb, k_Result, gb->reg_.a_, gb->*Reg.*Y);
+  SetFlagZ0HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
 }
 
-template <typename GameBoy, typename Register, uint8_t Register::*X,
-          uint8_t Register::*Y, Register GameBoy::*Reg>
+template <uint8_t Register::*x_>
 void Sub(GameBoy* gb) {
-  const uint16_t k_Result = gb->*Reg.*X - gb->*Reg.*Y;
-  SetFlagZ1HC(gb, k_Result, gb->*Reg.*X, gb->*Reg.*Y);
-  gb->*Reg.*X = k_Result;
-}
-template <typename GameBoy, typename Register, uint8_t Register::*x_, Register GameBoy::*reg_>
-void SubWithCarry(GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ - gb->*reg_.*x_;
-  SetFlagZ1HC(gb, k_Result, gb->reg_.a_, gb->*reg_.*x_);
+  const uint16_t k_Result = gb->reg_.a_ - gb->reg_.*x_;
+  SetFlagZ1HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
   gb->reg_.a_ = k_Result;
+}
+
+template <uint8_t Register::*x_>
+void SubWithCarry(GameBoy* gb) {
+  uint8_t k_RegFValue = static_cast<uint8_t>(gb->reg_.f_.to_ulong());
+  const uint16_t k_Result =
+      k_RegFValue - gb->reg_.*x_ - gb->reg_.f_[k_BitIndexC];
+  gb->reg_.f_ = k_Result;
+  SetFlagZ1HC(gb, k_Result, k_RegFValue, gb->reg_.*x_);
 }
 
 template <uint8_t Register::*x_>
@@ -1019,14 +861,26 @@ void Xor(GameBoy* gb) {
   gb->reg_.a_ = k_Result;
 }
 
-template <typename GameBoy, typename Register, uint8_t Register::*x_>
+template <uint8_t Register::*x_>
 void Or(GameBoy* gb) {
   const uint8_t k_Result = gb->reg_.a_ | gb->reg_.*x_;
   // SetFlagZ000
   gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;
   gb->reg_.a_ = k_Result;
 }
-
+template <uint8_t Register::*x_>
+void And(GameBoy* gb) {
+  const uint8_t k_Result = gb->reg_.a_ & gb->reg_.*x_;
+  // SetFlagZ000
+  gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH);
+  gb->reg_.a_ = k_Result;
+}
+template <uint8_t Register::*x_>
+void Compare(GameBoy* gb) {
+  const uint16_t k_Result = gb->reg_.a_ - gb->reg_.*x_;
+  SetFlagZ1HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
+  gb->reg_.f_ = k_Result;
+}
 template <typename GameBoy, typename Opcode, typename Operand,
           uint8_t Opcode::*X, uint8_t Operand::*Y,
           Opcode GameBoy::*Reg>
@@ -1071,7 +925,6 @@ extern inline void SubRegisterDirect8(const uint8_t k_Reg, GameBoy* gb);
 extern inline void SubImmediate8Function(GameBoy* gb);
 extern inline void SubWithCarryRegisterDirect8(const uint8_t k_Operand,
                                                GameBoy* gb);
-extern inline void SubWithCarry(GameBoy& gb);
 extern inline void AndRegisterDirect8(GameBoy* gb);
 extern inline void CompareRegisterDirect8(GameBoy* gb);
 

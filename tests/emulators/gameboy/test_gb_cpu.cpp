@@ -47,58 +47,6 @@ class GameBoyTest : public ::testing::Test {
 
 };
 
-TEST_F(GameBoyTest, LoadRegXfromA) {
-  using namespace binary::gb::instructionset;
-  gb_.reg_.a_ = 1;
-  LoadRegBFromRegA(&gb_);
-  LoadRegDFromRegA(&gb_);
-  LoadRegHFromRegA(&gb_);
-  LoadRegLFromRegA(&gb_);
-  LoadRegCFromRegA(&gb_);
-  LoadRegEFromRegA(&gb_);
-  LoadRegAFromRegA(&gb_);
-  EXPECT_EQ(gb_.reg_.af_, 0x0100);
-  VerifyRegisters(gb_.reg_.a_);
-  ClearAndVerifyRegisters();
-}
-
-TEST_F(GameBoyTest, LoadRegXfromH) {
-  using namespace binary::gb::instructionset;
-  gb_.reg_.h_ = 1;
-  LoadRegBFromRegH(&gb_);
-  LoadRegDFromRegH(&gb_);
-  LoadRegHFromRegH(&gb_);
-  LoadRegLFromRegH(&gb_);
-  LoadRegCFromRegH(&gb_);
-  LoadRegEFromRegH(&gb_);
-  LoadRegAFromRegH(&gb_);
-  EXPECT_EQ(gb_.reg_.hl_, 0x0101)
-      << "16-bit register HL must update its value to reflect changes in its "
-         "8-bit registers.\n"
-      << "Expected HL to be 0x0101 (0x01 in high byte from H and 0x01 in low "
-         "byte from L).\n"
-      << "Possible issue: The high byte of HL might not be properly updated "
-         "from register H.\n"
-      << "Ensure HL is set such that its high byte equals H and low byte "
-         "equals L.";
-
-  VerifyRegisters(gb_.reg_.h_);
-  ClearAndVerifyRegisters();
-
-  // Test High byte
-  gb_.reg_.h_ = 1;
-  LoadRegHFromRegH(&gb_);
-  EXPECT_EQ(gb_.reg_.hl_, 0x0100)
-      << "16-bit register HL must update its value to reflect changes in its "
-         "8-bit registers.\n"
-      << "Expected HL to be 0x0100 (0x01 in high byte from H and 0x00 in low "
-         "byte from L).\n"
-      << "Possible issue: The high byte of HL might not be properly updated "
-         "from register H.\n"
-      << "Ensure HL is set such that its high byte equals H and low byte "
-         "equals L.";
-}
-
 TEST_F(GameBoyTest, LoadRegDirectOpcodeTable) {
   using namespace binary::gb::instructionset;
   std::unique_ptr<std::array<Opcode, 512>> opcode_table;
