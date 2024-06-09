@@ -133,8 +133,6 @@ TEST_F(GameBoyTest, AddRegXtoRegYTable) {
   EXPECT_EQ(gb_.reg_.a_, 0);
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], true) << "Carry flag wasn't set";
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], true) << "Zero flag wasn't set";
-
-
 }
 
 TEST_F(GameBoyTest, SubRegXTable) {

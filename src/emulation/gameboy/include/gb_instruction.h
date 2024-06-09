@@ -464,7 +464,7 @@ enum class NewPublisherCodeIndex {
 };
 // TODO: Fill the PublisherCodeString with the codes corrsponding with the index
 const std::string k_PublisherCodeString{"0"};
-enum class AddressingModes {
+enum AddressingMode {
   k_None,
   k_Address8,   k_Address16,
   k_Direct,     k_RegisterDirect,
@@ -854,26 +854,59 @@ void SubWithCarry(GameBoy* gb) {
   SetFlagZ1HC(gb, k_Result, k_RegFValue, gb->reg_.*x_);
 }
 
-template <uint8_t Register::*x_>
+template <uint8_t Register::* x_ = &Register::a_,
+  AddressingMode address_mode = k_RegisterDirect>
 void Xor(GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ ^ gb->reg_.*x_;
+  uint8_t k_Result = 0;
+  if constexpr (address_mode == k_RegisterDirect) {
+    k_Result = gb->reg_.a_ ^ gb->reg_.*x_;
+  }
+  else if constexpr (address_mode == k_Immediate8) {
+    k_Result = gb->memory_[gb->reg_.program_counter_ + 1] ^ gb->reg_.a_;
+  }
+  else if constexpr (address_mode == k_RegisterIndirect) {
+    k_Result = gb->memory_[gb->reg_.hl_] ^ gb->reg_.a_;
+  }
   gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH);
-  gb->reg_.a_ = k_Result;
+  gb->reg_.a_ = k_Result; // output defaults to 0 if the programmer didn't write
+  // a valid address mode.
 }
 
-template <uint8_t Register::*x_>
+template <uint8_t Register::* x_ = &Register::a_,
+  AddressingMode address_mode = k_RegisterDirect>
 void Or(GameBoy* gb) {
-  const uint8_t k_Result = gb->reg_.a_ | gb->reg_.*x_;
-  // SetFlagZ000
+  uint8_t k_Result = 0;
+  if constexpr (address_mode == k_RegisterDirect) {
+    k_Result = gb->reg_.a_ | gb->reg_.*x_;
+  }
+  else if constexpr (address_mode == k_Immediate8) {
+    k_Result = gb->memory_[gb->reg_.program_counter_ + 1] | gb->reg_.a_;
+  }
+  else if constexpr (address_mode == k_RegisterIndirect) {
+    k_Result = gb->memory_[gb->reg_.hl_] | gb->reg_.a_;
+  }
   gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;
-  gb->reg_.a_ = k_Result;
+  gb->reg_.a_ = k_Result; // output defaults to 0 if the programmer didn't write
+  // a valid address mode.
 }
-template <uint8_t Register::*x_>
+
+template <uint8_t Register::*x_ = &Register::a_, 
+  AddressingMode address_mode = k_RegisterDirect>
 void And(GameBoy* gb) {
-  const uint8_t k_Result = gb->reg_.a_ & gb->reg_.*x_;
-  // SetFlagZ000
+  uint8_t k_Result = 0; 
+  if constexpr (address_mode == k_RegisterDirect) {
+    k_Result = gb->reg_.a_ & gb->reg_.*x_;
+  }
+  else if constexpr (address_mode == k_Immediate8) {
+    k_Result = gb->memory_[gb->reg_.program_counter_ + 1] & gb->reg_.a_;
+  }
+  else if constexpr (address_mode == k_RegisterIndirect) {
+    k_Result = gb->memory_[gb->reg_.hl_] & gb->reg_.a_;
+  }
   gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH);
-  gb->reg_.a_ = k_Result;
+  gb->reg_.a_ = k_Result; // output defaults to 0 if the programmer didn't write
+                          // a valid address mode.
+
 }
 template <uint8_t Register::*x_>
 void Compare(GameBoy* gb) {
@@ -886,50 +919,15 @@ template <typename GameBoy, typename Opcode, typename Operand,
           Opcode GameBoy::*Reg>
 void RotateCarryRegisterDirect8(GameBoy* instance) {
 }
-
-extern inline void RotateRightCarry(uint8_t* reg);
-extern inline void RotateRight(uint8_t* reg);
-extern inline void RotateLeft(uint8_t* reg);
-extern inline void RatateLeftCarry(uint8_t* reg);
-extern inline void Swap(uint8_t* reg);
-
 // Load Instructions
 
 // LD r, r;
-extern void Init8BitPrefixTable();
-extern inline void LoadRegisterDirect(uint8_t* reg, const uint8_t k_Reg);  
 
-extern inline void LoadRegisterIndirect8(uint8_t* reg, const uint8_t k_Reg);
-extern inline void LoadDirect(uint8_t* reg, const uint16_t k_Address);
-extern inline void LoadImmediate8(uint8_t* reg, const uint16_t k_Data);
-extern inline void LoadImmediate16(uint16_t* reg, const uint16_t k_Data);
-extern inline void LoadHighImmediate8(uint8_t* reg, const uint16_t k_Data);
-extern inline void LoadHighImmediate16(uint16_t* reg, const uint16_t k_Data);
- // Operation Instructions 
-extern inline void AddRegisterDirect8(const uint8_t k_Reg,
-                                      GameBoy* gb);
-                
 extern inline void AddImmediate8(GameBoy* gb);
 extern inline void AddImmediate16(const uint8_t );
-extern inline void AddWithCarryRegisterDirect8(const uint8_t k_Operand,
-                                               GameBoy* gb);
-extern inline void AddStackPointer();
-extern inline void XorImmediate8(GameBoy* gb);
-extern inline void XorImmediate16(GameBoy* gb);
-extern inline void XorRegisterDirect8(const uint8_t k_Reg, GameBoy* gb);
-extern inline void OrRegisterDirect8(const uint8_t k_Reg, GameBoy* gb);
-extern inline void AndImmediate8Function(uint8_t* reg);
-extern inline void AndImmediate16Function(uint16_t* reg);
-extern inline void ReadMemory(GameBoy* gb);
-extern inline void SubRegisterDirect8(const uint8_t k_Reg, GameBoy* gb);
-extern inline void SubImmediate8Function(GameBoy* gb);
-extern inline void SubWithCarryRegisterDirect8(const uint8_t k_Operand,
-                                               GameBoy* gb);
-extern inline void AndRegisterDirect8(GameBoy* gb);
-extern inline void CompareRegisterDirect8(GameBoy* gb);
 
-extern inline void SubImmediate8Function(uint8_t* reg, GameBoy* gb);
-extern inline void SubImmediate16Function(uint16_t* reg);
+extern inline void XorImmediate8(GameBoy* gb);
+
 extern inline void Fetch(GameBoy* gb);
 extern void JumpRelative(GameBoy* gb);
 void ReturnFromSubRoutine(binary::gb::GameBoy* gb);
