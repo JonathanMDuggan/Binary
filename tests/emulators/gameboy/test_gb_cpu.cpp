@@ -51,7 +51,7 @@ TEST_F(GameBoyTest, LoadRegDirectOpcodeTable) {
   using namespace binary::gb::instructionset;
   std::unique_ptr<std::array<Opcode, 512>> opcode_table;
   opcode_table = std::make_unique<std::array<Opcode, 512>>();
-  Init8BitLoadInstructionsTable(*opcode_table);
+  InitLoadInstructionsTable(*opcode_table);
   EXPECT_EQ(opcode_table->at(0x40).mnemonic_, "LD B,B");
   EXPECT_EQ(opcode_table->at(0x41).mnemonic_, "LD B,C");
   EXPECT_EQ(opcode_table->at(0x42).mnemonic_, "LD B,D");

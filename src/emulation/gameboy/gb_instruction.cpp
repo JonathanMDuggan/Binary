@@ -178,7 +178,7 @@ void binary::gb::GameBoy::Update16BitRegister(uint16_t& _16bit_reg,
 namespace binary::gb {
 
 void InitOpcodeTable(std::array<Opcode, 512>& opcode_table) {
-  Init8BitLoadInstructionsTable(opcode_table);
+  InitLoadInstructionsTable(opcode_table);
   Init8BitArithmeticLogicRegisterDirectTable(opcode_table);
 }
 
@@ -186,7 +186,7 @@ void Init8BitPrefixTable(std::array<Opcode, 512>& opcode_table) {
   GameBoy cpu = {};
   using namespace binary::gb::instructionset;
   const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
-                                               "H", "L", "HL", "A"};
+                                               "H", "L", "(HL)", "A"};
   const std::array<std::string, 32> k_Mnemonic = {
   "RLC",    "RRC",   "RL",     "RR",     "SLA",    "SRA",    "SWAP",   "SRL", 
   "BIT 0,", "BIT 1," "BIT 2,", "BIT 3,", "BIT 4," ,"BIT 5,", "BIT 6,", "BIT 7,",
@@ -201,7 +201,7 @@ void Init8BitPrefixTable(std::array<Opcode, 512>& opcode_table) {
       continue;
     }
     opcode_table[opcode].SetMachineCycles(2);
-    opcode_table[opcode].opcode_ = std::format("CB {:X}", opcode);
+    opcode_table[opcode].opcode_ = std::format("CB {:02X}", opcode);
     opcode_table[opcode].mnemonic_ =
         std::format("{} {}", k_Mnemonic[mnemonic], k_Letter[opcode % 8]);
 
@@ -214,10 +214,10 @@ void Init8BitPrefixTable(std::array<Opcode, 512>& opcode_table) {
 void Init8BitArithmeticLogicRegisterDirectTable(
     std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
-  const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
+  const std::array<std::string, 8> k_RegisterNames = {"B", "C", "D",  "E",
                                                "H", "L", "HL", "A"};
-  const std::array<std::string, 8> k_Mnemonic = {"ADD", "ADC", "SUB", "SBC",
-                                                 "AND", "XOR", "OR", "CP"};
+  const std::array<std::string, 8> k_Mnemonics = {"ADD", "ADC", "SUB", "SBC",
+                                                 "AND", "XOR", "OR",  "CP"};
   uint8_t mnemonic = 0;
   for (size_t opcode = 0x80; opcode < 0xC0; opcode++) {
     // Skip the indirect instructions
@@ -226,46 +226,53 @@ void Init8BitArithmeticLogicRegisterDirectTable(
     }
 
     opcode_table[opcode].SetMachineCycles(1);
-    opcode_table[opcode].opcode_ = std::format("{:X}", opcode);
+    opcode_table[opcode].opcode_ = std::format("{:02X}", opcode);
     opcode_table[opcode].mnemonic_ =
-        std::format("{} {}", k_Mnemonic[mnemonic], k_Letter[opcode % 8]);
+        std::format("{} {}", k_Mnemonics[mnemonic], k_RegisterNames[opcode % 8]);
     if (((opcode + 1) % 8) == 0) {
       mnemonic++;
-    }     
+    }
   }
   // We cannot algorithmically set std::functions to opcode table
   BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_EQUALS_OPERATION_REG);
-
-  // We are testing the opcodes 
-  opcode_table[ADD_B].execute_ = Add<&Register::b_>;
-  opcode_table[XOR_B].execute_ = Xor<&Register::b_>;
-  opcode_table[OR_B].execute_ = Or<&Register::b_>;
-  opcode_table[OR_C].execute_ = Or<&Register::c_>;
 }
 
-void Init8BitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
+void InitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
-  const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
-                                               "H", "L", "HL", "A"};
-  uint8_t opcode_letter = 0;
-  for (uint8_t opcode = 0x40; opcode < 0x80; opcode++) {
-    // Skip the indirect instructions
-    if (((~opcode & 0x6) == 0) || ((~opcode & 0xE) == 0)) {
-      continue; 
-    }
-    // Init Register Direct Instructions
-    if (opcode > 0x77 || opcode < 0x70) {
-      opcode_table[opcode].SetMachineCycles(1);
-      opcode_table[opcode].opcode_ = std::format("{:X}", opcode);
-      opcode_table[opcode].mnemonic_ = std::format(
-          "LD {},{}", k_Letter[opcode_letter], k_Letter[opcode % 8]);
-    } 
+  const std::array<std::string, 8> k_RegisterNames = {"B", "C", "D",    "E",
+                                                      "H", "L", "(HL)", "A"};
 
-    if (((opcode + 1) % 8) == 0){
-      opcode_letter++;
+  uint8_t register_index = 0;
+
+  for (uint8_t opcode = 0x40; opcode < 0x80; ++opcode) {
+    const uint8_t k_OperandIndex = opcode % 8;
+    std::string register_name = k_RegisterNames[register_index];
+    const std::string k_OperandName = k_RegisterNames[k_OperandIndex];
+
+    if ((opcode & 0xF8) == 0x70) {
+      // Skip (HL),(HL) instruction
+      if (k_OperandIndex == 6) {
+        continue;
+      }
+      opcode_table[opcode].SetMachineCycles(2);
+      register_name = "(HL)";
+    } else if ((opcode & 0xC7) == 0x76) {
+      // Handle HALT instruction
+      opcode_table[opcode].SetMachineCycles(1);
+    } else {
+      opcode_table[opcode].SetMachineCycles(1);
+    }
+
+    opcode_table[opcode].opcode_ = std::format("{:02X}", opcode);
+    opcode_table[opcode].mnemonic_ =
+        std::format("LD {},{}", register_name, k_OperandName);
+
+    if ((opcode & 0x07) == 0x07) {
+      ++register_index;
     }
   }
+
   // We cannot algorithmically set std::functions to opcode table
-  BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_EQUALS_LOAD_REGX_FROM_REG)
+  BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_EQUALS_LOAD_REGX_FROM_REG);
 }
 }

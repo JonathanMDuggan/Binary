@@ -475,7 +475,7 @@ enum AddressingMode {
 };
 
 extern void InitOpcodeTable(std::array<Opcode, 512>&);
-extern void Init8BitLoadInstructionsTable(
+extern void InitLoadInstructionsTable(
     std::array<Opcode, 512>& opcode_table);
 void Init8BitArithmeticLogicRegisterDirectTable(
     std::array<Opcode, 512>& opcode_table);
