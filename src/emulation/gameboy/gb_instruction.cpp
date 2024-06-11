@@ -169,6 +169,15 @@ void binary::gb::GameBoy::UpdateAll16BitReg() {
   UpdateRegDE();
   UpdateRegAF();
 }
+uint8_t binary::gb::GameBoy::Operand8bit() {
+  return memory_[reg_.program_counter_ + 1];
+}
+uint16_t binary::gb::GameBoy::Operand16bit() { 
+  const uint16_t k_LowByte = memory_[reg_.program_counter_ + 1];
+  const uint16_t k_HighByte = memory_[reg_.program_counter_ + 2];
+  const uint16_t k_Operand16bit = (k_HighByte << 8) | k_LowByte;
+  return k_Operand16bit;
+}
 void binary::gb::GameBoy::Update16BitRegister(uint16_t& _16bit_reg,
                                              const uint8_t& k_HighReg,
                                              const uint8_t& k_LowReg) {

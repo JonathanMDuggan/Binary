@@ -121,7 +121,10 @@ public:
   void UpdateRegDE();
   void UpdateRegAF();
   void UpdateAll16BitReg();
-
+  uint8_t Operand8bit();
+  uint16_t Operand16bit();
+  template <uint8_t Register::*x_>
+  void UpdateRegisters();
  private:
   inline void Update16BitRegister(uint16_t& _16bit_reg, const uint8_t& high_reg,
                                   const uint8_t& low_reg);
@@ -479,6 +482,20 @@ extern void InitLoadInstructionsTable(
     std::array<Opcode, 512>& opcode_table);
 void Init8BitArithmeticLogicRegisterDirectTable(
     std::array<Opcode, 512>& opcode_table);
+
+template <uint8_t Register::*x_>
+inline void GameBoy::UpdateRegisters() {
+  if constexpr (x_ == &Register::b_ || x_ == &Register::c_) {
+    UpdateRegBC();
+  } else if constexpr (x_ == &Register::d_ || x_ == &Register::e_) {
+    UpdateRegDE();
+  } else if constexpr (x_ == &Register::a_) {
+    UpdateRegAF();
+  } else {
+    UpdateRegHL();
+  }
+}
+
 }  // namespace binary::gb
 
 namespace binary::gb::instructionset{
@@ -804,23 +821,27 @@ template <uint8_t Register::*x_, const uint8_t BitPos>
 void Bit(GameBoy* gb) {
   const uint8_t k_Bit = (1 << BitPos);
   gb->reg_.*x_ ^= k_Bit;
-}
+  gb->UpdateRegisters<x_>(); 
 
+}
 template <uint8_t Register::*x_, const uint8_t BitPos>
 void Set(GameBoy* gb) {
   const uint8_t k_Bit = (1 << BitPos);
   gb->reg_.*x_ |= k_Bit;
+  gb->UpdateRegisters<x_>(); 
 }
 
 template <uint8_t Register::*x_, const uint8_t BitPos>
 void Reset(GameBoy* gb) {
   const uint8_t k_Bit = (1 << BitPos);
   gb->reg_.*x_ &= ~k_Bit;
+  gb->UpdateRegisters<x_>();
 }
 
 template <auto Register::*x_, uint8_t Register::*y_>
 void Load(GameBoy* gb) {
   gb->reg_.*x_ = gb->reg_.*y_;
+  gb->UpdateRegisters<x_>();
 }
 
 template <uint8_t Register::*x_>
@@ -828,6 +849,7 @@ void Add(GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ + gb->reg_.*x_;
   SetFlagZ0HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
   gb->reg_.a_ = k_Result;
+  gb->UpdateRegAF(); 
 }
 
 template <uint8_t Register::*x_>
@@ -836,6 +858,7 @@ void AddWithCarry(GameBoy* gb) {
   const uint8_t k_Result = k_RegFValue + gb->reg_.*x_ + gb->reg_.f_[k_BitIndexC];
   gb->reg_.f_ = k_Result;
   SetFlagZ0HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
+  gb->UpdateRegAF();
 }
 
 template <uint8_t Register::*x_>
@@ -843,6 +866,7 @@ void Sub(GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ - gb->reg_.*x_;
   SetFlagZ1HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
   gb->reg_.a_ = k_Result;
+  gb->UpdateRegAF();
 }
 
 template <uint8_t Register::*x_>
@@ -852,6 +876,7 @@ void SubWithCarry(GameBoy* gb) {
       k_RegFValue - gb->reg_.*x_ - gb->reg_.f_[k_BitIndexC];
   gb->reg_.f_ = k_Result;
   SetFlagZ1HC(gb, k_Result, k_RegFValue, gb->reg_.*x_);
+  gb->UpdateRegAF();
 }
 
 template <uint8_t Register::* x_ = &Register::a_,
@@ -862,14 +887,15 @@ void Xor(GameBoy* gb) {
     k_Result = gb->reg_.a_ ^ gb->reg_.*x_;
   }
   else if constexpr (address_mode == k_Immediate8) {
-    k_Result = gb->memory_[gb->reg_.program_counter_ + 1] ^ gb->reg_.a_;
+    k_Result = gb->Operand8bit() ^ gb->reg_.a_;
   }
   else if constexpr (address_mode == k_RegisterIndirect) {
     k_Result = gb->memory_[gb->reg_.hl_] ^ gb->reg_.a_;
   }
-  gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH);
+  gb->reg_.f_ = (k_Result != 0) ? 0 : k_FlagZ;
   gb->reg_.a_ = k_Result; // output defaults to 0 if the programmer didn't write
   // a valid address mode.
+  gb->UpdateRegAF();
 }
 
 template <uint8_t Register::* x_ = &Register::a_,
@@ -880,7 +906,7 @@ void Or(GameBoy* gb) {
     k_Result = gb->reg_.a_ | gb->reg_.*x_;
   }
   else if constexpr (address_mode == k_Immediate8) {
-    k_Result = gb->memory_[gb->reg_.program_counter_ + 1] | gb->reg_.a_;
+    k_Result = gb->Operand8bit() | gb->reg_.a_;
   }
   else if constexpr (address_mode == k_RegisterIndirect) {
     k_Result = gb->memory_[gb->reg_.hl_] | gb->reg_.a_;
@@ -888,6 +914,7 @@ void Or(GameBoy* gb) {
   gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;
   gb->reg_.a_ = k_Result; // output defaults to 0 if the programmer didn't write
   // a valid address mode.
+  gb->UpdateRegAF();
 }
 
 template <uint8_t Register::*x_ = &Register::a_, 
@@ -906,13 +933,14 @@ void And(GameBoy* gb) {
   gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH);
   gb->reg_.a_ = k_Result; // output defaults to 0 if the programmer didn't write
                           // a valid address mode.
-
+  gb->UpdateRegAF();
 }
 template <uint8_t Register::*x_>
 void Compare(GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ - gb->reg_.*x_;
   SetFlagZ1HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
   gb->reg_.f_ = k_Result;
+  gb->UpdateRegAF();
 }
 template <typename GameBoy, typename Opcode, typename Operand,
           uint8_t Opcode::*X, uint8_t Operand::*Y,
