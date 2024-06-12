@@ -94,6 +94,9 @@ TEST_F(GameBoyTest, LoadRegDirectOpcodeTable) {
   opcode_table->at(LD_L_H).execute_(&gb_);
   EXPECT_EQ(gb_.reg_.l_, k_TestValue)
       << "Register L should be equal to" << std::format("0x{:X}", 0x98);
+  uint16_t hl_value =
+      static_cast<uint16_t>((gb_.reg_.h_ << 8) | gb_.reg_.l_);
+  EXPECT_EQ(gb_.reg_.hl_, hl_value);
 }
 TEST_F(GameBoyTest, AddRegXtoRegYTable) {
   std::unique_ptr<std::array<Opcode, 512>> opcode_table;
@@ -115,13 +118,14 @@ TEST_F(GameBoyTest, AddRegXtoRegYTable) {
   gb_.reg_.a_ = 2;
   gb_.reg_.b_ = 4;
   opcode_table->at(ADD_B).execute_(&gb_);
-
+  uint16_t af_value = static_cast<uint16_t>((gb_.reg_.a_ << 8) |
+                                             gb_.reg_.f_.to_ulong());
   EXPECT_EQ(gb_.reg_.a_, 6);
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false) << "Zero flag wasn't set";
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexN], false) << "Negative flag wasn't set";
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexH], false) << "Half Carry flag wasn 't set";
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], false) << "Carry flag wasn't set";
-
+  EXPECT_EQ(gb_.reg_.af_, af_value);
   gb_.reg_.a_ = 255;
   gb_.reg_.c_ = 255;
   opcode_table->at(ADD_C).execute_(&gb_);
@@ -147,7 +151,7 @@ TEST_F(GameBoyTest, SubRegXTable) {
   opcode_table->at(SUB_B).execute_(&gb_);
   EXPECT_EQ(gb_.reg_.a_, 2);
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false) << "Zero flag wasn't set";
-  EXPECT_EQ(gb_.reg_.f_[k_BitIndexN], true) << "Negative flag wasn't set";
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexN], true)  << "Negative flag wasn't set";
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexH], false) << "Half Carry flag wasn't set";
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], false) << "Carry flag wasn't set";
   gb_.reg_.a_ = 255;

@@ -169,7 +169,7 @@ void binary::gb::GameBoy::UpdateAll16BitReg() {
   UpdateRegDE();
   UpdateRegAF();
 }
-uint8_t binary::gb::GameBoy::Operand8bit() {
+uint8_t binary::gb::GameBoy::Operand8Bit() {
   return memory_[reg_.program_counter_ + 1];
 }
 uint16_t binary::gb::GameBoy::Operand16bit() { 
