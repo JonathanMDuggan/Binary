@@ -28,7 +28,6 @@ void LoadRegAIntoHighAddress(GameBoy* gb) {
   gb->memory_[gb->reg_.program_counter_] = gb->reg_.a_;
 }
 
-
 inline void AddImmediate8(GameBoy* gb) {
   const uint8_t k_Operand = gb->memory_[gb->reg_.program_counter_ + 1];
   const uint8_t k_Result = gb->reg_.a_ + k_Operand;

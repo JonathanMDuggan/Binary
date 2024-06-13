@@ -123,7 +123,9 @@ public:
   void UpdateAll16BitReg();
   uint8_t Operand8Bit();
   uint16_t Operand16bit();
-  template <auto Register::*x_>
+  template <uint8_t Register::*x_>
+  void UpdateRegisters();
+  template <uint16_t Register::*x_>
   void UpdateRegisters();
  private:
   inline void Update16BitRegister(uint16_t& _16bit_reg, const uint8_t& high_reg,
@@ -483,7 +485,7 @@ extern void InitLoadInstructionsTable(
 void Init8BitArithmeticLogicRegisterDirectTable(
     std::array<Opcode, 512>& opcode_table);
 
-template <auto Register::*x_> 
+template <uint8_t Register::*x_>
 inline void GameBoy::UpdateRegisters() {
   if constexpr (x_ == &Register::b_ || x_ == &Register::c_) {
     UpdateRegBC();
@@ -495,7 +497,18 @@ inline void GameBoy::UpdateRegisters() {
     UpdateRegHL();
   }
 }
-
+template <uint16_t Register::*x_>
+inline void GameBoy::UpdateRegisters() {
+  if constexpr (x_ == &Register::bc_) {
+    UpdateRegBC();
+  } else if constexpr (x_ == &Register::de_) {
+    UpdateRegDE();
+  } else if constexpr (x_ == &Register::af_) {
+    UpdateRegAF();
+  } else {
+    UpdateRegHL();
+  }
+}
 }  // namespace binary::gb
 
 namespace binary::gb::instructionset {
@@ -832,13 +845,16 @@ void Reset(GameBoy* gb) {
   gb->UpdateRegisters<x_>();
 }
 
-template <auto Register::*x_, uint8_t Register::*y_,
+template <uint8_t Register::*x_ = &Register::a_, 
+          uint8_t Register::*y_ = &Register::a_,
           AddressingMode address_mode = k_RegisterDirect>
 void Load(GameBoy* gb) {
   if constexpr (address_mode == k_RegisterDirect) {
     gb->reg_.*x_ = gb->reg_.*y_;
   } else if constexpr (address_mode == k_Immediate8) {
-    gb->reg_.*x_ = gb->Operand8Bit;
+    gb->reg_.*x_ = gb->Operand8Bit();
+  } else if constexpr (address_mode == k_Indirect) {
+    gb->reg_.*x_ = gb->memory_[gb->reg_.*y_];
   }
   gb->UpdateRegisters<x_>();
 }
@@ -854,7 +870,6 @@ void Add(GameBoy* gb) {
     const uint16_t k_Result = gb->reg_.hl_ + gb->reg_.*x_;
     gb->reg_.hl_ = k_Result; 
   }
-  
 }
 
 template <uint8_t Register::*x_>
@@ -874,16 +889,19 @@ void Sub(GameBoy* gb) {
   gb->reg_.a_ = k_Result;
   gb->UpdateRegAF();
 }
+
 template <auto Register::*x_>
 void Increment(GameBoy* gb) {
   gb->reg_.*x_++;
   gb->UpdateRegisters<x_>(); 
 }
+
 template <auto Register::*x_>
 void decrement(GameBoy* gb) {
   gb->reg_.*x_++;
   gb->UpdateRegisters<x_>();
 }
+
 template <uint8_t Register::*x_>
 void SubWithCarry(GameBoy* gb) {
   uint8_t k_RegFValue = static_cast<uint8_t>(gb->reg_.f_.to_ulong());
@@ -950,6 +968,7 @@ void And(GameBoy* gb) {
                           // a valid address mode.
   gb->UpdateRegAF();
 }
+
 template <uint8_t Register::*x_>
 void Compare(GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ - gb->reg_.*x_;
