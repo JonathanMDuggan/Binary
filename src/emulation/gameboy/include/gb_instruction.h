@@ -125,8 +125,6 @@ public:
   uint16_t Operand16bit();
   template <uint8_t Register::*x_>
   void UpdateRegisters();
-  template <uint16_t Register::*x_>
-  void UpdateRegisters();
  private:
   inline void Update16BitRegister(uint16_t& _16bit_reg, const uint8_t& high_reg,
                                   const uint8_t& low_reg);
@@ -492,18 +490,6 @@ inline void GameBoy::UpdateRegisters() {
   } else if constexpr (x_ == &Register::d_ || x_ == &Register::e_) {
     UpdateRegDE();
   } else if constexpr (x_ == &Register::a_) {
-    UpdateRegAF();
-  } else {
-    UpdateRegHL();
-  }
-}
-template <uint16_t Register::*x_>
-inline void GameBoy::UpdateRegisters() {
-  if constexpr (x_ == &Register::bc_) {
-    UpdateRegBC();
-  } else if constexpr (x_ == &Register::de_) {
-    UpdateRegDE();
-  } else if constexpr (x_ == &Register::af_) {
     UpdateRegAF();
   } else {
     UpdateRegHL();
