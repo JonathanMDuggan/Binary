@@ -952,20 +952,23 @@ void And(GameBoy* gb) {
   gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH);
   gb->reg_.a_ = k_Result; // output defaults to 0 if the programmer didn't write
                           // a valid address mode.
-  gb->UpdateRegAF();
-}
+  gb->UpdateRegAF();}
 
-template <uint8_t Register::*x_>
+template <uint8_t Register::*x_, AddressingMode address_mode = k_RegisterDirect>
 void Compare(GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ - gb->reg_.*x_;
-  SetFlagZ1HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
-  gb->reg_.f_ = k_Result;
-  gb->UpdateRegAF();
+  uint16_t k_Result = 0;
+  if constexpr (address_mode == k_RegisterDirect) {
+    k_Result = gb->reg_.a_ - gb->reg_.*x_; 
+  } else if constexpr (address_mode == k_RegisterIndirect) {
+    k_Result = gb->reg_.a_ - gb->memory_[gb->reg_.hl_];
+  }
+  SetFlagZ1HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);  
+  gb->reg_.f_ = k_Result; 
+  gb->UpdateRegAF(); 
 }
-template <typename GameBoy, typename Opcode, typename Operand,
-          uint8_t Opcode::*X, uint8_t Operand::*Y,
-          Opcode GameBoy::*Reg>
-void RotateCarryRegisterDirect8(GameBoy* instance) {
+template <uint8_t Register::*x_>
+void RotateCarryRegisterDirect8(GameBoy* gb) {
+
 }
 // Load Instructions
 
