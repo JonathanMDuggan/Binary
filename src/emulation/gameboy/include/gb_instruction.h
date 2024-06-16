@@ -810,12 +810,25 @@ extern void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
 extern void SetFlagZ000(GameBoy* gb, const bool k_IsZero);
 extern void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result,
                         const uint8_t k_Reg, const uint8_t k_Operand);
-
+extern void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result );
+template <uint8_t Register::*x_>
+void Swap(GameBoy* gb) {
+  const uint8_t k_HighNibble = gb->reg_.*x_ >> 4;
+  const uint8_t k_LowNibble = gb->reg_.*x_ << 4;
+  const uint16_t k_Result = k_HighNibble | k_LowNibble;
+  gb->reg_.f_ = (k_Result == 0) ? 0 : k_FlagZ;  
+  gb->reg_.*x_ = k_Result;
+  gb->UpdateRegisters<x_>(); 
+  gb->UpdateRegAF();
+}
 template <uint8_t Register::*x_, const uint8_t BitPos>
 void Bit(GameBoy* gb) {
   const uint8_t k_Bit = (1 << BitPos);
-  gb->reg_.*x_ ^= k_Bit;
+  const uint16_t k_Result = gb->reg_.*x_ ^ k_Bit;
+  gb->reg_.f_ |= (k_Result == 0) ? k_FlagH : k_FlagZ | k_FlagH;
+  gb->reg_.*x_ = k_Result;
   gb->UpdateRegisters<x_>();
+  gb->UpdateRegAF();
 }
 template <uint8_t Register::*x_, const uint8_t BitPos>
 void Set(GameBoy* gb) {
