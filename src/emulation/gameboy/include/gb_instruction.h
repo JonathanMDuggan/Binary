@@ -725,7 +725,8 @@ void And(GameBoy* gb) {
   gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH);
   gb->reg_.a_ = k_Result; // output defaults to 0 if the programmer didn't write
                           // a valid address mode.
-  gb->UpdateRegAF();}
+  gb->UpdateRegAF();
+}
 
 template <uint8_t Register::*x_, AddressingMode address_mode = k_RegisterDirect>
 void Compare(GameBoy* gb) {
@@ -738,6 +739,22 @@ void Compare(GameBoy* gb) {
   SetFlagZ1HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);  
   gb->reg_.f_ = k_Result; 
   gb->UpdateRegAF(); 
+}
+
+template <uint16_t Register::*x_>
+void Pop(GameBoy* gb) {
+  const uint8_t k_HighNibble = gb->memory_[gb->reg_.stack_pointer_ + 1];
+  const uint8_t k_LowNibble = gb->memory_[gb->reg_.stack_pointer_ + 2];
+  gb->reg_.*x_ = k_HighNibble | k_LowNibble;
+  gb->reg_.stack_pointer_ += 2;
+}
+template <uint16_t Register::*x_>
+void Push(GameBoy* gb) {
+  const uint8_t k_HighNibble = gb->reg_.*x_ >> 4;
+  const uint8_t k_LowNibble = gb->reg_.*x_ << 4;
+  gb->memory_[gb->reg_.stack_pointer_] = k_LowNibble;
+  gb->memory_[gb->reg_.stack_pointer_ - 1] = k_HighNibble;
+  gb->reg_.stack_pointer_--;
 }
 template <uint8_t Register::*x_>
 void RotateCarryRegisterDirect8(GameBoy* gb) {
