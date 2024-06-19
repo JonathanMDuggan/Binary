@@ -524,37 +524,42 @@ extern void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
 extern void SetFlagZ000(GameBoy* gb, const bool k_IsZero);
 extern void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result,
                         const uint8_t k_Reg, const uint8_t k_Operand);
-extern void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result );
+extern void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result); 
 
 template <uint8_t Register::*x_>
 void Swap(GameBoy* gb) {
   const uint8_t k_HighNibble = gb->reg_.*x_ >> 4;
   const uint8_t k_LowNibble = gb->reg_.*x_ << 4;
   const uint16_t k_Result = k_HighNibble | k_LowNibble;
+
   gb->reg_.f_ = (k_Result != 0) ? 0 : k_FlagZ;  
   gb->reg_.*x_ = k_Result;
   gb->UpdateRegisters<x_>(); 
   gb->UpdateRegAF();
 }
 
+
 template <uint8_t Register::*x_>
 void RotateLeft(GameBoy* gb) {
   const bool k_7thBit = ((gb->reg_.*x_ & 0x80) == true);
-  gb->reg_.*x_ << 1;
-  gb->reg_.*x_ |= gb->reg_.f_[k_BitIndexC];
+  const bool k_IsCarryFlagSet = gb->reg_.f_[k_BitIndexC];
+  const uint8_t k_Result = (gb->reg_.*x_ << 1) | gb->reg_.f_[k_BitIndexC];
+
+  SetFlagZ00C(gb, k_Result);
   gb->reg_.f_[k_BitIndexC] = k_7thBit; 
-  gb->reg_.f_[k_BitIndexH] = false;
-  gb->UpdateRegisters<x_>(); 
+  gb->reg_.*x_ = k_Result;
+  gb->UpdateRegisters<x_>();
   gb->UpdateRegAF(); 
 }
 
 template <uint8_t Register::*x_>
 void RotateLeftCircular(GameBoy* gb) {
   const bool k_7thBit = ((gb->reg_.*x_ & 0x80) == true);
-  gb->reg_.*x_ << 1;
-  gb->reg_.*x_ |= k_7thBit;
+  const uint8_t k_Result = (gb->reg_.*x_ << 1) | k_7thBit;
+
+  SetFlagZ00C(gb, k_Result);
   gb->reg_.f_[k_BitIndexC] = k_7thBit;
-  gb->reg_.f_[k_BitIndexH] = false;
+  gb->reg_.*x_ = k_Result;
   gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
@@ -579,6 +584,15 @@ void RotateRightCircular(GameBoy* gb) {
   gb->reg_.f_[k_BitIndexH] = false;
   gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
+}
+
+template <uint8_t Register::*x_>
+void ShiftLeft(GameBoy* gb) {
+
+}
+template <uint8_t Register::*x_>
+void ShiftRight(GameBoy* gb) {
+  
 }
 
 template <uint8_t Register::*x_, const uint8_t BitPos>

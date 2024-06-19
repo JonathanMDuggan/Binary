@@ -54,12 +54,14 @@ void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result, const uint8_t k_Reg,
   gb->reg_.f_[k_BitIndexC] = k_IsCarry;
 }
 
-void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result, const uint8_t k_Reg,
-                 const uint8_t k_Operand) {
+
+void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result) {
   const bool k_IsZero = (static_cast<uint8_t>(k_Result) == 0);
-  const bool k_IsHCarry = ((k_Reg & 0x0f) + (k_Operand & 0x0f) > 0x0f);
+  const bool k_IsCarry = ((k_Result & 0x100) != 0);
   gb->reg_.f_[k_BitIndexZ] = k_IsZero;
-  gb->reg_.f_[k_BitIndexH] = k_IsHCarry;
+  gb->reg_.f_[k_BitIndexN] = false;
+  gb->reg_.f_[k_BitIndexH] = false;
+  gb->reg_.f_[k_BitIndexC] = k_IsCarry;
 }
 void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
                  const uint8_t k_Operand) {
