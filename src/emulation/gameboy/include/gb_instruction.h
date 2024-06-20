@@ -14,6 +14,8 @@
 #include <string>
 #include <functional>
 #include <bitset>
+#include <type_traits>
+
 namespace binary::gb {
 enum CpuFlags {
   k_0 = 0,
@@ -552,18 +554,27 @@ void RotateLeft(GameBoy* gb) {
   gb->UpdateRegAF(); 
 }
 
-template <uint8_t Register::*x_>
-void RotateLeftCircular(GameBoy* gb) {
-  const bool k_7thBit = ((gb->reg_.*x_ & 0x80) == true);
-  const uint8_t k_Result = (gb->reg_.*x_ << 1) | k_7thBit;
+template <typename T, T Register::*x_> 
+void RotateLeftCircular(GameBoy* gb) { 
+  if constexpr (std::is_same_v<T, uint8_t>) { 
+    const bool k_7thBit = ((gb->reg_.*x_ & 0x80) == true); 
+    const uint8_t k_Result = (gb->reg_.*x_ << 1) | k_7thBit; 
 
-  SetFlagZ00C(gb, k_Result);
-  gb->reg_.f_[k_BitIndexC] = k_7thBit;
-  gb->reg_.*x_ = k_Result;
+    SetFlagZ00C(gb, k_Result); 
+    gb->reg_.f_[k_BitIndexC] = k_7thBit; 
+    gb->reg_.*x_ = k_Result;  
+  } else if constexpr (std::is_same_v<T, uint16_t>) { 
+    const bool k_7thBit = ((gb->memory_[gb->reg_.*x_] & 0x80) == true);
+    const uint8_t k_Result = (gb->memory_[gb->reg_.*x_] << 1) | k_7thBit;
+
+    SetFlagZ00C(gb, k_Result);
+    gb->reg_.f_[k_BitIndexC] = k_7thBit;
+    gb->memory_[gb->reg_.*x_] = k_Result;
+  }
+
   gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
-
 template <uint8_t Register::*x_>
 void RotateRight(GameBoy* gb) {
   const bool k_FirstBit = ((gb->reg_.*x_ & 1) == true); 
@@ -588,11 +599,17 @@ void RotateRightCircular(GameBoy* gb) {
 
 template <uint8_t Register::*x_>
 void ShiftLeft(GameBoy* gb) {
-
+  gb->reg_.*x_ << 1;
+  gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0; 
+  gb->UpdateRegisters<x_>(); 
+  gb->UpdateRegAF(); 
 }
 template <uint8_t Register::*x_>
 void ShiftRight(GameBoy* gb) {
-  
+  gb->reg_.*x_ >> 1;
+  gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0;
+  gb->UpdateRegisters<x_>();
+  gb->UpdateRegAF();
 }
 
 template <uint8_t Register::*x_, const uint8_t BitPos>
