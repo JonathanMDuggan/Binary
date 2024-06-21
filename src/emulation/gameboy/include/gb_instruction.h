@@ -28,11 +28,11 @@ enum CpuFlags {
 
 #define BINARY_GB_EXECUTE_PREFIX(upper, lower, num)                           \
   opcode_table[BIT_##num##_##upper].execute_ =                                \
-      Bit<&Register::lower##_, ##num##>;                                       \
+      Bit<uint8_t,&Register::lower##_, ##num##>;                                       \
   opcode_table[RES_##num##_##upper].execute_ =                                \
-      Reset<&Register::lower##_, ##num##>;                                     \
+      Reset<uint8_t, &Register::lower##_, ##num##>;                                     \
   opcode_table[SET_##num##_##upper].execute_ =                                \
-      Set<&Register::lower##_, ##num##>;   
+      Set<uint8_t, &Register::lower##_, ##num##>;   
 
 #define BINARY_GB_REPEAT_FOR_ALL_PREFIX(MACRO)\
 MACRO(B,b,0) MACRO(C,c,0) MACRO(D,d,0) MACRO(E,e,0) MACRO(H,h,0) MACRO(L,l,0)\
@@ -528,37 +528,59 @@ extern void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result,
                         const uint8_t k_Reg, const uint8_t k_Operand);
 extern void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result); 
 
-template <uint8_t Register::*x_>
+template <typename T = uint8_t, uint8_t Register::*x_>
 void Swap(GameBoy* gb) {
-  const uint8_t k_HighNibble = gb->reg_.*x_ >> 4;
-  const uint8_t k_LowNibble = gb->reg_.*x_ << 4;
-  const uint16_t k_Result = k_HighNibble | k_LowNibble;
+  if constexpr (std::is_same_v<T, uint8_t>) {
+    const uint8_t k_HighNibble = gb->reg_.*x_ >> 4;
+    const uint8_t k_LowNibble = gb->reg_.*x_ << 4;
+    const uint16_t k_Result = k_HighNibble | k_LowNibble;
 
-  gb->reg_.f_ = (k_Result != 0) ? 0 : k_FlagZ;  
-  gb->reg_.*x_ = k_Result;
+    gb->reg_.f_ = (k_Result != 0) ? 0 : k_FlagZ;
+    gb->reg_.*x_ = k_Result;
+  } else if constexpr (std::is_same_v<T, uint16_t>) {
+    const uint8_t k_HighNibble = gb->memory_[gb->reg_.*x_] >> 4;
+    const uint8_t k_LowNibble = gb->memory_[gb->reg_.*x_] << 4;
+    const uint16_t k_Result = k_HighNibble | k_LowNibble;
+
+    gb->reg_.f_ = (k_Result != 0) ? 0 : k_FlagZ;
+    gb->memory_[gb->reg_.*x_] = k_Result;
+  }
+
   gb->UpdateRegisters<x_>(); 
   gb->UpdateRegAF();
 }
 
 
-template <uint8_t Register::*x_>
+template <typename T = uint8_t, uint8_t Register::*x_>
 void RotateLeft(GameBoy* gb) {
-  const bool k_7thBit = ((gb->reg_.*x_ & 0x80) == true);
-  const bool k_IsCarryFlagSet = gb->reg_.f_[k_BitIndexC];
-  const uint8_t k_Result = (gb->reg_.*x_ << 1) | gb->reg_.f_[k_BitIndexC];
+  if constexpr (std::is_same_v<T, uint8_t>) {
+    const bool k_7thBit = ((gb->reg_.*x_ & 0x80) == true);
+    const bool k_IsCarryFlagSet = gb->reg_.f_[k_BitIndexC]; 
+    const uint8_t k_Result = (gb->reg_.*x_ << 1) | gb->reg_.f_[k_BitIndexC]; 
 
-  SetFlagZ00C(gb, k_Result);
-  gb->reg_.f_[k_BitIndexC] = k_7thBit; 
-  gb->reg_.*x_ = k_Result;
+    SetFlagZ00C(gb, k_Result); 
+    gb->reg_.f_[k_BitIndexC] = k_7thBit; 
+    gb->reg_.*x_ = k_Result; 
+
+  } else if constexpr (std::is_same_v<T, uint16_t>) {
+    const bool k_7thBit = ((gb->memory_[gb->reg_.*x_] & 0x80) == true);
+    const bool k_IsCarryFlagSet = gb->reg_.f_[k_BitIndexC]; 
+    const uint8_t k_Result = (gb->memory_[gb->reg_.*x_]<< 1) 
+                             | gb->reg_.f_[k_BitIndexC];
+
+    SetFlagZ00C(gb, k_Result);
+    gb->reg_.f_[k_BitIndexC] = k_7thBit; 
+    gb->memory_[gb->reg_.*x_] = k_Result; 
+  }
   gb->UpdateRegisters<x_>();
   gb->UpdateRegAF(); 
 }
 
-template <typename T, T Register::*x_> 
+template <typename T = uint8_t, T Register::*x_>
 void RotateLeftCircular(GameBoy* gb) { 
-  if constexpr (std::is_same_v<T, uint8_t>) { 
-    const bool k_7thBit = ((gb->reg_.*x_ & 0x80) == true); 
-    const uint8_t k_Result = (gb->reg_.*x_ << 1) | k_7thBit; 
+  if constexpr (std::is_same_v<T, uint8_t>) {
+    const bool k_7thBit = ((gb->reg_.*x_ & 0x80) == true);
+    const uint8_t k_Result = (gb->reg_.*x_ << 1) | k_7thBit;
 
     SetFlagZ00C(gb, k_Result); 
     gb->reg_.f_[k_BitIndexC] = k_7thBit; 
@@ -575,63 +597,108 @@ void RotateLeftCircular(GameBoy* gb) {
   gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
-template <uint8_t Register::*x_>
+template <typename T = uint8_t, uint8_t Register::*x_>
 void RotateRight(GameBoy* gb) {
-  const bool k_FirstBit = ((gb->reg_.*x_ & 1) == true); 
-  gb->reg_.*x_ >> 1;
-  gb->reg_.*x_ |= (gb->reg_.f_[k_BitIndexC] == true) ? 0x80 : 0;
-  gb->reg_.f_[k_BitIndexC] = k_FirstBit; 
-  gb->reg_.f_[k_BitIndexH] = false;
+  if constexpr (std::is_same_v<T, uint8_t>) {
+    const bool k_FirstBit = ((gb->reg_.*x_ & 1) == true);
+    gb->reg_.*x_ >> 1;
+    gb->reg_.*x_ |= (gb->reg_.f_[k_BitIndexC] == true) ? 0x80 : 0;
+    gb->reg_.f_[k_BitIndexC] = k_FirstBit;
+    gb->reg_.f_[k_BitIndexH] = false;
+  } else if constexpr (std::is_same_v<T, uint16_t>) { 
+    const bool k_FirstBit = ((gb->memory_[gb->reg_.*x_] & 1) == true);
+    gb->memory_[gb->reg_.*x_] >> 1; 
+    gb->memory_[gb->reg_.*x_] |= (gb->reg_.f_[k_BitIndexC] == true) ? 0x80 : 0;
+    gb->reg_.f_[k_BitIndexC] = k_FirstBit; 
+    gb->reg_.f_[k_BitIndexH] = false; 
+  }
   gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
 
-template <uint8_t Register::*x_>
+template <typename T = uint8_t, uint8_t Register::*x_>
 void RotateRightCircular(GameBoy* gb) {
-  bool k_FirstBit = ((gb->reg_.*x_ & 1) == true);
-  gb->reg_.*x_ >> 1;
-  gb->reg_.*x_ |= (k_FirstBit == true) ? 0x80 : 0;
-  gb->reg_.f_[k_BitIndexC] = k_FirstBit;
-  gb->reg_.f_[k_BitIndexH] = false;
+  if constexpr (std::is_same_v<T, uint8_t>) {
+    bool k_FirstBit = ((gb->reg_.*x_ & 1) == true);
+    gb->reg_.*x_ >> 1; 
+    gb->reg_.*x_ |= (k_FirstBit == true) ? 0x80 : 0; 
+    gb->reg_.f_[k_BitIndexC] = k_FirstBit; 
+    gb->reg_.f_[k_BitIndexH] = false;
+
+  } else if constexpr (std::is_same_v<T, uint16_t>) {
+    bool k_FirstBit = ((gb->memory_[gb->reg_.*x_] & 1) == true); 
+    gb->memory_[gb->reg_.*x_] >> 1; 
+    gb->memory_[gb->reg_.*x_] |= (k_FirstBit == true) ? 0x80 : 0; 
+    gb->reg_.f_[k_BitIndexC] = k_FirstBit; 
+    gb->reg_.f_[k_BitIndexH] = false;
+  }
   gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
 
-template <uint8_t Register::*x_>
+template <typename T = uint8_t, uint8_t Register::*x_>
 void ShiftLeft(GameBoy* gb) {
-  gb->reg_.*x_ << 1;
-  gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0; 
+  if constexpr (std::is_same_v<T, uint8_t>) {
+    gb->reg_.*x_ << 1; 
+    gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0;
+  } else if constexpr (std::is_same_v<T, uint16_t>) {
+    gb->memory_[gb->reg_.*x_] << 1;  
+    gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0; 
+  }
   gb->UpdateRegisters<x_>(); 
   gb->UpdateRegAF(); 
 }
-template <uint8_t Register::*x_>
+template <typename T = uint8_t, uint8_t Register::*x_>
 void ShiftRight(GameBoy* gb) {
-  gb->reg_.*x_ >> 1;
-  gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0;
+  if constexpr (std::is_same_v<T, uint8_t>) {
+    gb->reg_.*x_ >> 1;
+    gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0;
+  } else if constexpr (std::is_same_v<T, uint16_t>) {
+    gb->memory_[gb->reg_.*x_] >> 1;
+    gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0;
+  }
   gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
 
-template <uint8_t Register::*x_, const uint8_t BitPos>
+template <typename T = uint8_t, uint8_t Register::*x_, const uint8_t BitPos>
 void Bit(GameBoy* gb) {
-  const uint8_t k_Bit = (1 << BitPos);
-  const uint16_t k_Result = gb->reg_.*x_ ^ k_Bit;
-  gb->reg_.f_ |= (k_Result != 0) ? k_FlagH : k_FlagZ | k_FlagH;
-  gb->reg_.*x_ = k_Result;
+  if constexpr (std::is_same_v<T, uint8_t>) {
+    const uint8_t k_Bit = (1 << BitPos);
+    const uint16_t k_Result = gb->reg_.*x_ ^ k_Bit;
+    gb->reg_.f_ |= (k_Result != 0) ? k_FlagH : k_FlagZ | k_FlagH;
+    gb->reg_.*x_ = k_Result;
+  } else if constexpr (std::is_same_v<T, uint16_t>) {
+    const uint8_t k_Bit = (1 << BitPos);
+    const uint16_t k_Result = gb->reg_.*x_ ^ k_Bit;
+    gb->reg_.f_ |= (k_Result != 0) ? k_FlagH : k_FlagZ | k_FlagH;
+    gb->memory_[gb->reg_.*x_] = k_Result;
+
+  }
   gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
-template <uint8_t Register::*x_, const uint8_t BitPos>
+template <typename T = uint8_t, uint8_t Register::*x_, const uint8_t BitPos>
 void Set(GameBoy* gb) {
-  const uint8_t k_Bit = (1 << BitPos);
-  gb->reg_.*x_ |= k_Bit;
+  if constexpr (std::is_same_v<T, uint8_t>) {
+    const uint8_t k_Bit = (1 << BitPos);
+    gb->reg_.*x_ |= k_Bit;
+  } else if constexpr (std::is_same_v<T, uint16_t>) {
+    const uint8_t k_Bit = (1 << BitPos);
+    gb->memory_[gb->reg_.*x_] |= k_Bit;
+  }
   gb->UpdateRegisters<x_>();
 }
 
-template <uint8_t Register::*x_, const uint8_t BitPos>
+template <typename T = uint8_t, uint8_t Register::*x_, const uint8_t BitPos>
 void Reset(GameBoy* gb) {
-  const uint8_t k_Bit = (1 << BitPos);
-  gb->reg_.*x_ &= ~k_Bit;
+  if constexpr (std::is_same_v<T, uint8_t>) {
+    const uint8_t k_Bit = (1 << BitPos);
+    gb->reg_.*x_ &= ~k_Bit; 
+  } else if constexpr (std::is_same_v<T, uint16_t>) {
+    const uint8_t k_Bit = (1 << BitPos);
+    gb->memory_[gb->reg_.*x_] &= ~k_Bit;
+  }
   gb->UpdateRegisters<x_>();
 }
 
