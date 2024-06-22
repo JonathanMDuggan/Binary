@@ -858,7 +858,24 @@ template <uint8_t Register::*x_>
 void RotateCarryRegisterDirect8(GameBoy* gb) {
 
 }
-// Load Instructions
+template <const uint8_t bit_index, const bool condition>
+void Return(GameBoy* gb) {
+  if (gb->reg_.f_[bit_index] == condition) { 
+    const uint8_t k_LowByte = gb->memory_[gb->reg_.stack_pointer_]; 
+    const uint8_t k_HighByte = gb->memory_[gb->reg_.stack_pointer_ + 1]; 
+    const uint16_t k_ReturnAddress = 
+    static_cast<uint16_t>((k_HighByte << 8) | k_LowByte); 
+    gb->reg_.program_counter_ = k_ReturnAddress; 
+  }
+}
+template <const uint8_t bit_index, const bool condition>
+void Jump(GameBoy* gb) {
+  if (gb->reg_.f_[bit_index] == condition) {
+    gb->reg_.program_counter_ += gb->memory_[gb->reg_.program_counter_ + 1];
+    gb->branched = true; 
+  }
+}
+    // Load Instructions
 
 // LD r, r;
 
