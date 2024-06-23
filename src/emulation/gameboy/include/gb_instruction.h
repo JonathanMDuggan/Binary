@@ -523,7 +523,6 @@ void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
                  const uint8_t k_Operand);
 extern void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
                         const uint8_t k_Reg);
-extern void SetFlagZ000(GameBoy* gb, const bool k_IsZero);
 extern void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result,
                         const uint8_t k_Reg, const uint8_t k_Operand);
 extern void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result); 
@@ -865,28 +864,30 @@ void Return(GameBoy* gb) {
     const uint8_t k_HighByte = gb->memory_[gb->reg_.stack_pointer_ + 1]; 
     const uint16_t k_ReturnAddress = 
     static_cast<uint16_t>((k_HighByte << 8) | k_LowByte); 
-    gb->reg_.program_counter_ = k_ReturnAddress; 
+    gb->reg_.program_counter_ = k_ReturnAddress;
   }
 }
 template <const uint8_t bit_index, const bool condition>
-void Jump(GameBoy* gb) {
+void JumpRelative(GameBoy* gb) {
   if (gb->reg_.f_[bit_index] == condition) {
     gb->reg_.program_counter_ += gb->memory_[gb->reg_.program_counter_ + 1];
     gb->branched = true; 
   }
 }
-    // Load Instructions
-
-// LD r, r;
-
-extern inline void AddImmediate8(GameBoy* gb);
-extern inline void AddImmediate16(const uint8_t );
-
-extern inline void XorImmediate8(GameBoy* gb);
-
+template <typename T = uint8_t, const uint8_t bit_index, const bool condition>
+void Jump(GameBoy* gb) {
+  if (gb->reg_.f_[bit_index] == condition) { 
+    const uint8_t k_LowByte = gb->memory_[gb->reg_.program_counter_]; 
+    const uint8_t k_HighByte = gb->memory_[gb->reg_.program_counter_ + 1]; 
+    const uint16_t k_JumpAddress = 
+        static_cast<uint16_t>((k_HighByte << 8) | k_LowByte); 
+    gb->reg_.stack_pointer_ = gb->reg_.program_counter_; 
+    gb->reg_.program_counter_ = k_JumpAddress; 
+  }
+  // Load Instructions
+}
+// LD r, r;   
 extern inline void Fetch(GameBoy* gb);
-extern void JumpRelative(GameBoy* gb);
-void ReturnFromSubRoutine(binary::gb::GameBoy* gb);
 extern void NoOperationFunction(GameBoy* gb);
 
 }// namespace binary::gb::instructionset

@@ -28,13 +28,6 @@ void LoadRegAIntoHighAddress(GameBoy* gb) {
   gb->memory_[gb->reg_.program_counter_] = gb->reg_.a_;
 }
 
-inline void AddImmediate8(GameBoy* gb) {
-  const uint8_t k_Operand = gb->memory_[gb->reg_.program_counter_ + 1];
-  const uint8_t k_Result = gb->reg_.a_ + k_Operand;
-  SetFlagZ0HC(gb, k_Result, gb->reg_.a_, k_Operand);
-  gb->reg_.a_ = k_Result;
-}
-
 void SubImmediate8Function(GameBoy* gb) {
   const uint16_t k_Operand = gb->memory_[gb->reg_.program_counter_ + 1];
   const uint16_t k_Result = gb->reg_.a_ - k_Operand;
@@ -53,7 +46,6 @@ void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result, const uint8_t k_Reg,
   gb->reg_.f_[k_BitIndexH] = k_IsHCarry;
   gb->reg_.f_[k_BitIndexC] = k_IsCarry;
 }
-
 
 void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result) {
   const bool k_IsZero = (static_cast<uint8_t>(k_Result) == 0);
@@ -75,52 +67,6 @@ void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
   gb->reg_.f_[k_BitIndexC] = k_IsCarry;
 }
 
-inline void XorImmediate8(GameBoy* gb) {
-  const uint8_t k_Operand = gb->memory_[gb->reg_.program_counter_ + 1];
-  gb->reg_.a_ ^= k_Operand;
-  gb->reg_.f_[k_BitIndexZ] = true;
-}
-inline void OrImmediate8(GameBoy* gb) {
-  const uint8_t k_Operand = gb->memory_[gb->reg_.program_counter_ + 1];
-  gb->reg_.a_ = k_Operand;
-  gb->reg_.f_[k_BitIndexZ] = true;
-}
-void JumpRelativeSignedIfNotZero(GameBoy* gb) {
-  if (!gb->reg_.f_[k_BitIndexZ]) JumpRelative(gb);
-}
-
-void JumpRelativeSignedIfNotCarry(GameBoy* gb) {
-  if (!gb->reg_.f_[k_BitIndexC]) JumpRelative(gb);
-}
-
-void JumpRelative(GameBoy* gb) {
-  gb->reg_.program_counter_ += gb->memory_[gb->reg_.program_counter_ + 1];
-  gb->branched = true;
-}
-
-void ReturnIfNotZero(GameBoy* gb) {
-  if (!gb->reg_.f_[k_BitIndexZ]) ReturnFromSubRoutine(gb);
-}
-
-void ReturnIfNotCarry(GameBoy* gb) {
-  if (!gb->reg_.f_[k_BitIndexC]) ReturnFromSubRoutine(gb);
-}
-
-void ReturnIfCarry(GameBoy* gb) {
-  if (gb->reg_.f_[k_BitIndexC]) ReturnFromSubRoutine(gb);
-}
-
-void ReturnIfZero(GameBoy* gb) {
-  if (gb->reg_.f_[k_BitIndexZ]) ReturnFromSubRoutine(gb);
-}
-
-void ReturnFromSubRoutine(GameBoy* gb) {
-  const uint8_t k_LowByte = gb->memory_[gb->reg_.stack_pointer_];
-  const uint8_t k_HighByte = gb->memory_[gb->reg_.stack_pointer_ + 1];
-  const uint16_t k_ReturnAddress = 
-    static_cast<uint16_t>((k_HighByte << 8) | k_LowByte);
-  gb->reg_.program_counter_ = k_ReturnAddress;
-}
   // Stop instruction
 void Stop(GameBoy* gb) {
   // There's no reason to call a helper function for this, since there's only
