@@ -527,7 +527,7 @@ extern void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result,
                         const uint8_t k_Reg, const uint8_t k_Operand);
 extern void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result); 
 
-template <typename T = uint8_t, uint8_t Register::*x_>
+template <typename T = uint8_t, T Register::*x_>
 void Swap(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
     const uint8_t k_HighNibble = gb->reg_.*x_ >> 4;
@@ -550,7 +550,7 @@ void Swap(GameBoy* gb) {
 }
 
 
-template <typename T = uint8_t, uint8_t Register::*x_>
+template <typename T = uint8_t, T Register::*x_>
 void RotateLeft(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
     const bool k_7thBit = ((gb->reg_.*x_ & 0x80) == true);
@@ -596,7 +596,7 @@ void RotateLeftCircular(GameBoy* gb) {
   gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
-template <typename T = uint8_t, uint8_t Register::*x_>
+template <typename T = uint8_t, T Register::*x_>
 void RotateRight(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
     const bool k_FirstBit = ((gb->reg_.*x_ & 1) == true);
@@ -615,7 +615,7 @@ void RotateRight(GameBoy* gb) {
   gb->UpdateRegAF();
 }
 
-template <typename T = uint8_t, uint8_t Register::*x_>
+template <typename T = uint8_t, T Register::*x_>
 void RotateRightCircular(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
     bool k_FirstBit = ((gb->reg_.*x_ & 1) == true);
@@ -635,7 +635,7 @@ void RotateRightCircular(GameBoy* gb) {
   gb->UpdateRegAF();
 }
 
-template <typename T = uint8_t, uint8_t Register::*x_>
+template <typename T = uint8_t, T Register::*x_>
 void ShiftLeft(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
     gb->reg_.*x_ << 1; 
@@ -647,7 +647,7 @@ void ShiftLeft(GameBoy* gb) {
   gb->UpdateRegisters<x_>(); 
   gb->UpdateRegAF(); 
 }
-template <typename T = uint8_t, uint8_t Register::*x_>
+template <typename T = uint8_t, T Register::*x_>
 void ShiftRight(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
     gb->reg_.*x_ >> 1;
@@ -660,7 +660,7 @@ void ShiftRight(GameBoy* gb) {
   gb->UpdateRegAF();
 }
 
-template <typename T = uint8_t, uint8_t Register::*x_, const uint8_t BitPos>
+template <typename T = uint8_t, T Register::*x_, const uint8_t BitPos>
 void Bit(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
     const uint8_t k_Bit = (1 << BitPos);
@@ -677,7 +677,7 @@ void Bit(GameBoy* gb) {
   gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
-template <typename T = uint8_t, uint8_t Register::*x_, const uint8_t BitPos>
+template <typename T = uint8_t, T Register::*x_, const uint8_t BitPos>
 void Set(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
     const uint8_t k_Bit = (1 << BitPos);
@@ -689,7 +689,7 @@ void Set(GameBoy* gb) {
   gb->UpdateRegisters<x_>();
 }
 
-template <typename T = uint8_t, uint8_t Register::*x_, const uint8_t BitPos>
+template <typename T = uint8_t, T Register::*x_, const uint8_t BitPos> 
 void Reset(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
     const uint8_t k_Bit = (1 << BitPos);
@@ -860,27 +860,21 @@ void RotateCarryRegisterDirect8(GameBoy* gb) {
 template <const uint8_t bit_index, const bool condition>
 void Return(GameBoy* gb) {
   if (gb->reg_.f_[bit_index] == condition) { 
-    const uint8_t k_LowByte = gb->memory_[gb->reg_.stack_pointer_]; 
-    const uint8_t k_HighByte = gb->memory_[gb->reg_.stack_pointer_ + 1]; 
-    const uint16_t k_ReturnAddress = 
-    static_cast<uint16_t>((k_HighByte << 8) | k_LowByte); 
+    const uint16_t k_ReturnAddress = gb->Operand16bit();
     gb->reg_.program_counter_ = k_ReturnAddress;
   }
 }
 template <const uint8_t bit_index, const bool condition>
 void JumpRelative(GameBoy* gb) {
   if (gb->reg_.f_[bit_index] == condition) {
-    gb->reg_.program_counter_ += gb->memory_[gb->reg_.program_counter_ + 1];
+    gb->reg_.program_counter_ += gb->Operand8Bit();
     gb->branched = true; 
   }
 }
-template <typename T = uint8_t, const uint8_t bit_index, const bool condition>
+template <const uint8_t bit_index, const bool condition>
 void Jump(GameBoy* gb) {
   if (gb->reg_.f_[bit_index] == condition) { 
-    const uint8_t k_LowByte = gb->memory_[gb->reg_.program_counter_]; 
-    const uint8_t k_HighByte = gb->memory_[gb->reg_.program_counter_ + 1]; 
-    const uint16_t k_JumpAddress = 
-        static_cast<uint16_t>((k_HighByte << 8) | k_LowByte); 
+    const uint16_t k_JumpAddress = gb->Operand16bit();
     gb->reg_.stack_pointer_ = gb->reg_.program_counter_; 
     gb->reg_.program_counter_ = k_JumpAddress; 
   }
