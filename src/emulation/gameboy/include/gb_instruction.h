@@ -26,13 +26,30 @@ enum CpuFlags {
   k_Same = 2  // Nothing
 };
 
+
 #define BINARY_GB_EXECUTE_PREFIX(upper, lower, num)                           \
   opcode_table[BIT_##num##_##upper].execute_ =                                \
-      Bit<uint8_t,&Register::lower##_, ##num##>;                                       \
+      Bit<uint8_t,&Register::lower##_, ##num##>;                              \
   opcode_table[RES_##num##_##upper].execute_ =                                \
-      Reset<uint8_t, &Register::lower##_, ##num##>;                                     \
+      Reset<uint8_t, &Register::lower##_, ##num##>;                           \
   opcode_table[SET_##num##_##upper].execute_ =                                \
       Set<uint8_t, &Register::lower##_, ##num##>;   
+
+#define BINARY_GB_EXECUTE_PREFIX_S(upper, lower) \
+  opcode_table[RL_##num##_##upper].execute_ =      \
+      RotateLeft<uint8_t, &Register::lower##_>;   \
+  opcode_table[RLC_##num##_##upper].execute_ =      \
+      RotateLeftCircular<uint8_t, &Register::lower##_>; \
+  opcode_table[RR_##num##_##upper].execute_ =      \
+      RotateRight<uint8_t, &Register::lower##_>;         \
+  opcode_table[RRC_##num##_##upper].execute_ = \
+      RotateRightCircular<uint8_t, &Register::lower##_>;         \
+  opcode_table[SWAP_##num##_##upper].execute_ =   \
+      Swap<uint8_t, &Register::lower##_>;       \
+  opcode_table[SLA_##num##_##upper].execute_ =   \
+      ShiftLeft<uint8_t, &Register::lower##_>;\
+   opcode_table[SRA_##num##_##upper].execute_ =       \
+      ShiftRight<uint8_t, &Register::lower##_>;
 
 #define BINARY_GB_REPEAT_FOR_ALL_PREFIX(MACRO)\
 MACRO(B,b,0) MACRO(C,c,0) MACRO(D,d,0) MACRO(E,e,0) MACRO(H,h,0) MACRO(L,l,0)\
@@ -71,7 +88,7 @@ MACRO(B, b) MACRO(C, c) MACRO(D, d) MACRO(E, e) MACRO(H, h) MACRO(L, l) MACRO(A,
   opcode_table[SUB_##upper].execute_ = Sub<&Register::lower##_>;              \
   opcode_table[SBC_##upper].execute_ = SubWithCarry<&Register::lower##_>;     \
   opcode_table[AND_##upper].execute_ = And<&Register::lower##_>;              \
-  opcode_table[OR_##upper].execute_ = Or<&Register::lower##_>;               \
+  opcode_table[OR_##upper].execute_ = Or<&Register::lower##_>;                \
   opcode_table[XOR_##upper].execute_ = Xor<&Register::lower##_>;              \
   opcode_table[CP_##upper].execute_ = Compare<&Register::lower##_>;   
 
@@ -677,6 +694,7 @@ void Bit(GameBoy* gb) {
   gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
+
 template <typename T = uint8_t, T Register::*x_, const uint8_t BitPos>
 void Set(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
@@ -880,7 +898,7 @@ void Jump(GameBoy* gb) {
   }
   // Load Instructions
 }
-// LD r, r;   
+    // LD r, r;   
 extern inline void Fetch(GameBoy* gb);
 extern void NoOperationFunction(GameBoy* gb);
 

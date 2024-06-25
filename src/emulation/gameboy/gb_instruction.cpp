@@ -175,6 +175,7 @@ void Init8BitPrefixTable(std::array<Opcode, 512>& opcode_table) {
   }
   BINARY_GB_REPEAT_FOR_ALL_PREFIX(BINARY_GB_EXECUTE_PREFIX)
 }
+
 void Init8BitArithmeticLogicRegisterDirectTable(
     std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;

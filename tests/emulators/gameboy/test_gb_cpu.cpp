@@ -254,7 +254,6 @@ TEST_F(GameBoyTest, CompareRegXTable) {
   opcode_table->at(SUB_D).execute_(&gb_);
   EXPECT_EQ(gb_.reg_.a_, 0xFF);
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], true) << "Carry flag wasn't set";
-
 }
 }  // namespace binary
 
