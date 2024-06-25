@@ -27,7 +27,7 @@ enum CpuFlags {
 };
 
 
-#define BINARY_GB_EXECUTE_PREFIX(upper, lower, num)                           \
+#define BINARY_GB_EXECUTE_BIT_PREFIX(upper, lower, num)                           \
   opcode_table[BIT_##num##_##upper].execute_ =                                \
       Bit<uint8_t,&Register::lower##_, ##num##>;                              \
   opcode_table[RES_##num##_##upper].execute_ =                                \
@@ -35,23 +35,23 @@ enum CpuFlags {
   opcode_table[SET_##num##_##upper].execute_ =                                \
       Set<uint8_t, &Register::lower##_, ##num##>;   
 
-#define BINARY_GB_EXECUTE_PREFIX_S(upper, lower) \
-  opcode_table[RL_##num##_##upper].execute_ =      \
+#define BINARY_GB_EXECUTE_BYTE_PREFIX(upper, lower) \
+  opcode_table[RL_##upper].execute_ =      \
       RotateLeft<uint8_t, &Register::lower##_>;   \
-  opcode_table[RLC_##num##_##upper].execute_ =      \
+  opcode_table[RLC_##upper].execute_ =      \
       RotateLeftCircular<uint8_t, &Register::lower##_>; \
-  opcode_table[RR_##num##_##upper].execute_ =      \
+  opcode_table[RR_##upper].execute_ =      \
       RotateRight<uint8_t, &Register::lower##_>;         \
-  opcode_table[RRC_##num##_##upper].execute_ = \
+  opcode_table[RRC_##upper].execute_ = \
       RotateRightCircular<uint8_t, &Register::lower##_>;         \
-  opcode_table[SWAP_##num##_##upper].execute_ =   \
+  opcode_table[SWAP_##upper].execute_ =   \
       Swap<uint8_t, &Register::lower##_>;       \
-  opcode_table[SLA_##num##_##upper].execute_ =   \
+  opcode_table[SLA_##upper].execute_ =   \
       ShiftLeft<uint8_t, &Register::lower##_>;\
-   opcode_table[SRA_##num##_##upper].execute_ =       \
+   opcode_table[SRA_##upper].execute_ =       \
       ShiftRight<uint8_t, &Register::lower##_>;
 
-#define BINARY_GB_REPEAT_FOR_ALL_PREFIX(MACRO)\
+#define BINARY_GB_REPEAT_FOR_ALL_BIT_PREFIX(MACRO)\
 MACRO(B,b,0) MACRO(C,c,0) MACRO(D,d,0) MACRO(E,e,0) MACRO(H,h,0) MACRO(L,l,0)\
 MACRO(B,b,1) MACRO(C,c,1) MACRO(D,d,1) MACRO(E,e,1) MACRO(H,h,1) MACRO(L,l,1)\
 MACRO(B,b,2) MACRO(C,c,2) MACRO(D,d,2) MACRO(E,e,2) MACRO(H,h,2) MACRO(L,l,2)\
@@ -570,7 +570,7 @@ void Swap(GameBoy* gb) {
 template <typename T = uint8_t, T Register::*x_>
 void RotateLeft(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
-    const bool k_7thBit = ((gb->reg_.*x_ & 0x80) == true);
+    const bool k_7thBit = ((gb->reg_.*x_ & 0x80) > 0);
     const bool k_IsCarryFlagSet = gb->reg_.f_[k_BitIndexC]; 
     const uint8_t k_Result = (gb->reg_.*x_ << 1) | gb->reg_.f_[k_BitIndexC]; 
 
@@ -595,7 +595,7 @@ void RotateLeft(GameBoy* gb) {
 template <typename T = uint8_t, T Register::*x_>
 void RotateLeftCircular(GameBoy* gb) { 
   if constexpr (std::is_same_v<T, uint8_t>) {
-    const bool k_7thBit = ((gb->reg_.*x_ & 0x80) == true);
+    const bool k_7thBit = ((gb->reg_.*x_ & 0x80) > 0);
     const uint8_t k_Result = (gb->reg_.*x_ << 1) | k_7thBit;
 
     SetFlagZ00C(gb, k_Result); 
@@ -616,8 +616,8 @@ void RotateLeftCircular(GameBoy* gb) {
 template <typename T = uint8_t, T Register::*x_>
 void RotateRight(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
-    const bool k_FirstBit = ((gb->reg_.*x_ & 1) == true);
-    gb->reg_.*x_ >> 1;
+    const bool k_FirstBit = ((gb->reg_.*x_ & 1) > 0);
+    gb->reg_.*x_ >>= 1;
     gb->reg_.*x_ |= (gb->reg_.f_[k_BitIndexC] == true) ? 0x80 : 0;
     gb->reg_.f_[k_BitIndexC] = k_FirstBit;
     gb->reg_.f_[k_BitIndexH] = false;
@@ -635,8 +635,8 @@ void RotateRight(GameBoy* gb) {
 template <typename T = uint8_t, T Register::*x_>
 void RotateRightCircular(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
-    bool k_FirstBit = ((gb->reg_.*x_ & 1) == true);
-    gb->reg_.*x_ >> 1; 
+    bool k_FirstBit = ((gb->reg_.*x_ & 1) > 0);
+    gb->reg_.*x_ >>= 1; 
     gb->reg_.*x_ |= (k_FirstBit == true) ? 0x80 : 0; 
     gb->reg_.f_[k_BitIndexC] = k_FirstBit; 
     gb->reg_.f_[k_BitIndexH] = false;
@@ -655,7 +655,7 @@ void RotateRightCircular(GameBoy* gb) {
 template <typename T = uint8_t, T Register::*x_>
 void ShiftLeft(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
-    gb->reg_.*x_ << 1; 
+    gb->reg_.*x_ <<= 1; 
     gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0;
   } else if constexpr (std::is_same_v<T, uint16_t>) {
     gb->memory_[gb->reg_.*x_] << 1;  
@@ -667,7 +667,7 @@ void ShiftLeft(GameBoy* gb) {
 template <typename T = uint8_t, T Register::*x_>
 void ShiftRight(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
-    gb->reg_.*x_ >> 1;
+    gb->reg_.*x_ >>= 1;
     gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0;
   } else if constexpr (std::is_same_v<T, uint16_t>) {
     gb->memory_[gb->reg_.*x_] >> 1;

@@ -173,7 +173,8 @@ void Init8BitPrefixTable(std::array<Opcode, 512>& opcode_table) {
       mnemonic++;
     }
   }
-  BINARY_GB_REPEAT_FOR_ALL_PREFIX(BINARY_GB_EXECUTE_PREFIX)
+  BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_BYTE_PREFIX);
+  BINARY_GB_REPEAT_FOR_ALL_BIT_PREFIX(BINARY_GB_EXECUTE_BIT_PREFIX)
 }
 
 void Init8BitArithmeticLogicRegisterDirectTable(
