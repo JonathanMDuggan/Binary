@@ -35,22 +35,46 @@ enum CpuFlags {
   opcode_table[SET_##num##_##upper].execute_ =                                \
       Set<uint8_t, &Register::lower##_, ##num##>;   
 
-#define BINARY_GB_EXECUTE_BYTE_PREFIX(upper, lower) \
-  opcode_table[RL_##upper].execute_ =      \
-      RotateLeft<uint8_t, &Register::lower##_>;   \
-  opcode_table[RLC_##upper].execute_ =      \
-      RotateLeftCircular<uint8_t, &Register::lower##_>; \
-  opcode_table[RR_##upper].execute_ =      \
-      RotateRight<uint8_t, &Register::lower##_>;         \
-  opcode_table[RRC_##upper].execute_ = \
-      RotateRightCircular<uint8_t, &Register::lower##_>;         \
-  opcode_table[SWAP_##upper].execute_ =   \
-      Swap<uint8_t, &Register::lower##_>;       \
-  opcode_table[SLA_##upper].execute_ =   \
-      ShiftLeft<uint8_t, &Register::lower##_>;\
-   opcode_table[SRA_##upper].execute_ =       \
+#define BINARY_GB_EXECUTE_REGISTER_INDIRECT_BYTE_PREFIX\
+  opcode_table[RL__HL].execute_ =                                       \
+      RotateLeft<uint16_t, &Register::hl_>;                             \
+  opcode_table[RLC__HL].execute_ =                                      \
+      RotateLeftCircular<uint16_t, &Register::hl_>;                     \
+  opcode_table[RR__HL].execute_ =                                       \
+      RotateRight<uint16_t, &Register::hl_>;                            \
+  opcode_table[RRC__HL].execute_ =                                      \
+      RotateRightCircular<uint16_t, &Register::hl_>;                    \
+  opcode_table[SWAP__HL].execute_ = Swap<uint16_t, &Register::hl_>; \
+  opcode_table[SLA__HL].execute_ =                                      \
+      ShiftLeft<uint16_t, &Register::hl_>;                              \
+  opcode_table[SRA__HL].execute_ = ShiftRight<uint16_t, &Register::hl_>;
+
+#define BINARY_GB_EXECUTE_REGISTER_INDIRECT_BIT_PREFIX(num)               \
+  opcode_table[BIT_##num##__HL].execute_ =                                \
+      Bit<uint16_t, &Register::hl_, ##num##>;                             \
+  opcode_table[RES_##num##__HL].execute_ =                                \
+      Reset<uint16_t, &Register::hl_, ##num##>;                           \
+  opcode_table[SET_##num##__HL].execute_ =                                \
+      Set<uint16_t, &Register::hl_, ##num##>;
+
+#define BINARY_GB_EXECUTE_BYTE_PREFIX(upper, lower)             \
+  opcode_table[RL_##upper].execute_ =                           \
+      RotateLeft<uint8_t, &Register::lower##_>;                 \
+  opcode_table[RLC_##upper].execute_ =                          \
+      RotateLeftCircular<uint8_t, &Register::lower##_>;         \
+  opcode_table[RR_##upper].execute_ =                           \
+      RotateRight<uint8_t, &Register::lower##_>;                \
+  opcode_table[RRC_##upper].execute_ =                          \
+      RotateRightCircular<uint8_t, &Register::lower##_>;        \
+  opcode_table[SWAP_##upper].execute_ =                         \
+      Swap<uint8_t, &Register::lower##_>;                       \
+  opcode_table[SLA_##upper].execute_ =                          \
+      ShiftLeft<uint8_t, &Register::lower##_>;                  \
+   opcode_table[SRA_##upper].execute_ =                         \
       ShiftRight<uint8_t, &Register::lower##_>;
 
+#define BINARY_GB_REPEAT_FOR_ALL_REGISTER_DIRECT_BIT_PREFIX(MACRO)\
+MACRO(0) MACRO(1) MACRO(2) MACRO(3) MACRO(4) MACRO(5) MACRO(6) MACRO(7)
 #define BINARY_GB_REPEAT_FOR_ALL_BIT_PREFIX(MACRO)\
 MACRO(B,b,0) MACRO(C,c,0) MACRO(D,d,0) MACRO(E,e,0) MACRO(H,h,0) MACRO(L,l,0)\
 MACRO(B,b,1) MACRO(C,c,1) MACRO(D,d,1) MACRO(E,e,1) MACRO(H,h,1) MACRO(L,l,1)\
@@ -553,6 +577,7 @@ void Swap(GameBoy* gb) {
 
     gb->reg_.f_ = (k_Result != 0) ? 0 : k_FlagZ;
     gb->reg_.*x_ = k_Result;
+    gb->UpdateRegisters<x_>(); 
   } else if constexpr (std::is_same_v<T, uint16_t>) {
     const uint8_t k_HighNibble = gb->memory_[gb->reg_.*x_] >> 4;
     const uint8_t k_LowNibble = gb->memory_[gb->reg_.*x_] << 4;
@@ -562,7 +587,6 @@ void Swap(GameBoy* gb) {
     gb->memory_[gb->reg_.*x_] = k_Result;
   }
 
-  gb->UpdateRegisters<x_>(); 
   gb->UpdateRegAF();
 }
 
@@ -577,9 +601,9 @@ void RotateLeft(GameBoy* gb) {
     SetFlagZ00C(gb, k_Result); 
     gb->reg_.f_[k_BitIndexC] = k_7thBit; 
     gb->reg_.*x_ = k_Result; 
-
+    gb->UpdateRegisters<x_>();
   } else if constexpr (std::is_same_v<T, uint16_t>) {
-    const bool k_7thBit = ((gb->memory_[gb->reg_.*x_] & 0x80) == true);
+    const bool k_7thBit = ((gb->memory_[gb->reg_.*x_] & 0x80) > 0);
     const bool k_IsCarryFlagSet = gb->reg_.f_[k_BitIndexC]; 
     const uint8_t k_Result = (gb->memory_[gb->reg_.*x_]<< 1) 
                              | gb->reg_.f_[k_BitIndexC];
@@ -588,7 +612,6 @@ void RotateLeft(GameBoy* gb) {
     gb->reg_.f_[k_BitIndexC] = k_7thBit; 
     gb->memory_[gb->reg_.*x_] = k_Result; 
   }
-  gb->UpdateRegisters<x_>();
   gb->UpdateRegAF(); 
 }
 
@@ -601,8 +624,9 @@ void RotateLeftCircular(GameBoy* gb) {
     SetFlagZ00C(gb, k_Result); 
     gb->reg_.f_[k_BitIndexC] = k_7thBit; 
     gb->reg_.*x_ = k_Result;  
+    gb->UpdateRegisters<x_>();
   } else if constexpr (std::is_same_v<T, uint16_t>) { 
-    const bool k_7thBit = ((gb->memory_[gb->reg_.*x_] & 0x80) == true);
+    const bool k_7thBit = ((gb->memory_[gb->reg_.*x_] & 0x80) > 0);
     const uint8_t k_Result = (gb->memory_[gb->reg_.*x_] << 1) | k_7thBit;
 
     SetFlagZ00C(gb, k_Result);
@@ -610,7 +634,7 @@ void RotateLeftCircular(GameBoy* gb) {
     gb->memory_[gb->reg_.*x_] = k_Result;
   }
 
-  gb->UpdateRegisters<x_>();
+
   gb->UpdateRegAF();
 }
 template <typename T = uint8_t, T Register::*x_>
@@ -621,14 +645,14 @@ void RotateRight(GameBoy* gb) {
     gb->reg_.*x_ |= (gb->reg_.f_[k_BitIndexC] == true) ? 0x80 : 0;
     gb->reg_.f_[k_BitIndexC] = k_FirstBit;
     gb->reg_.f_[k_BitIndexH] = false;
+    gb->UpdateRegisters<x_>(); 
   } else if constexpr (std::is_same_v<T, uint16_t>) { 
-    const bool k_FirstBit = ((gb->memory_[gb->reg_.*x_] & 1) == true);
-    gb->memory_[gb->reg_.*x_] >> 1; 
+    const bool k_FirstBit = ((gb->memory_[gb->reg_.*x_] & 1) > 0);
+    gb->memory_[gb->reg_.*x_] >>= 1; 
     gb->memory_[gb->reg_.*x_] |= (gb->reg_.f_[k_BitIndexC] == true) ? 0x80 : 0;
     gb->reg_.f_[k_BitIndexC] = k_FirstBit; 
     gb->reg_.f_[k_BitIndexH] = false; 
   }
-  gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
 
@@ -640,15 +664,14 @@ void RotateRightCircular(GameBoy* gb) {
     gb->reg_.*x_ |= (k_FirstBit == true) ? 0x80 : 0; 
     gb->reg_.f_[k_BitIndexC] = k_FirstBit; 
     gb->reg_.f_[k_BitIndexH] = false;
-
+    gb->UpdateRegisters<x_>();
   } else if constexpr (std::is_same_v<T, uint16_t>) {
-    bool k_FirstBit = ((gb->memory_[gb->reg_.*x_] & 1) == true); 
-    gb->memory_[gb->reg_.*x_] >> 1; 
+    bool k_FirstBit = ((gb->memory_[gb->reg_.*x_] & 1) > 0); 
+    gb->memory_[gb->reg_.*x_] >>= 1; 
     gb->memory_[gb->reg_.*x_] |= (k_FirstBit == true) ? 0x80 : 0; 
     gb->reg_.f_[k_BitIndexC] = k_FirstBit; 
     gb->reg_.f_[k_BitIndexH] = false;
   }
-  gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
 
@@ -657,11 +680,11 @@ void ShiftLeft(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
     gb->reg_.*x_ <<= 1; 
     gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0;
+    gb->UpdateRegisters<x_>(); 
   } else if constexpr (std::is_same_v<T, uint16_t>) {
-    gb->memory_[gb->reg_.*x_] << 1;  
+    gb->memory_[gb->reg_.*x_] <<= 1;  
     gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0; 
   }
-  gb->UpdateRegisters<x_>(); 
   gb->UpdateRegAF(); 
 }
 template <typename T = uint8_t, T Register::*x_>
@@ -669,11 +692,11 @@ void ShiftRight(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
     gb->reg_.*x_ >>= 1;
     gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0;
+    gb->UpdateRegisters<x_>();
   } else if constexpr (std::is_same_v<T, uint16_t>) {
-    gb->memory_[gb->reg_.*x_] >> 1;
+    gb->memory_[gb->reg_.*x_] >>= 1;
     gb->reg_.f_ = (gb->reg_.*x_) ? k_FlagZ : 0;
   }
-  gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
 
@@ -684,6 +707,7 @@ void Bit(GameBoy* gb) {
     const uint16_t k_Result = gb->reg_.*x_ ^ k_Bit;
     gb->reg_.f_ |= (k_Result != 0) ? k_FlagH : k_FlagZ | k_FlagH;
     gb->reg_.*x_ = k_Result;
+    gb->UpdateRegisters<x_>();
   } else if constexpr (std::is_same_v<T, uint16_t>) {
     const uint8_t k_Bit = (1 << BitPos);
     const uint16_t k_Result = gb->reg_.*x_ ^ k_Bit;
@@ -691,7 +715,6 @@ void Bit(GameBoy* gb) {
     gb->memory_[gb->reg_.*x_] = k_Result;
 
   }
-  gb->UpdateRegisters<x_>();
   gb->UpdateRegAF();
 }
 
@@ -700,11 +723,12 @@ void Set(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
     const uint8_t k_Bit = (1 << BitPos);
     gb->reg_.*x_ |= k_Bit;
+    gb->UpdateRegisters<x_>();
   } else if constexpr (std::is_same_v<T, uint16_t>) {
     const uint8_t k_Bit = (1 << BitPos);
     gb->memory_[gb->reg_.*x_] |= k_Bit;
   }
-  gb->UpdateRegisters<x_>();
+
 }
 
 template <typename T = uint8_t, T Register::*x_, const uint8_t BitPos> 
@@ -712,11 +736,12 @@ void Reset(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
     const uint8_t k_Bit = (1 << BitPos);
     gb->reg_.*x_ &= ~k_Bit; 
+    gb->UpdateRegisters<x_>();
   } else if constexpr (std::is_same_v<T, uint16_t>) {
     const uint8_t k_Bit = (1 << BitPos);
     gb->memory_[gb->reg_.*x_] &= ~k_Bit;
   }
-  gb->UpdateRegisters<x_>();
+
 }
 
 template <uint8_t Register::*x_ = &Register::a_, 
