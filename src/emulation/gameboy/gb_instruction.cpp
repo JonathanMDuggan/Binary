@@ -146,7 +146,7 @@ void InitOpcodeTable(std::array<Opcode, 512>& opcode_table) {
   Init8BitArithmeticLogicRegisterDirectTable(opcode_table);
 }
 
-void Init8BitPrefixTable(std::array<Opcode, 512>& opcode_table) {
+void InitPrefixTable(std::array<Opcode, 512>& opcode_table) {
   GameBoy cpu = {};
   using namespace binary::gb::instructionset;
   const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
@@ -162,9 +162,10 @@ void Init8BitPrefixTable(std::array<Opcode, 512>& opcode_table) {
   for (size_t opcode = 0x100; opcode < 0x200; opcode++) {
     // Skip the indirect instructions
     if (((~opcode & 0x6) == 0) || ((~opcode & 0xE) == 0)) {
-      continue;
+      opcode_table[opcode].SetMachineCycles(4); 
+    } else {
+      opcode_table[opcode].SetMachineCycles(2); 
     }
-    opcode_table[opcode].SetMachineCycles(2);
     opcode_table[opcode].opcode_ = std::format("CB {:02X}", opcode);
     opcode_table[opcode].mnemonic_ =
         std::format("{} {}", k_Mnemonic[mnemonic], k_Letter[opcode % 8]);
@@ -176,8 +177,8 @@ void Init8BitPrefixTable(std::array<Opcode, 512>& opcode_table) {
   BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_BYTE_PREFIX);
   BINARY_GB_REPEAT_FOR_ALL_BIT_PREFIX(BINARY_GB_EXECUTE_BIT_PREFIX);
   BINARY_GB_EXECUTE_REGISTER_INDIRECT_BYTE_PREFIX;
-  BINARY_GB_REPEAT_FOR_ALL_REGISTER_DIRECT_BIT_PREFIX(
-      BINARY_GB_EXECUTE_REGISTER_INDIRECT_BIT_PREFIX)
+  BINARY_GB_REPEAT_FOR_ALL_REGISTER_INDIRECT_BIT_PREFIX(
+      BINARY_GB_EXECUTE_REGISTER_INDIRECT_BIT_PREFIX);
 }
 
 void Init8BitArithmeticLogicRegisterDirectTable(

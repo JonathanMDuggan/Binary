@@ -73,7 +73,7 @@ enum CpuFlags {
    opcode_table[SRA_##upper].execute_ =                         \
       ShiftRight<uint8_t, &Register::lower##_>;
 
-#define BINARY_GB_REPEAT_FOR_ALL_REGISTER_DIRECT_BIT_PREFIX(MACRO)\
+#define BINARY_GB_REPEAT_FOR_ALL_REGISTER_INDIRECT_BIT_PREFIX(MACRO)\
 MACRO(0) MACRO(1) MACRO(2) MACRO(3) MACRO(4) MACRO(5) MACRO(6) MACRO(7)
 #define BINARY_GB_REPEAT_FOR_ALL_BIT_PREFIX(MACRO)\
 MACRO(B,b,0) MACRO(C,c,0) MACRO(D,d,0) MACRO(E,e,0) MACRO(H,h,0) MACRO(L,l,0)\
@@ -633,8 +633,6 @@ void RotateLeftCircular(GameBoy* gb) {
     gb->reg_.f_[k_BitIndexC] = k_7thBit;
     gb->memory_[gb->reg_.*x_] = k_Result;
   }
-
-
   gb->UpdateRegAF();
 }
 template <typename T = uint8_t, T Register::*x_>
