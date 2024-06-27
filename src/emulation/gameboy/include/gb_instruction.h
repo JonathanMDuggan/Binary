@@ -114,7 +114,17 @@ MACRO(B, b) MACRO(C, c) MACRO(D, d) MACRO(E, e) MACRO(H, h) MACRO(L, l) MACRO(A,
   opcode_table[AND_##upper].execute_ = And<&Register::lower##_>;              \
   opcode_table[OR_##upper].execute_ = Or<&Register::lower##_>;                \
   opcode_table[XOR_##upper].execute_ = Xor<&Register::lower##_>;              \
-  opcode_table[CP_##upper].execute_ = Compare<&Register::lower##_>;   
+  opcode_table[CP_##upper].execute_ = Compare<&Register::lower##_>; 
+
+#define BINARY_GB_EXECUTE_EQUALS_OPERATION_REG_INDIRECT                               \
+  opcode_table[ADD__HL].execute_ = Add<&Register::a_, k_RegisterIndirect>;            \
+  opcode_table[ADC__HL].execute_ = AddWithCarry<&Register::a_,k_RegisterIndirect>;    \
+  opcode_table[SUB__HL].execute_ = Sub<&Register::a_, k_RegisterIndirect>;            \
+  opcode_table[SBC__HL].execute_ = SubWithCarry<&Register::a_,k_RegisterIndirect>;    \
+  opcode_table[AND__HL].execute_ = And<&Register::a_,k_RegisterIndirect>;             \
+  opcode_table[OR__HL].execute_ = Or<&Register::a_, k_RegisterIndirect>;              \
+  opcode_table[XOR__HL].execute_ = Xor<&Register::a_, k_RegisterIndirect>;            \
+  opcode_table[CP__HL].execute_ = Compare<&Register::a_, k_RegisterIndirect>;
 
 constexpr uint8_t k_FlagZ = 0x80;
 constexpr uint8_t k_FlagN = 0x40;
@@ -756,7 +766,8 @@ void Load(GameBoy* gb) {
   gb->UpdateRegisters<x_>();
 }
 
-template <auto Register::*x_, AddressingMode address_mode = k_RegisterDirect>
+template <uint8_t Register::*x_ = &Register::a_,
+          AddressingMode address_mode = k_RegisterDirect>
 void Add(GameBoy* gb) {
   if constexpr (address_mode == k_RegisterDirect) {
     const uint16_t k_Result = gb->reg_.a_ + gb->reg_.*x_;
@@ -769,7 +780,8 @@ void Add(GameBoy* gb) {
   }
 }
 
-template <uint8_t Register::*x_>
+template <uint8_t Register::*x_ = &Register::a_,
+          AddressingMode address_mode = k_RegisterDirect> 
 void AddWithCarry(GameBoy* gb) {
   uint8_t k_RegFValue = static_cast<uint8_t>(gb->reg_.f_.to_ulong());
   const uint8_t k_Result =
@@ -779,7 +791,8 @@ void AddWithCarry(GameBoy* gb) {
   gb->UpdateRegAF();
 }
 
-template <uint8_t Register::*x_>
+template <uint8_t Register::*x_ = &Register::a_,
+          AddressingMode address_mode = k_RegisterDirect> 
 void Sub(GameBoy* gb) {
   const uint16_t k_Result = gb->reg_.a_ - gb->reg_.*x_;
   SetFlagZ1HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
@@ -787,19 +800,22 @@ void Sub(GameBoy* gb) {
   gb->UpdateRegAF();
 }
 
-template <auto Register::*x_>
+template <uint8_t Register::*x_ = &Register::a_,
+          AddressingMode address_mode = k_RegisterDirect>
 void Increment(GameBoy* gb) {
   gb->reg_.*x_++;
   gb->UpdateRegisters<x_>(); 
 }
 
-template <auto Register::*x_>
+template <uint8_t Register::*x_ = &Register::a_,
+          AddressingMode address_mode = k_RegisterDirect>
 void decrement(GameBoy* gb) {
   gb->reg_.*x_++;
   gb->UpdateRegisters<x_>();
 }
 
-template <uint8_t Register::*x_>
+template <uint8_t Register::*x_ = &Register::a_,
+          AddressingMode address_mode = k_RegisterDirect> 
 void SubWithCarry(GameBoy* gb) {
   uint8_t k_RegFValue = static_cast<uint8_t>(gb->reg_.f_.to_ulong());
   const uint16_t k_Result =
@@ -866,7 +882,8 @@ void And(GameBoy* gb) {
   gb->UpdateRegAF();
 }
 
-template <uint8_t Register::*x_, AddressingMode address_mode = k_RegisterDirect>
+template <uint8_t Register::*x_ = &Register::a_,
+          AddressingMode address_mode = k_RegisterDirect>
 void Compare(GameBoy* gb) {
   uint16_t k_Result = 0;
   if constexpr (address_mode == k_RegisterDirect) {

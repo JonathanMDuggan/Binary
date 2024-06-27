@@ -205,6 +205,7 @@ void Init8BitArithmeticLogicRegisterDirectTable(
   }
   // We cannot algorithmically set std::functions to opcode table
   BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_EQUALS_OPERATION_REG);
+  BINARY_GB_EXECUTE_EQUALS_OPERATION_REG_INDIRECT; 
 }
 
 void InitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
