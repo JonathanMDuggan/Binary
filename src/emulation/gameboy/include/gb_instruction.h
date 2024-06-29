@@ -75,6 +75,23 @@ enum CpuFlags {
 
 #define BINARY_GB_REPEAT_FOR_ALL_REGISTER_INDIRECT_BIT_PREFIX(MACRO)\
 MACRO(0) MACRO(1) MACRO(2) MACRO(3) MACRO(4) MACRO(5) MACRO(6) MACRO(7)
+
+#define BINARY_GB_EXECUTE_EQUALS_LOAD_REGX_FROM_INDIRECT_REG                    \
+  opcode_table[LD_A__HL].execute_ =                           \
+      Load<&Register::a_, &Register::a_, k_RegisterIndirect>; \
+  opcode_table[LD_B__HL].execute_ =                           \
+      Load<&Register::b_, &Register::a_, k_RegisterIndirect>; \
+  opcode_table[LD_C__HL].execute_ =                           \
+      Load<&Register::c_, &Register::a_, k_RegisterIndirect>; \
+  opcode_table[LD_D__HL].execute_ =                           \
+      Load<&Register::d_, &Register::a_, k_RegisterIndirect>; \
+  opcode_table[LD_E__HL].execute_ =                           \
+      Load<&Register::e_, &Register::a_, k_RegisterIndirect>; \
+  opcode_table[LD_H__HL].execute_ =                           \
+      Load<&Register::h_, &Register::a_, k_RegisterIndirect>; \
+  opcode_table[LD_L__HL].execute_ =                           \
+      Load<&Register::l_, &Register::a_, k_RegisterIndirect>;
+
 #define BINARY_GB_REPEAT_FOR_ALL_BIT_PREFIX(MACRO)\
 MACRO(B,b,0) MACRO(C,c,0) MACRO(D,d,0) MACRO(E,e,0) MACRO(H,h,0) MACRO(L,l,0)\
 MACRO(B,b,1) MACRO(C,c,1) MACRO(D,d,1) MACRO(E,e,1) MACRO(H,h,1) MACRO(L,l,1)\
@@ -93,7 +110,6 @@ MACRO(A,a,4)\
 MACRO(A,a,5)\
 MACRO(A,a,6)\
 MACRO(A,a,7)\
-
 
 #define BINARY_GB_ALL_REG(MACRO)\
 MACRO(B, b) MACRO(C, c) MACRO(D, d) MACRO(E, e) MACRO(H, h) MACRO(L, l) MACRO(A, a)
@@ -629,7 +645,7 @@ template <typename T = uint8_t, T Register::*x_>
 void RotateLeftCircular(GameBoy* gb) { 
   if constexpr (std::is_same_v<T, uint8_t>) {
     const bool k_7thBit = ((gb->reg_.*x_ & 0x80) > 0);
-    const uint8_t k_Result = (gb->reg_.*x_ << 1) | k_7thBit;
+    const uint8_t k_Result = (gb->reg_.*x_ << 1) | static_cast<uint8_t>(k_7thBit);
 
     SetFlagZ00C(gb, k_Result); 
     gb->reg_.f_[k_BitIndexC] = k_7thBit; 
@@ -637,7 +653,8 @@ void RotateLeftCircular(GameBoy* gb) {
     gb->UpdateRegisters<x_>();
   } else if constexpr (std::is_same_v<T, uint16_t>) { 
     const bool k_7thBit = ((gb->memory_[gb->reg_.*x_] & 0x80) > 0);
-    const uint8_t k_Result = (gb->memory_[gb->reg_.*x_] << 1) | k_7thBit;
+    const uint8_t k_Result =
+        (gb->memory_[gb->reg_.*x_] << 1) | static_cast<uint8_t>(k_7thBit);
 
     SetFlagZ00C(gb, k_Result);
     gb->reg_.f_[k_BitIndexC] = k_7thBit;
@@ -762,6 +779,8 @@ void Load(GameBoy* gb) {
     gb->reg_.*x_ = gb->Operand8Bit();
   } else if constexpr (address_mode == k_Indirect) {
     gb->reg_.*x_ = gb->memory_[gb->reg_.*y_];
+  } else if constexpr (address_mode == k_RegisterIndirect) {
+    gb->reg_.*x_ = gb->memory_[gb->reg_.hl_];
   }
   gb->UpdateRegisters<x_>();
 }
