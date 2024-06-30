@@ -837,10 +837,16 @@ template <uint8_t Register::*x_ = &Register::a_,
           AddressingMode address_mode = k_RegisterDirect> 
 void SubWithCarry(GameBoy* gb) {
   uint8_t k_RegFValue = static_cast<uint8_t>(gb->reg_.f_.to_ulong());
-  const uint16_t k_Result =
-      k_RegFValue - gb->reg_.*x_ - gb->reg_.f_[k_BitIndexC];
+  uint16_t k_Result = 0;
+  if constexpr (address_mode == k_RegisterDirect) {
+    k_Result = k_RegFValue - gb->reg_.*x_ - gb->reg_.f_[k_BitIndexC];
+    SetFlagZ1HC(gb, k_Result, k_RegFValue, gb->reg_.*x_); 
+  } else if constexpr (address_mode == k_RegisterIndirect) {
+    k_Result = k_RegFValue - gb->memory_[gb->reg_.hl_] - gb->reg_.f_[k_BitIndexC];
+    SetFlagZ1HC(gb, k_Result, k_RegFValue, gb->memory_[gb->reg_.hl_]);
+  }
   gb->reg_.f_ = k_Result;
-  SetFlagZ1HC(gb, k_Result, k_RegFValue, gb->reg_.*x_);
+
   gb->UpdateRegAF();
 }
 
