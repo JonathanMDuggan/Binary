@@ -543,7 +543,9 @@ enum AddressingMode {
   k_Indexed,
   k_Immediate8, k_Immediate16,
   k_Indirect,   k_RegisterIndirect,
-  k_Relative,
+  k_Relative,   
+  k_StackPointer,
+  k_ProgramCounter
 };
 
 extern void InitOpcodeTable(std::array<Opcode, 512>&);
@@ -812,9 +814,10 @@ void AddWithCarry(GameBoy* gb) {
 
 template <uint8_t Register::*x_ = &Register::a_,
           AddressingMode address_mode = k_RegisterDirect> 
-void Sub(GameBoy* gb) {
-  const uint16_t k_Result = gb->reg_.a_ - gb->reg_.*x_;
-  SetFlagZ1HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
+void Sub(GameBoy* gb) { 
+  const uint8_t k_Operand = GetOperandValue<x_, address_mode>(gb); 
+  const uint16_t k_Result = gb->reg_.a_ - k_Operand; 
+  SetFlagZ1HC(gb, k_Result, gb->reg_.a_, k_Operand);
   gb->reg_.a_ = k_Result;
   gb->UpdateRegAF();
 }
@@ -833,77 +836,57 @@ void decrement(GameBoy* gb) {
   gb->UpdateRegisters<x_>();
 }
 
-template <uint8_t Register::*x_ = &Register::a_,
-          AddressingMode address_mode = k_RegisterDirect> 
-void SubWithCarry(GameBoy* gb) {
-  uint8_t k_RegFValue = static_cast<uint8_t>(gb->reg_.f_.to_ulong());
-  uint16_t k_Result = 0;
+template <uint8_t Register::*x_, AddressingMode address_mode>
+auto GetOperandValue(GameBoy* gb) {
   if constexpr (address_mode == k_RegisterDirect) {
-    k_Result = k_RegFValue - gb->reg_.*x_ - gb->reg_.f_[k_BitIndexC];
-    SetFlagZ1HC(gb, k_Result, k_RegFValue, gb->reg_.*x_); 
+    return gb->reg_.*x_;
   } else if constexpr (address_mode == k_RegisterIndirect) {
-    k_Result = k_RegFValue - gb->memory_[gb->reg_.hl_] - gb->reg_.f_[k_BitIndexC];
-    SetFlagZ1HC(gb, k_Result, k_RegFValue, gb->memory_[gb->reg_.hl_]);
+    return gb->memory_[gb->reg_.hl_];
+  } else if constexpr (address_mode == k_Immediate8) {
+    return gb->Operand8Bit();
+  } else if constexpr (address_mode == k_RegisterDirect16) {
+    return gb->reg_.hl_;
   }
-  gb->reg_.f_ = k_Result;
+}
 
+template <uint8_t Register::*x_ = &Register::a_,
+          AddressingMode address_mode = k_RegisterDirect>
+void SubWithCarry(GameBoy* gb) {
+  const uint8_t k_RegFValue = static_cast<uint8_t>(gb->reg_.f_.to_ulong());
+  const uint8_t k_Operand = GetOperandValue<x_, address_mode>(gb); 
+  const uint16_t k_Result = k_RegFValue - k_Operand - gb->reg_.f_[k_BitIndexC];
+  gb->reg_.f_ = k_Result;
+  SetFlagZ1HC(gb, k_Result, k_RegFValue, k_Operand);
   gb->UpdateRegAF();
 }
 
 template <uint8_t Register::* x_ = &Register::a_,
   AddressingMode address_mode = k_RegisterDirect>
 void Xor(GameBoy* gb) {
-  uint8_t k_Result = 0;
-  if constexpr (address_mode == k_RegisterDirect) {
-    k_Result = gb->reg_.a_ ^ gb->reg_.*x_;
-  }
-  else if constexpr (address_mode == k_Immediate8) {
-    k_Result = gb->Operand8Bit() ^ gb->reg_.a_;
-  }
-  else if constexpr (address_mode == k_RegisterIndirect) {
-    k_Result = gb->memory_[gb->reg_.hl_] ^ gb->reg_.a_;
-  }
+  const uint8_t k_Operand = GetOperandValue<x_, address_mode>(gb);
+  const uint16_t k_Result = gb->reg_.a_ ^ k_Operand;
   gb->reg_.f_ = (k_Result != 0) ? 0 : k_FlagZ;
-  gb->reg_.a_ = k_Result; // output defaults to 0 if the programmer didn't write
-  // a valid address mode.
+  gb->reg_.a_ = k_Result;
   gb->UpdateRegAF();
 }
 
-template <uint8_t Register::* x_ = &Register::a_,
+template <uint8_t Register::*x_ = &Register::a_,
   AddressingMode address_mode = k_RegisterDirect>
 void Or(GameBoy* gb) {
-  uint8_t k_Result = 0;
-  if constexpr (address_mode == k_RegisterDirect) {
-    k_Result = gb->reg_.a_ | gb->reg_.*x_;
-  }
-  else if constexpr (address_mode == k_Immediate8) {
-    k_Result = gb->Operand8Bit() | gb->reg_.a_;
-  }
-  else if constexpr (address_mode == k_RegisterIndirect) {
-    k_Result = gb->memory_[gb->reg_.hl_] | gb->reg_.a_;
-  }
+  const uint8_t k_Operand = GetOperandValue<x_, address_mode>(gb);
+  const uint16_t k_Result = k_Operand | gb->reg_.a_;
   gb->reg_.f_ = (k_Result != 0) ? false : k_FlagZ;
-  gb->reg_.a_ = k_Result; // output defaults to 0 if the programmer didn't write
-  // a valid address mode.
+  gb->reg_.a_ = k_Result;
   gb->UpdateRegAF();
 }
 
 template <uint8_t Register::*x_ = &Register::a_, 
   AddressingMode address_mode = k_RegisterDirect>
 void And(GameBoy* gb) {
-  uint8_t k_Result = 0; 
-  if constexpr (address_mode == k_RegisterDirect) {
-    k_Result = gb->reg_.a_ & gb->reg_.*x_;
-  }
-  else if constexpr (address_mode == k_Immediate8) {
-    k_Result = gb->memory_[gb->reg_.program_counter_ + 1] & gb->reg_.a_;
-  }
-  else if constexpr (address_mode == k_RegisterIndirect) {
-    k_Result = gb->memory_[gb->reg_.hl_] & gb->reg_.a_;
-  }
+  const uint8_t k_Operand = GetOperandValue<x_, address_mode>(gb);
+  const uint16_t k_Result = k_Operand & gb->reg_.a_;
   gb->reg_.f_ = (k_Result != 0) ? k_FlagH : (k_FlagZ | k_FlagH);
-  gb->reg_.a_ = k_Result; // output defaults to 0 if the programmer didn't write
-                          // a valid address mode.
+  gb->reg_.a_ = k_Result;     
   gb->UpdateRegAF();
 }
 
