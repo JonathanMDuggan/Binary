@@ -828,7 +828,7 @@ void Increment(GameBoy* gb) {
   if constexpr (address_mode == k_RegisterDirect) { 
     gb->reg_.*x_++; 
   }else if constexpr (address_mode == k_RegisterIndirect) {
-    gb->memory_[gb->reg_.hl_]++
+    gb->memory_[gb->reg_.hl_]++;
   }
   gb->UpdateRegisters<x_>(); 
 }
@@ -838,6 +838,8 @@ template <uint8_t Register::*x_ = &Register::a_,
 void decrement(GameBoy* gb) {
   if constexpr (address_mode == k_RegisterDirect) {
     gb->reg_.*x_--; 
+  }else if constexpr (address_mode == k_RegisterIndirect) {
+    gb->memory_[gb->reg_.hl_]--;
   } 
 
   gb->UpdateRegisters<x_>();
