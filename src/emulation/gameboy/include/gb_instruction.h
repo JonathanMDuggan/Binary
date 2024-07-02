@@ -825,14 +825,21 @@ void Sub(GameBoy* gb) {
 template <uint8_t Register::*x_ = &Register::a_,
           AddressingMode address_mode = k_RegisterDirect>
 void Increment(GameBoy* gb) {
-  gb->reg_.*x_++;
+  if constexpr (address_mode == k_RegisterDirect) { 
+    gb->reg_.*x_++; 
+  }else if constexpr (address_mode == k_RegisterIndirect) {
+    gb->memory_[gb->reg_.hl_]++
+  }
   gb->UpdateRegisters<x_>(); 
 }
 
 template <uint8_t Register::*x_ = &Register::a_,
           AddressingMode address_mode = k_RegisterDirect>
 void decrement(GameBoy* gb) {
-  gb->reg_.*x_++;
+  if constexpr (address_mode == k_RegisterDirect) {
+    gb->reg_.*x_--; 
+  } 
+
   gb->UpdateRegisters<x_>();
 }
 
