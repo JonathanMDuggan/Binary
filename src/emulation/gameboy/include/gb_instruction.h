@@ -822,21 +822,23 @@ void Sub(GameBoy* gb) {
   gb->UpdateRegAF();
 }
 
-template <uint8_t Register::*x_ = &Register::a_,
+template <typename T = uint8_t, T Register::*x_ = &Register::a_,
           AddressingMode address_mode = k_RegisterDirect>
 void Increment(GameBoy* gb) {
-  if constexpr (address_mode == k_RegisterDirect) { 
-    gb->reg_.*x_++; 
+
+  if constexpr (address_mode == k_RegisterDirect ||
+                std::is_same_v<T, uint16_t>) {
   }else if constexpr (address_mode == k_RegisterIndirect) {
     gb->memory_[gb->reg_.hl_]++;
   }
   gb->UpdateRegisters<x_>(); 
 }
 
-template <uint8_t Register::*x_ = &Register::a_,
+template <typename T = uint8_t, uint8_t Register::*x_ = &Register::a_,
           AddressingMode address_mode = k_RegisterDirect>
 void decrement(GameBoy* gb) {
-  if constexpr (address_mode == k_RegisterDirect) {
+  if constexpr (address_mode == k_RegisterDirect ||
+                std::is_same_v<T, uint16_t>) { 
     gb->reg_.*x_--; 
   }else if constexpr (address_mode == k_RegisterIndirect) {
     gb->memory_[gb->reg_.hl_]--;
