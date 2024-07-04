@@ -737,7 +737,7 @@ void Bit(GameBoy* gb) {
     gb->UpdateRegisters<x_>();
   } else if constexpr (std::is_same_v<T, uint16_t>) {
     const uint8_t k_Bit = (1 << BitPos);
-    const uint16_t k_Result = gb->reg_.*x_ ^ k_Bit;
+    const uint16_t k_Result = gb->memory_[gb->reg_.*x_] ^ k_Bit; 
     gb->reg_.f_ |= (k_Result != 0) ? k_FlagH : k_FlagZ | k_FlagH;
     gb->memory_[gb->reg_.*x_] = k_Result;
 
@@ -828,6 +828,7 @@ void Increment(GameBoy* gb) {
 
   if constexpr (address_mode == k_RegisterDirect ||
                 std::is_same_v<T, uint16_t>) {
+    gb->reg_.*x_++;
   }else if constexpr (address_mode == k_RegisterIndirect) {
     gb->memory_[gb->reg_.hl_]++;
   }
@@ -922,6 +923,7 @@ void Pop(GameBoy* gb) {
   gb->reg_.*x_ = k_HighNibble | k_LowNibble;
   gb->reg_.stack_pointer_ += 2;
 }
+
 template <uint16_t Register::*x_>
 void Push(GameBoy* gb) {
   const uint8_t k_HighNibble = gb->reg_.*x_ >> 4;
@@ -930,6 +932,7 @@ void Push(GameBoy* gb) {
   gb->memory_[gb->reg_.stack_pointer_ - 1] = k_HighNibble;
   gb->reg_.stack_pointer_--;
 }
+
 template <uint8_t Register::*x_>
 void RotateCarryRegisterDirect8(GameBoy* gb) {
 
