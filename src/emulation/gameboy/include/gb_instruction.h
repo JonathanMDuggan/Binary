@@ -132,15 +132,22 @@ MACRO(B, b) MACRO(C, c) MACRO(D, d) MACRO(E, e) MACRO(H, h) MACRO(L, l) MACRO(A,
   opcode_table[XOR_##upper].execute_ = Xor<&Register::lower##_>;              \
   opcode_table[CP_##upper].execute_ = Compare<&Register::lower##_>; 
 
-#define BINARY_GB_EXECUTE_EQUALS_OPERATION_REG_INDIRECT                               \
-  opcode_table[ADD__HL].execute_ = Add<&Register::a_, k_RegisterIndirect>;            \
-  opcode_table[ADC__HL].execute_ = AddWithCarry<&Register::a_,k_RegisterIndirect>;    \
-  opcode_table[SUB__HL].execute_ = Sub<&Register::a_, k_RegisterIndirect>;            \
-  opcode_table[SBC__HL].execute_ = SubWithCarry<&Register::a_,k_RegisterIndirect>;    \
-  opcode_table[AND__HL].execute_ = And<&Register::a_,k_RegisterIndirect>;             \
-  opcode_table[OR__HL].execute_ = Or<&Register::a_, k_RegisterIndirect>;              \
-  opcode_table[XOR__HL].execute_ = Xor<&Register::a_, k_RegisterIndirect>;            \
+#define BINARY_GB_EXECUTE_EQUALS_OPERATION_REG_INDIRECT                           \
+  opcode_table[ADD__HL].execute_ = Add<&Register::a_, k_RegisterIndirect>;        \
+  opcode_table[ADC__HL].execute_ = AddWithCarry<&Register::a_,k_RegisterIndirect>;\
+  opcode_table[SUB__HL].execute_ = Sub<&Register::a_, k_RegisterIndirect>;        \
+  opcode_table[SBC__HL].execute_ = SubWithCarry<&Register::a_,k_RegisterIndirect>;\
+  opcode_table[AND__HL].execute_ = And<&Register::a_,k_RegisterIndirect>;         \
+  opcode_table[OR__HL].execute_ = Or<&Register::a_, k_RegisterIndirect>;          \
+  opcode_table[XOR__HL].execute_ = Xor<&Register::a_, k_RegisterIndirect>;        \
   opcode_table[CP__HL].execute_ = Compare<&Register::a_, k_RegisterIndirect>;
+#define BINARY_GB_REPEAT_FOR_ALL_16BIT_REG(MACRO)\
+MACRO(HL, hl) MACRO(BC, bc)  MACRO(DE, de) MACRO(AF, af)    
+
+#define BINARY_GB_EXECUTE_POP_AND_PUSH(upper, lower)                                    \
+  opcode_table[POP_##upper].execute_ = Pop<&Register::lower##_>;                        \
+  opcode_table[PUSH_##upper].execute_ = Push<&Register::lower##_>;                      \
+
 
 constexpr uint8_t k_FlagZ = 0x80;
 constexpr uint8_t k_FlagN = 0x40;
@@ -830,7 +837,7 @@ void Increment(GameBoy* gb) {
                 std::is_same_v<T, uint16_t>) {
     gb->reg_.*x_++;
   }else if constexpr (address_mode == k_RegisterIndirect) {
-    gb->memory_[gb->reg_.hl_]++;
+    gb->memory_[gb->reg_.hl_]++; 
   }
   gb->UpdateRegisters<x_>(); 
 }
