@@ -554,13 +554,13 @@ enum AddressingMode {
   k_StackPointer,
   k_ProgramCounter
 };
-
-extern void InitOpcodeTable(std::array<Opcode, 512>&);
-extern void InitLoadInstructionsTable(
-    std::array<Opcode, 512>& opcode_table);
-void Init8BitArithmeticLogicRegisterDirectTable(
-    std::array<Opcode, 512>& opcode_table);
-
+extern void InitPrefixTable(std::array<Opcode, 512>& opcode_table); 
+extern void InitOpcodeTable(std::array<Opcode, 512>&);  
+extern void InitLoadInstructionsTable( 
+    std::array<Opcode, 512>& opcode_table); 
+extern void Init8BitArithmeticLogicRegisterDirectTable( 
+    std::array<Opcode, 512>& opcode_table); 
+extern void InitPushAndPop(std::array<Opcode, 512>& opcode_table);
 template <uint8_t Register::*x_>
 inline void GameBoy::UpdateRegisters() {
   if constexpr (x_ == &Register::b_ || x_ == &Register::c_) {

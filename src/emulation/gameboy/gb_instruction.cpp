@@ -144,10 +144,11 @@ namespace binary::gb {
 void InitOpcodeTable(std::array<Opcode, 512>& opcode_table) {
   InitLoadInstructionsTable(opcode_table);
   Init8BitArithmeticLogicRegisterDirectTable(opcode_table);
+  InitPushAndPop(opcode_table);
+  InitPrefixTable(opcode_table); 
 }
 
 void InitPrefixTable(std::array<Opcode, 512>& opcode_table) {
-  GameBoy cpu = {};
   using namespace binary::gb::instructionset;
   const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
                                                "H", "L", "(HL)", "A"};
@@ -207,7 +208,32 @@ void Init8BitArithmeticLogicRegisterDirectTable(
   BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_EQUALS_OPERATION_REG);
   BINARY_GB_EXECUTE_EQUALS_OPERATION_REG_INDIRECT; 
 }
+void InitPushAndPop(std::array<Opcode, 512>& opcode_table) {
+  using namespace binary::gb::instructionset; 
+  const std::array<std::string, 8> k_RegisterNames = {"BC", "DE", "HL", "AF"};
+  uint8_t register_index = 0;
 
+  // Init Push instructions
+  for (uint8_t opcode = 0xC1; opcode <= 0xF1; opcode+= 16) { 
+    const std::string k_RegisterName = k_RegisterNames[register_index];
+    opcode_table[opcode].opcode_ = std::format("{:02X}", opcode);
+    opcode_table[opcode].SetMachineCycles(3);
+    opcode_table[opcode].mnemonic_ = std::format("POP {}", k_RegisterName); 
+    register_index++;
+  }
+
+  register_index = 0; 
+  // Init Push instructions
+  for (uint8_t opcode = 0xC5; opcode <= 0xF5; opcode+= 16) {
+    const std::string k_RegisterName = k_RegisterNames[register_index]; 
+    opcode_table[opcode].opcode_ = std::format("{:02X}", opcode); 
+    opcode_table[opcode].SetMachineCycles(3); 
+    opcode_table[opcode].mnemonic_ = std::format("PUSH {}", k_RegisterName); 
+    register_index++; 
+  }
+
+  BINARY_GB_REPEAT_FOR_ALL_16BIT_REG(BINARY_GB_EXECUTE_POP_AND_PUSH);
+}
 void InitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
   const std::array<std::string, 8> k_RegisterNames = {"B", "C", "D",    "E",
