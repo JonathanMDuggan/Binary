@@ -234,6 +234,50 @@ void InitPushAndPop(std::array<Opcode, 512>& opcode_table) {
 
   BINARY_GB_REPEAT_FOR_ALL_16BIT_REG(BINARY_GB_EXECUTE_POP_AND_PUSH);
 }
+void InitIncrementAndDecrement(std::array<Opcode, 512>& opcode_table) {
+using namespace binary::gb::instructionset;
+  const std::array<std::string, 8> k_16BitRegisterNames = {"BC", "DE", "HL", 
+                                                           "SP"}; 
+  const std::array<std::string, 8> k_RegisterNames = {"B", "C", "D",    "E",
+                                                      "H", "L", "(HL)", "A"};
+
+uint8_t register_index = 0; 
+for (uint8_t opcode = 0x04; opcode <= 0x2D; opcode += 8) { 
+  const std::string k_RegisterName = k_RegisterNames[register_index];
+  const std::string k_16BitRegisterName = k_16BitRegisterNames[register_index];
+  const uint8_t k_16BitOpcode = opcode; 
+  const uint8_t k_IncrementOpcode = opcode + 1;
+  const uint8_t k_DecrementOpcode = opcode + 2; 
+
+  // Indirect instruction on opcode 0x34 and 0x35 takes 3 machine instructions
+  const uint8_t cycles = (opcode == 0x33) ? 1 : 3; 
+  if ((opcode & 0x03) == 0x03) { 
+    opcode_table[k_16BitOpcode].opcode_ = std::format("{:02X}", k_16BitOpcode); 
+    opcode_table[k_16BitOpcode].SetMachineCycles(2); 
+    opcode_table[k_16BitOpcode].mnemonic_ = 
+      std::format("INC {}", k_16BitRegisterName); 
+  } else {
+    opcode_table[k_16BitOpcode].opcode_ = std::format("{:02X}", k_16BitOpcode); 
+    opcode_table[k_16BitOpcode].SetMachineCycles(2); 
+    opcode_table[k_16BitOpcode].mnemonic_ = 
+      std::format("DEC {}", k_16BitRegisterName); 
+  }
+
+  opcode_table[k_IncrementOpcode].SetMachineCycles(cycles);
+  opcode_table[k_IncrementOpcode].opcode_ =  
+    std::format("{:02X}", k_IncrementOpcode); 
+  opcode_table[k_IncrementOpcode].mnemonic_ = 
+    std::format("INC {}", k_RegisterName);
+
+  opcode_table[k_DecrementOpcode].SetMachineCycles(cycles);
+  opcode_table[k_DecrementOpcode].mnemonic_ =
+    std::format("DEC {}", k_RegisterName); 
+  opcode_table[k_DecrementOpcode].opcode_ =
+    std::format("{:02X}", k_DecrementOpcode);
+
+}
+
+}
 void InitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
   const std::array<std::string, 8> k_RegisterNames = {"B", "C", "D",    "E",

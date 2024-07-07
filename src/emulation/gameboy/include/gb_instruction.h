@@ -92,6 +92,21 @@ MACRO(0) MACRO(1) MACRO(2) MACRO(3) MACRO(4) MACRO(5) MACRO(6) MACRO(7)
   opcode_table[LD_L__HL].execute_ =                           \
       Load<&Register::l_, &Register::a_, k_RegisterIndirect>;
 
+#define BINARY_GB_EXECUTE_INC_AND_DEC  \
+  opcode_table[LD_A__HL].execute_ =                           \
+      Load<&Register::a_, &Register::a_, k_RegisterIndirect>; \
+  opcode_table[LD_B__HL].execute_ =                           \
+      Load<&Register::b_, &Register::a_, k_RegisterIndirect>; \
+  opcode_table[LD_C__HL].execute_ =                           \
+      Load<&Register::c_, &Register::a_, k_RegisterIndirect>; \
+  opcode_table[LD_D__HL].execute_ =                           \
+      Load<&Register::d_, &Register::a_, k_RegisterIndirect>; \
+  opcode_table[LD_E__HL].execute_ =                           \
+      Load<&Register::e_, &Register::a_, k_RegisterIndirect>; \
+  opcode_table[LD_H__HL].execute_ =                           \
+      Load<&Register::h_, &Register::a_, k_RegisterIndirect>; \
+  opcode_table[LD_L__HL].execute_ =                           \
+      Load<&Register::l_, &Register::a_, k_RegisterIndirect>;
 #define BINARY_GB_REPEAT_FOR_ALL_BIT_PREFIX(MACRO)\
 MACRO(B,b,0) MACRO(C,c,0) MACRO(D,d,0) MACRO(E,e,0) MACRO(H,h,0) MACRO(L,l,0)\
 MACRO(B,b,1) MACRO(C,c,1) MACRO(D,d,1) MACRO(E,e,1) MACRO(H,h,1) MACRO(L,l,1)\
@@ -561,6 +576,8 @@ extern void InitLoadInstructionsTable(
 extern void Init8BitArithmeticLogicRegisterDirectTable( 
     std::array<Opcode, 512>& opcode_table); 
 extern void InitPushAndPop(std::array<Opcode, 512>& opcode_table);
+extern void InitIncrementAndDecrement(std::array<Opcode, 512>& opcode_table);
+
 template <uint8_t Register::*x_>
 inline void GameBoy::UpdateRegisters() {
   if constexpr (x_ == &Register::b_ || x_ == &Register::c_) {
