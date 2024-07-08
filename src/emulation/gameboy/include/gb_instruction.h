@@ -163,7 +163,16 @@ MACRO(HL, hl) MACRO(BC, bc)  MACRO(DE, de) MACRO(AF, af)
   opcode_table[POP_##upper].execute_ = Pop<&Register::lower##_>;                        \
   opcode_table[PUSH_##upper].execute_ = Push<&Register::lower##_>;                      \
 
+#define BINARY_GB_EXECUTE_DEC_AND_INC(upper, lower) \
+  opcode_table[INC_##upper].execute_ = Increment<uint8_t, &Register::lower##_>;    \
+  opcode_table[DEC_##upper].execute_ = Decrement<uint8_t, &Register::lower##_>;
 
+#define BINARY_GB_EXECUTE_16BIT_DEC_AND_INC(upper, lower)\
+  opcode_table[INC_##upper].execute_ = Increment<uint16_t, &Register::lower##_>; \
+  opcode_table[DEC_##upper].execute_ = Decrement<uint16_t, &Register::lower##_>; 
+
+#define BINARY_GB_EXECUTE_16BIT_DEC_AND_INC_ALL_REG(MACRO) \
+MACRO(BC, bc) MACRO(DE, de) MACRO(AF, af) MACRO(SP, stack_pointer)
 constexpr uint8_t k_FlagZ = 0x80;
 constexpr uint8_t k_FlagN = 0x40;
 constexpr uint8_t k_FlagH = 0x20;
@@ -242,7 +251,7 @@ enum Instruction : uint8_t {
 //Nibble 0            Nibble 1          Nibble 2          Nibble 3
   NOP         = 0x00, LD_BC_D16 = 0x01, LD__BC_A  = 0x02, INC_BC    = 0x03,
   STOP        = 0x10, LD_DE_D16 = 0x11, LD__DE_A  = 0x12, INC_DE    = 0x13,
-  JR_NZ_R8    = 0x20, LD_HL_D16 = 0x21, LD__HLp_A = 0x22, INC_HL    = 0x23,
+  JR_NZ_R8    = 0x20, LD_HL_D16 = 0x21, LD__HLp_A = 0x22, INC_AF    = 0x23,
   JR_NC_R8    = 0x30, LD_SP_D16 = 0x31, LD__HLm_A = 0x32, INC_SP    = 0x33,
   LD_B_B      = 0x40, LD_B_C    = 0x41, LD_B_D    = 0x42, LD_B_E    = 0x43,
   LD_D_B      = 0x50, LD_D_C    = 0x51, LD_D_D    = 0x52, LD_D_E    = 0x53,
@@ -274,9 +283,9 @@ enum Instruction : uint8_t {
   NUL_E4      = 0xE4, PUSH_HL   = 0xE5, AND_D8    = 0xE6, RST_20H   = 0xE7,
   NUL_F4      = 0xF4, PUSH_AF   = 0xF5, OR_D8     = 0xF6, RST_30H   = 0xF7,
 //Nibble 8            Nibble 9          Nibble A          Nibble B
-  LD__A16_SP  = 0x08, ADD_HL_BC = 0x09, LD__A_BC  = 0x0A, DEC_DC    = 0x0B,
+  LD__A16_SP  = 0x08, ADD_HL_BC = 0x09, LD__A_BC  = 0x0A, DEC_BC    = 0x0B,
   JR_R8       = 0x18, ADD_HL_DE = 0x19, LD__A_DE  = 0x1A, DEC_DE    = 0x1B,
-  JR_Z_R8     = 0x28, ADD_HL_HL = 0x29, LD__A_HLp = 0x2A, DEC_HL    = 0x2B,
+  JR_Z_R8     = 0x28, ADD_HL_HL = 0x29, LD__A_HLp = 0x2A, DEC_AF    = 0x2B,
   JR_C_R8     = 0x38, ADD_HL_SP = 0x39, LD__A_HLm = 0x3A, DEC_SP    = 0x3B,
   LD_C_B      = 0x48, LD_C_C    = 0x49, LD_C_D    = 0x4A, LD_C_E    = 0x4B,
   LD_E_B      = 0x58, LD_E_C    = 0x59, LD_E_D    = 0x5A, LD_E_E    = 0x5B,
@@ -852,24 +861,31 @@ void Increment(GameBoy* gb) {
 
   if constexpr (address_mode == k_RegisterDirect ||
                 std::is_same_v<T, uint16_t>) {
-    gb->reg_.*x_++;
+    ++(gb->reg_.*x_);
+    if constexpr (std::is_same_v<T, uint8_t>) {
+      gb->UpdateRegisters<x_>(); 
+    }
   }else if constexpr (address_mode == k_RegisterIndirect) {
-    gb->memory_[gb->reg_.hl_]++; 
+    ++(gb->memory_[gb->reg_.hl_]); 
   }
-  gb->UpdateRegisters<x_>(); 
+
 }
 
-template <typename T = uint8_t, uint8_t Register::*x_ = &Register::a_,
+template <typename T = uint8_t, T Register::*x_ = &Register::a_,
           AddressingMode address_mode = k_RegisterDirect>
-void decrement(GameBoy* gb) {
+void Decrement(GameBoy* gb) {
   if constexpr (address_mode == k_RegisterDirect ||
                 std::is_same_v<T, uint16_t>) { 
-    gb->reg_.*x_--; 
+    --(gb->reg_.*x_);
+
+    if constexpr (std::is_same_v<T, uint8_t>) {
+      gb->UpdateRegisters<x_>(); 
+    }
   }else if constexpr (address_mode == k_RegisterIndirect) {
-    gb->memory_[gb->reg_.hl_]--;
+    --(gb->memory_[gb->reg_.hl_]);
   } 
 
-  gb->UpdateRegisters<x_>();
+ 
 }
 
 template <uint8_t Register::*x_, AddressingMode address_mode>
