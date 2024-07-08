@@ -283,8 +283,31 @@ void InitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
   const std::array<std::string, 8> k_RegisterNames = {"B", "C", "D",    "E",
                                                       "H", "L", "(HL)", "A"};
-
+  const std::array<std::string, 8> k_16BitRegisterNames = {"(BC)", "(DE)",
+                                                           "(HL+)", "(HL-)"};
   uint8_t register_index = 0;
+  uint8_t _16_bit_register_index = 0;
+  for (uint8_t opcode = 0x02; opcode <= 0x3E; opcode+= 4) {
+
+    opcode_table[opcode].SetMachineCycles(2);
+    if ((opcode & 0x02) == 0x02) {
+      opcode_table[opcode].mnemonic_ =
+          std::format("LD {}, A", k_16BitRegisterNames[_16_bit_register_index]);
+      opcode_table[opcode].opcode_ = std::format("{:02X}", opcode);
+    } else if (((opcode & 0x06) == 0x06) || ((opcode & 0x0E) == 0x0E)){
+      opcode_table[opcode].mnemonic_ =
+          std::format("LD {}, d8", k_RegisterNames[register_index]);
+      register_index++;
+    } else if ((opcode & 0x0A) == 0x0A) {
+      opcode_table[opcode].mnemonic_ =
+          std::format("LD A, {}", k_16BitRegisterNames[_16_bit_register_index]);
+      opcode_table[opcode].opcode_ = std::format("{:02X}", opcode);
+      _16_bit_register_index++;
+    }
+  }
+  // The only mechine cycle that was over 2 clock cycles
+  opcode_table[LD__HL_D8].SetMachineCycles(3);
+  register_index = 0;
 
   for (uint8_t opcode = 0x40; opcode < 0x80; ++opcode) {
     const uint8_t k_OperandIndex = opcode % 8;
