@@ -79,35 +79,23 @@ MACRO(0) MACRO(1) MACRO(2) MACRO(3) MACRO(4) MACRO(5) MACRO(6) MACRO(7)
 
 #define BINARY_GB_EXECUTE_EQUALS_LOAD_REGX_FROM_INDIRECT_REG                    \
   opcode_table[LD_A__HL].execute_ =                           \
-      Load<&Register::a_, &Register::a_, k_RegisterIndirect>; \
+      Load<uint8_t, &Register::a_, &Register::a_, k_RegisterIndirect>; \
   opcode_table[LD_B__HL].execute_ =                           \
-      Load<&Register::b_, &Register::a_, k_RegisterIndirect>; \
+      Load<uint8_t, &Register::b_, &Register::a_, k_RegisterIndirect>; \
   opcode_table[LD_C__HL].execute_ =                           \
-      Load<&Register::c_, &Register::a_, k_RegisterIndirect>; \
+      Load<uint8_t, &Register::c_, &Register::a_, k_RegisterIndirect>; \
   opcode_table[LD_D__HL].execute_ =                           \
-      Load<&Register::d_, &Register::a_, k_RegisterIndirect>; \
+      Load<uint8_t, &Register::d_, &Register::a_, k_RegisterIndirect>; \
   opcode_table[LD_E__HL].execute_ =                           \
-      Load<&Register::e_, &Register::a_, k_RegisterIndirect>; \
+      Load<uint8_t, &Register::e_, &Register::a_, k_RegisterIndirect>; \
   opcode_table[LD_H__HL].execute_ =                           \
-      Load<&Register::h_, &Register::a_, k_RegisterIndirect>; \
+      Load<uint8_t, &Register::h_, &Register::a_, k_RegisterIndirect>; \
   opcode_table[LD_L__HL].execute_ =                           \
-      Load<&Register::l_, &Register::a_, k_RegisterIndirect>;
+      Load<uint8_t, &Register::l_, &Register::a_, k_RegisterIndirect>;
 
 #define BINARY_GB_EXECUTE_INC_AND_DEC  \
-  opcode_table[LD_A__HL].execute_ =                           \
-      Load<&Register::a_, &Register::a_, k_RegisterIndirect>; \
-  opcode_table[LD_B__HL].execute_ =                           \
-      Load<&Register::b_, &Register::a_, k_RegisterIndirect>; \
-  opcode_table[LD_C__HL].execute_ =                           \
-      Load<&Register::c_, &Register::a_, k_RegisterIndirect>; \
-  opcode_table[LD_D__HL].execute_ =                           \
-      Load<&Register::d_, &Register::a_, k_RegisterIndirect>; \
-  opcode_table[LD_E__HL].execute_ =                           \
-      Load<&Register::e_, &Register::a_, k_RegisterIndirect>; \
-  opcode_table[LD_H__HL].execute_ =                           \
-      Load<&Register::h_, &Register::a_, k_RegisterIndirect>; \
-  opcode_table[LD_L__HL].execute_ =                           \
-      Load<&Register::l_, &Register::a_, k_RegisterIndirect>;
+
+
 #define BINARY_GB_REPEAT_FOR_ALL_BIT_PREFIX(MACRO)\
 MACRO(B,b,0) MACRO(C,c,0) MACRO(D,d,0) MACRO(E,e,0) MACRO(H,h,0) MACRO(L,l,0)\
 MACRO(B,b,1) MACRO(C,c,1) MACRO(D,d,1) MACRO(E,e,1) MACRO(H,h,1) MACRO(L,l,1)\
@@ -130,13 +118,13 @@ MACRO(A,a,7)\
 #define BINARY_GB_ALL_REG(MACRO)\
 MACRO(B, b) MACRO(C, c) MACRO(D, d) MACRO(E, e) MACRO(H, h) MACRO(L, l) MACRO(A, a)
 #define BINARY_GB_EXECUTE_EQUALS_LOAD_REGX_FROM_REG(upper, lower) \
-  opcode_table[LD_A_##upper].execute_ = Load<&Register::a_,&Register::lower##_>;\
-  opcode_table[LD_B_##upper].execute_ = Load<&Register::b_,&Register::lower##_>;\
-  opcode_table[LD_C_##upper].execute_ = Load<&Register::c_,&Register::lower##_>;\
-  opcode_table[LD_D_##upper].execute_ = Load<&Register::d_,&Register::lower##_>;\
-  opcode_table[LD_E_##upper].execute_ = Load<&Register::e_,&Register::lower##_>;\
-  opcode_table[LD_H_##upper].execute_ = Load<&Register::h_,&Register::lower##_>;\
-  opcode_table[LD_L_##upper].execute_ = Load<&Register::l_,&Register::lower##_>;
+  opcode_table[LD_A_##upper].execute_ = Load<uint8_t, &Register::a_,&Register::lower##_>;\
+  opcode_table[LD_B_##upper].execute_ = Load<uint8_t, &Register::b_,&Register::lower##_>;\
+  opcode_table[LD_C_##upper].execute_ = Load<uint8_t, &Register::c_,&Register::lower##_>;\
+  opcode_table[LD_D_##upper].execute_ = Load<uint8_t, &Register::d_,&Register::lower##_>;\
+  opcode_table[LD_E_##upper].execute_ = Load<uint8_t, &Register::e_,&Register::lower##_>;\
+  opcode_table[LD_H_##upper].execute_ = Load<uint8_t, &Register::h_,&Register::lower##_>;\
+  opcode_table[LD_L_##upper].execute_ = Load<uint8_t, &Register::l_,&Register::lower##_>;
 
 #define BINARY_GB_EXECUTE_EQUALS_OPERATION_REG(upper, lower) \
   opcode_table[ADD_##upper].execute_ = Add<&Register::lower##_>;              \
@@ -805,20 +793,27 @@ void Reset(GameBoy* gb) {
 
 }
 
-template <uint8_t Register::*x_ = &Register::a_, 
-          uint8_t Register::*y_ = &Register::a_,
+template <typename T = uint8_t, T Register::*x_ = &Register::a_,  
+          T Register::*y_ = &Register::a_,
           AddressingMode address_mode = k_RegisterDirect>
 void Load(GameBoy* gb) {
-  if constexpr (address_mode == k_RegisterDirect) {
-    gb->reg_.*x_ = gb->reg_.*y_;
-  } else if constexpr (address_mode == k_Immediate8) {
-    gb->reg_.*x_ = gb->Operand8Bit();
-  } else if constexpr (address_mode == k_Indirect) {
-    gb->reg_.*x_ = gb->memory_[gb->reg_.*y_];
-  } else if constexpr (address_mode == k_RegisterIndirect) {
-    gb->reg_.*x_ = gb->memory_[gb->reg_.hl_];
+
+  if constexpr (std::is_same_v<T, uint16_t>) {
+    if constexpr (address_mode == k_RegisterIndirect) {
+      gb->reg_.a_ = gb->memory_[gb->reg_.*y_];
+    } else if constexpr (address_mode == k_Indirect) {
+      gb->memory_[gb->reg_.*y_] = gb->reg_.a_;
+    }
+  } else {
+    if constexpr (address_mode == k_RegisterDirect) { 
+      gb->reg_.*x_ = gb->reg_.*y_; 
+    } else if constexpr (address_mode == k_Immediate8) { 
+      gb->reg_.*x_ = gb->Operand8Bit(); 
+    } else if constexpr (address_mode == k_RegisterIndirect) {
+      gb->memory_[gb->reg_.hl_] = gb->reg_.*y_;
+    }
+    gb->UpdateRegisters<x_>(); 
   }
-  gb->UpdateRegisters<x_>();
 }
 
 template <uint8_t Register::*x_ = &Register::a_,
