@@ -10,6 +10,7 @@
 //  * Cartridge Type Flags
 //  * ROM size Flags
 
+#include <format>
 #include <array>
 #include <string>
 #include <functional>
@@ -489,7 +490,7 @@ typedef struct FlagInfo {
 
 typedef class Opcode {
  public:
-  std::string opcode_{};
+  std::function<std::string(GameBoy*,const uint8_t)> opcode_{}; 
   std::string mnemonic_{};
   std::uint8_t machine_cycles_{};
   std::uint8_t machine_cycles_branch_{};
@@ -1000,7 +1001,23 @@ void Jump(GameBoy* gb) {
   }
   // Load Instructions
 }
-    // LD r, r;   
+
+template <AddressingMode address_mode = k_RegisterDirect>
+std::string PrintOpcode(GameBoy* gb, const uint8_t opcode) {
+  std::string output; 
+  if constexpr (k_Address8) {
+    const uint8_t k_Byte = gb->memory_[opcode + 1];
+    output = std::format("{:02X} {:02X}", opcode, k_Byte);
+  } else if constexpr (k_Address16) {
+    const uint8_t k_HByte = gb->memory_[opcode + 2];
+    const uint8_t k_LByte = gb->memory_[opcode + 1];
+    output = std::format("{:02X} {:02X} {:02X}", opcode, k_LByte, k_HByte);
+  } else{
+    output = std::format("{:02X}", opcode);
+  }
+  return output;
+}
+// LD r, r;   
 extern inline void Fetch(GameBoy* gb);
 extern void NoOperationFunction(GameBoy* gb);
 

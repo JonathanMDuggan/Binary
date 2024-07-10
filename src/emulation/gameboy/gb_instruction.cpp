@@ -1,5 +1,4 @@
 #include "include/gb_instruction.h"
-#include <format>
 #include <memory>
 namespace binary::gb::instructionset {
 
@@ -167,7 +166,7 @@ void InitPrefixTable(std::array<Opcode, 512>& opcode_table) {
     } else {
       opcode_table[opcode].SetMachineCycles(2); 
     }
-    opcode_table[opcode].opcode_ = std::format("CB {:02X}", opcode);
+    opcode_table[opcode].opcode_ = PrintOpcode<>;
     opcode_table[opcode].mnemonic_ =
         std::format("{} {}", k_Mnemonic[mnemonic], k_Letter[opcode % 8]);
 
@@ -197,7 +196,7 @@ void Init8BitArithmeticLogicRegisterDirectTable(
     }
 
     opcode_table[opcode].SetMachineCycles(1);
-    opcode_table[opcode].opcode_ = std::format("{:02X}", opcode);
+    opcode_table[opcode].opcode_ = PrintOpcode<>;
     opcode_table[opcode].mnemonic_ =
         std::format("{} {}", k_Mnemonics[mnemonic], k_RegisterNames[opcode % 8]);
     if (((opcode + 1) % 8) == 0) {
@@ -216,7 +215,7 @@ void InitPushAndPop(std::array<Opcode, 512>& opcode_table) {
   // Init Push instructions
   for (uint8_t opcode = 0xC1; opcode <= 0xF1; opcode+= 16) { 
     const std::string k_RegisterName = k_RegisterNames[register_index];
-    opcode_table[opcode].opcode_ = std::format("{:02X}", opcode);
+    opcode_table[opcode].opcode_ = PrintOpcode<>;
     opcode_table[opcode].SetMachineCycles(3);
     opcode_table[opcode].mnemonic_ = std::format("POP {}", k_RegisterName); 
     register_index++;
@@ -226,7 +225,7 @@ void InitPushAndPop(std::array<Opcode, 512>& opcode_table) {
   // Init Push instructions
   for (uint8_t opcode = 0xC5; opcode <= 0xF5; opcode+= 16) {
     const std::string k_RegisterName = k_RegisterNames[register_index]; 
-    opcode_table[opcode].opcode_ = std::format("{:02X}", opcode); 
+    opcode_table[opcode].opcode_ = PrintOpcode<>;
     opcode_table[opcode].SetMachineCycles(3); 
     opcode_table[opcode].mnemonic_ = std::format("PUSH {}", k_RegisterName); 
     register_index++; 
@@ -252,28 +251,26 @@ uint8_t register_index = 0;
     // Indirect instruction on opcode 0x34 and 0x35 takes 3 machine instructions
     const uint8_t cycles = (opcode == 0x33) ? 1 : 3; 
     if ((opcode & 0x03) == 0x03) { 
-      opcode_table[k_16BitOpcode].opcode_ = std::format("{:02X}", k_16BitOpcode); 
+      opcode_table[k_16BitOpcode].opcode_ = PrintOpcode<>;
       opcode_table[k_16BitOpcode].SetMachineCycles(2); 
       opcode_table[k_16BitOpcode].mnemonic_ = 
         std::format("INC {}", k_16BitRegisterName); 
     } else {
-      opcode_table[k_16BitOpcode].opcode_ = std::format("{:02X}", k_16BitOpcode); 
+      opcode_table[k_16BitOpcode].opcode_ = PrintOpcode<>;
       opcode_table[k_16BitOpcode].SetMachineCycles(2); 
       opcode_table[k_16BitOpcode].mnemonic_ = 
         std::format("DEC {}", k_16BitRegisterName); 
     }
   
     opcode_table[k_IncrementOpcode].SetMachineCycles(cycles);
-    opcode_table[k_IncrementOpcode].opcode_ =  
-      std::format("{:02X}", k_IncrementOpcode); 
+    opcode_table[k_IncrementOpcode].opcode_ = PrintOpcode<>;
     opcode_table[k_IncrementOpcode].mnemonic_ = 
       std::format("INC {}", k_RegisterName);
   
     opcode_table[k_DecrementOpcode].SetMachineCycles(cycles);
     opcode_table[k_DecrementOpcode].mnemonic_ =
       std::format("DEC {}", k_RegisterName); 
-    opcode_table[k_DecrementOpcode].opcode_ =
-      std::format("{:02X}", k_DecrementOpcode);
+    opcode_table[k_DecrementOpcode].opcode_ = PrintOpcode<>;
   
   }
   BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_DEC_AND_INC);
@@ -293,15 +290,16 @@ void InitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
     if ((opcode & 0x02) == 0x02) {
       opcode_table[opcode].mnemonic_ =
           std::format("LD {}, A", k_16BitRegisterNames[_16_bit_register_index]);
-      opcode_table[opcode].opcode_ = std::format("{:02X}", opcode);
+      opcode_table[opcode].opcode_ = PrintOpcode<>;
     } else if (((opcode & 0x06) == 0x06) || ((opcode & 0x0E) == 0x0E)){
+      opcode_table[opcode].opcode_ = PrintOpcode<k_Address8>;
       opcode_table[opcode].mnemonic_ =
           std::format("LD {}, d8", k_RegisterNames[register_index]);
       register_index++;
     } else if ((opcode & 0x0A) == 0x0A) {
       opcode_table[opcode].mnemonic_ =
           std::format("LD A, {}", k_16BitRegisterNames[_16_bit_register_index]);
-      opcode_table[opcode].opcode_ = std::format("{:02X}", opcode);
+      opcode_table[opcode].opcode_ = PrintOpcode<>; 
       _16_bit_register_index++;
     }
   }
@@ -328,7 +326,7 @@ void InitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
       opcode_table[opcode].SetMachineCycles(1);
     }
 
-    opcode_table[opcode].opcode_ = std::format("{:02X}", opcode);
+    opcode_table[opcode].opcode_ = PrintOpcode<>;
     opcode_table[opcode].mnemonic_ =
         std::format("LD {},{}", register_name, k_OperandName);
 
