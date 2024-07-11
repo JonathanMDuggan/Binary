@@ -145,6 +145,7 @@ void InitOpcodeTable(std::array<Opcode, 512>& opcode_table) {
   Init8BitArithmeticLogicRegisterDirectTable(opcode_table);
   InitPushAndPop(opcode_table);
   InitPrefixTable(opcode_table); 
+  InitNullOpcodes(opcode_table);
 }
 
 void InitPrefixTable(std::array<Opcode, 512>& opcode_table) {
@@ -276,6 +277,34 @@ uint8_t register_index = 0;
   BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_DEC_AND_INC);
   BINARY_GB_EXECUTE_16BIT_DEC_AND_INC_ALL_REG(BINARY_GB_EXECUTE_16BIT_DEC_AND_INC)
 }
+
+void NullOpcode(GameBoy* gb) { 
+  gb->reg_.program_counter_++; 
+}
+void InitNullOpcodes(std::array<Opcode, 512>& opcode_table) {
+  using namespace binary::gb::instructionset;
+  // See, this is why I was using macros for init the opcode table
+  InitNullOpcode(opcode_table[NUL_D3], NUL_D3);
+  InitNullOpcode(opcode_table[NUL_E3], NUL_E3);
+  InitNullOpcode(opcode_table[NUL_E4], NUL_E4);
+  InitNullOpcode(opcode_table[NUL_F4], NUL_F4);
+  InitNullOpcode(opcode_table[NUL_DB], NUL_DB);
+  InitNullOpcode(opcode_table[NUL_EB], NUL_EB);
+  InitNullOpcode(opcode_table[NUL_EC], NUL_EC);
+  InitNullOpcode(opcode_table[NUL_FC], NUL_FC);
+  InitNullOpcode(opcode_table[NUL_DD], NUL_DD);
+  InitNullOpcode(opcode_table[NUL_ED], NUL_ED);
+  InitNullOpcode(opcode_table[NUL_FD], NUL_FD);
+}
+
+void InitNullOpcode(Opcode& opcode, uint32_t code) {
+  using namespace binary::gb::instructionset;
+  opcode.SetMachineCycles(1);
+  opcode.opcode_ = PrintOpcode<>;
+  opcode.mnemonic_ = std::format("NULL {:02X}", code);
+  opcode.execute_ = NullOpcode;
+}
+
 void InitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
   const std::array<std::string, 8> k_RegisterNames = {"B", "C", "D",    "E",
