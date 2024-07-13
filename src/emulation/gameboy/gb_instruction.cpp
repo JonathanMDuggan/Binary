@@ -18,7 +18,6 @@ namespace binary::gb::instructionset {
 void NoOperationFunction(GameBoy* gb) { return; }
 void NoOperation(GameBoy* gb) { NoOperationFunction(gb); }
 
-
 void LoadHighAddressIntoRegA(GameBoy* gb) {
   const uint8_t k_HighAddress = gb->memory_[gb->reg_.program_counter_ + 2];
   gb->reg_.a_ = k_HighAddress;
@@ -54,6 +53,7 @@ void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result) {
   gb->reg_.f_[k_BitIndexH] = false;
   gb->reg_.f_[k_BitIndexC] = k_IsCarry;
 }
+
 void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
                  const uint8_t k_Operand) {
   const bool k_IsZero = (static_cast<uint8_t>(k_Result) == 0);
@@ -98,7 +98,6 @@ void binary::gb::GameBoy::ClearRegisters() {
   UpdateAll16BitReg();
 }
 
-
 void binary::gb::GameBoy::UpdateRegHL() {
   Update16BitRegister(reg_.hl_, reg_.h_, reg_.l_);
 }
@@ -116,13 +115,13 @@ void binary::gb::GameBoy::UpdateRegAF() {
   Update16BitRegister(reg_.af_, reg_.a_, k_RegisterFValue);
 }
 
-
 void binary::gb::GameBoy::UpdateAll16BitReg() { 
   UpdateRegHL();
   UpdateRegBC();
   UpdateRegDE();
   UpdateRegAF();
 }
+
 uint8_t binary::gb::GameBoy::Operand8Bit() {
   return memory_[reg_.program_counter_ + 1];
 }
@@ -234,6 +233,7 @@ void InitPushAndPop(std::array<Opcode, 512>& opcode_table) {
 
   BINARY_GB_REPEAT_FOR_ALL_16BIT_REG(BINARY_GB_EXECUTE_POP_AND_PUSH);
 }
+
 void InitIncrementAndDecrement(std::array<Opcode, 512>& opcode_table) {
 using namespace binary::gb::instructionset;
   const std::array<std::string, 8> k_16BitRegisterNames = {"BC", "DE", "HL", 
@@ -275,7 +275,7 @@ uint8_t register_index = 0;
   
   }
   BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_DEC_AND_INC);
-  BINARY_GB_EXECUTE_16BIT_DEC_AND_INC_ALL_REG(BINARY_GB_EXECUTE_16BIT_DEC_AND_INC)
+  BINARY_GB_EXECUTE_16BIT_DEC_AND_INC_ALL_REG(BINARY_GB_EXECUTE_16BIT_DEC_AND_INC) 
 }
 
 void NullOpcode(GameBoy* gb) { 

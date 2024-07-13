@@ -689,6 +689,7 @@ void RotateLeftCircular(GameBoy* gb) {
   }
   gb->UpdateRegAF();
 }
+
 template <typename T = uint8_t, T Register::*x_>
 void RotateRight(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
@@ -822,15 +823,11 @@ void Load(GameBoy* gb) {
 template <uint8_t Register::*x_ = &Register::a_,
           AddressingMode address_mode = k_RegisterDirect>
 void Add(GameBoy* gb) {
-  if constexpr (address_mode == k_RegisterDirect) {
-    const uint16_t k_Result = gb->reg_.a_ + gb->reg_.*x_;
-    SetFlagZ0HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
-    gb->reg_.a_ = k_Result;
-    gb->UpdateRegAF();
-  } else if constexpr (address_mode == k_RegisterDirect16) {
-    const uint16_t k_Result = gb->reg_.hl_ + gb->reg_.*x_;
-    gb->reg_.hl_ = k_Result; 
-  }
+  const uint8_t k_Operand = GetOperandValue<x_, address_mode>(gb);
+  const uint16_t k_Result = gb->reg_.a_ + k_Operand;
+  SetFlagZ0HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
+  gb->reg_.a_ = k_Result; 
+  gb->UpdateRegAF();
 }
 
 template <uint8_t Register::*x_ = &Register::a_,
@@ -867,7 +864,6 @@ void Increment(GameBoy* gb) {
   }else if constexpr (address_mode == k_RegisterIndirect) {
     ++(gb->memory_[gb->reg_.hl_]); 
   }
-
 }
 
 template <typename T = uint8_t, T Register::*x_ = &Register::a_,
@@ -883,8 +879,6 @@ void Decrement(GameBoy* gb) {
   }else if constexpr (address_mode == k_RegisterIndirect) {
     --(gb->memory_[gb->reg_.hl_]);
   } 
-
- 
 }
 
 template <uint8_t Register::*x_, AddressingMode address_mode>
