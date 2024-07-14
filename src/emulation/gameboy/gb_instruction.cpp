@@ -125,7 +125,7 @@ void binary::gb::GameBoy::UpdateAll16BitReg() {
 uint8_t binary::gb::GameBoy::Operand8Bit() {
   return memory_[reg_.program_counter_ + 1];
 }
-uint16_t binary::gb::GameBoy::Operand16bit() { 
+uint16_t binary::gb::GameBoy::Operand16Bit() { 
   const uint16_t k_LowByte = memory_[reg_.program_counter_ + 1];
   const uint16_t k_HighByte = memory_[reg_.program_counter_ + 2];
   const uint16_t k_Operand16bit = (k_HighByte << 8) | k_LowByte;

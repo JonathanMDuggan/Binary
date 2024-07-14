@@ -211,7 +211,7 @@ public:
   void UpdateRegAF();
   void UpdateAll16BitReg();
   uint8_t Operand8Bit();
-  uint16_t Operand16bit();
+  uint16_t Operand16Bit();
   template <uint8_t Register::*x_>
   void UpdateRegisters();
  private:
@@ -720,7 +720,7 @@ void RotateRightCircular(GameBoy* gb) {
     gb->UpdateRegisters<x_>();
   } else if constexpr (std::is_same_v<T, uint16_t>) {
     bool k_FirstBit = ((gb->memory_[gb->reg_.*x_] & 1) > 0); 
-    gb->memory_[gb->reg_.*x_] >>= 1; 
+    gb->memory_[gb->reg_.*x_] >>= 1;
     gb->memory_[gb->reg_.*x_] |= (k_FirstBit == true) ? 0x80 : 0; 
     gb->reg_.f_[k_BitIndexC] = k_FirstBit; 
     gb->reg_.f_[k_BitIndexH] = false;
@@ -781,7 +781,6 @@ void Set(GameBoy* gb) {
     const uint8_t k_Bit = (1 << BitPos);
     gb->memory_[gb->reg_.*x_] |= k_Bit;
   }
-
 }
 
 template <typename T = uint8_t, T Register::*x_, const uint8_t BitPos> 
@@ -807,6 +806,8 @@ void Load(GameBoy* gb) {
       gb->reg_.a_ = gb->memory_[gb->reg_.*y_];
     } else if constexpr (address_mode == k_Indirect) {
       gb->memory_[gb->reg_.*y_] = gb->reg_.a_;
+    } else if constexpr (address_mode == k_Immediate16) {
+      gb->reg_.*x_ = 0;
     }
   } else {
     if constexpr (address_mode == k_RegisterDirect) { 
@@ -889,6 +890,8 @@ auto GetOperandValue(GameBoy* gb) {
     return gb->memory_[gb->reg_.hl_];
   } else if constexpr (address_mode == k_Immediate8) {
     return gb->Operand8Bit();
+  } else if constexpr (address_mode == k_Immediate16){
+    return gb->Operand16Bit();
   } else if constexpr (address_mode == k_RegisterDirect16) {
     return gb->reg_.hl_;
   }
@@ -973,7 +976,7 @@ void RotateCarryRegisterDirect8(GameBoy* gb) {
 template <const uint8_t bit_index, const bool condition>
 void Return(GameBoy* gb) {
   if (gb->reg_.f_[bit_index] == condition) { 
-    const uint16_t k_ReturnAddress = gb->Operand16bit();
+    const uint16_t k_ReturnAddress = gb->Operand16Bit();
     gb->reg_.program_counter_ = k_ReturnAddress;
   }
 }
@@ -986,9 +989,9 @@ void JumpRelative(GameBoy* gb) {
 }
 template <const uint8_t bit_index, const bool condition>
 void Jump(GameBoy* gb) {
-  if (gb->reg_.f_[bit_index] == condition) { 
-    const uint16_t k_JumpAddress = gb->Operand16bit();
-    gb->reg_.stack_pointer_ = gb->reg_.program_counter_; 
+  if (gb->reg_.f_[bit_index] == condition) {
+    const uint16_t k_JumpAddress = gb->Operand16Bit();
+    gb->reg_.stack_pointer_ = gb->reg_.program_counter_;
     gb->reg_.program_counter_ = k_JumpAddress; 
   }
   // Load Instructions
