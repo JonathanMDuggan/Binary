@@ -568,21 +568,6 @@ enum AddressingMode {
   k_ProgramCounter
 };
 
-template<const uint8_t k_Opcode_Length>
-extern void InitGenericOpcode(Opcode& opcode,
-                              const std::string k_Mnemonic, 
-                              const uint8_t k_Machine_Cycles,
-                              const uint8_t k_Machine_Cycles_Branched = 0
-                              ) {
-  using namespace binary::gb::instructionset;
-  if constexpr (k_Machine_Cycles_Branched > 0) {
-    opcode.SetMachineCycles(k_Machine_Cycles_Branched, k_Machine_Cycles);
-  } else {
-    opcode.SetMachineCycles(k_Machine_Cycles);
-  }
-  opcode.opcode_ = PrintOpcode<k_Opcode_Length>;
-  opcode.mnemonic_ = k_Mnemonic;
-}
 
 extern void InitPrefixTable(std::array<Opcode, 512>& opcode_table);
 extern void InitOpcodeTable(std::array<Opcode, 512>&);  
@@ -1034,6 +1019,20 @@ std::string PrintOpcode(GameBoy* gb, const uint8_t opcode) {
     output = std::format("{:02X}", opcode);
   }
   return output;
+}
+
+template <const uint8_t k_Opcode_Length,
+          const uint8_t k_Machine_Cycles_Branched = 0>
+extern void InitGenericOpcode(Opcode& opcode, const std::string k_Mnemonic,
+                              const uint8_t k_Machine_Cycles) {
+  using namespace binary::gb::instructionset;
+  if constexpr (k_Machine_Cycles_Branched > 0) {
+    opcode.SetMachineCycles(k_Machine_Cycles_Branched, k_Machine_Cycles);
+  } else {
+    opcode.SetMachineCycles(k_Machine_Cycles);
+  }
+  opcode.opcode_ = PrintOpcode<k_Opcode_Length>;
+  opcode.mnemonic_ = k_Mnemonic;
 }
 // LD r, r;   
 extern inline void Fetch(GameBoy* gb);

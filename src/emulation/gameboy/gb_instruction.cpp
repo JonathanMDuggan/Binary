@@ -288,15 +288,15 @@ void InitConditional(std::array<Opcode, 512>& opcode_table) {
   // values manually
   
   // Return Opcodes
-  InitGenericOpcode<1>(opcode_table[RET_NZ], std::format("RET NZ"), 2, 5);
+  InitGenericOpcode<1, 5>(opcode_table[RET_NZ], std::format("RET NZ"), 2);
   opcode_table[RET_NZ].execute_ = Return<k_BitIndexZ, true , false>;
-  InitGenericOpcode<1>(opcode_table[RET_NC], std::format("RET NC"), 2, 5);
+  InitGenericOpcode<1, 5>(opcode_table[RET_NC], std::format("RET NC"), 2);
   opcode_table[RET_NC].execute_ = Return<k_BitIndexC, true, false>;  
-  InitGenericOpcode<1>(opcode_table[RET_Z], std::format("RET Z"), 2, 5);
+  InitGenericOpcode<1, 5>(opcode_table[RET_Z], std::format("RET Z"), 2);
   opcode_table[RET_Z].execute_ = Return<k_BitIndexZ, true, true>;  
-  InitGenericOpcode<1>(opcode_table[RET_C], std::format("RET C"), 2, 5);
+  InitGenericOpcode<1, 5>(opcode_table[RET_C], std::format("RET C"), 2);
   opcode_table[RET_C].execute_ = Return<k_BitIndexC, true, true>;
-  InitGenericOpcode<1>(opcode_table[RET], std::format("RET"), 4);
+  InitGenericOpcode<1, 4>(opcode_table[RET], std::format("RET"), 4);
   opcode_table[RET].execute_ = Return<k_BitIndexZ, true>;
   // TODO: Add RETI
 }
