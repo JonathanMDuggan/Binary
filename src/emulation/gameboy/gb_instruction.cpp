@@ -142,10 +142,10 @@ namespace binary::gb {
 void InitOpcodeTable(std::array<Opcode, 512>& opcode_table) {
   InitLoadInstructionsTable(opcode_table);
   Init8BitArithmeticLogicRegisterDirectTable(opcode_table);
+  InitConditional(opcode_table);
   InitPushAndPop(opcode_table);
   InitPrefixTable(opcode_table); 
   InitNullOpcodes(opcode_table);
-  InitConditional(opcode_table);
 }
 
 void InitPrefixTable(std::array<Opcode, 512>& opcode_table) {
@@ -286,19 +286,42 @@ void InitConditional(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
   // There is no pattern in the opcode table, therefore we need to input all the
   // values manually
-  
+  constexpr bool k_Branch = true;
   // Return Opcodes
   InitGenericOpcode<1, 5>(opcode_table[RET_NZ], std::format("RET NZ"), 2);
-  opcode_table[RET_NZ].execute_ = Return<k_BitIndexZ, true , false>;
+  opcode_table[RET_NZ].execute_ = Return<k_Branch, k_BitIndexZ, false>; 
   InitGenericOpcode<1, 5>(opcode_table[RET_NC], std::format("RET NC"), 2);
-  opcode_table[RET_NC].execute_ = Return<k_BitIndexC, true, false>;  
-  InitGenericOpcode<1, 5>(opcode_table[RET_Z], std::format("RET Z"), 2);
-  opcode_table[RET_Z].execute_ = Return<k_BitIndexZ, true, true>;  
-  InitGenericOpcode<1, 5>(opcode_table[RET_C], std::format("RET C"), 2);
-  opcode_table[RET_C].execute_ = Return<k_BitIndexC, true, true>;
+  opcode_table[RET_NC].execute_ = Return<k_Branch, k_BitIndexC, false>;   
+  InitGenericOpcode<1, 5>(opcode_table[RET_Z], std::format("RET Z"), 2); 
+  opcode_table[RET_Z].execute_ = Return<k_Branch, k_BitIndexZ, true>;   
+  InitGenericOpcode<1, 5>(opcode_table[RET_C], std::format("RET C"), 2); 
+  opcode_table[RET_C].execute_ = Return<k_Branch, k_BitIndexC, true>; 
   InitGenericOpcode<1, 4>(opcode_table[RET], std::format("RET"), 4);
-  opcode_table[RET].execute_ = Return<k_BitIndexZ, true>;
+  opcode_table[RET].execute_ = Return<!k_Branch>;
   // TODO: Add RETI
+
+  // Jump Relative 
+  InitGenericOpcode<2, 3>(opcode_table[JR_NZ_R8], std::format("JR NZ"), 2);
+  opcode_table[JR_NZ_R8].execute_ = JumpRelative<k_Branch, k_BitIndexZ, false>;
+  InitGenericOpcode<2, 3>(opcode_table[JR_NC_R8], std::format("JR NC"), 2);
+  opcode_table[JR_NC_R8].execute_ = JumpRelative<k_Branch, k_BitIndexC, false>;
+  InitGenericOpcode<2, 3>(opcode_table[JR_Z_R8], std::format("JR Z"), 2);
+  opcode_table[JR_Z_R8].execute_ = JumpRelative<k_Branch, k_BitIndexZ, true>;
+  InitGenericOpcode<2, 3>(opcode_table[JR_C_R8], std::format("JR C"), 2);
+  opcode_table[JR_C_R8].execute_ = JumpRelative<k_Branch, k_BitIndexC, true>;
+  InitGenericOpcode<2>(opcode_table[JR_R8], std::format("JR "), 3);
+  opcode_table[JR_R8].execute_ = JumpRelative<!k_Branch>;
+  // Jump
+  InitGenericOpcode<3, 4>(opcode_table[JP_NZ_A16], std::format("JP NZ"), 3);
+  opcode_table[JP_NZ_A16].execute_ = Jump<k_Branch, k_BitIndexZ, false>;
+  InitGenericOpcode<3, 4>(opcode_table[JP_NC_A16], std::format("JP NC"), 3);
+  opcode_table[JP_NC_A16].execute_ = Jump<k_Branch, k_BitIndexC, false>;
+  InitGenericOpcode<3, 4>(opcode_table[JP_Z_A16], std::format("JP Z"), 3);
+  opcode_table[JP_Z_A16].execute_ = Jump<k_Branch, k_BitIndexZ, true>;
+  InitGenericOpcode<3, 4>(opcode_table[JP_C_A16], std::format("JP C"), 3);
+  opcode_table[JP_C_A16].execute_ = Jump<k_Branch, k_BitIndexC, true>;
+  InitGenericOpcode<3>(opcode_table[JP_A16], std::format("JP "), 3);
+  opcode_table[JP_A16].execute_ = Jump<!k_Branch>;
 }
 void InitNullOpcodes(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
@@ -340,7 +363,7 @@ void InitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
           std::format("LD {}, A", k_16BitRegisterNames[_16_bit_register_index]);
       opcode_table[opcode].opcode_ = PrintOpcode<>;
     } else if (((opcode & 0x06) == 0x06) || ((opcode & 0x0E) == 0x0E)){
-      opcode_table[opcode].opcode_ = PrintOpcode<k_Address8>;
+      opcode_table[opcode].opcode_ = PrintOpcode<2>;
       opcode_table[opcode].mnemonic_ =
           std::format("LD {}, d8", k_RegisterNames[register_index]);
       register_index++;

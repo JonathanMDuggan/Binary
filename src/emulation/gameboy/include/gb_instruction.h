@@ -975,12 +975,14 @@ void RotateCarryRegisterDirect8(GameBoy* gb) {
 
 }
 
-template <const uint8_t bit_index, const bool has_condition, const bool condition = false>
+template <const bool has_condition, const uint8_t bit_index = k_BitIndexZ,
+          const bool condition = false>
 void Return(GameBoy* gb) {
   if constexpr (has_condition) { 
     if (gb->reg_.f_[bit_index] == condition) { 
       const uint16_t k_ReturnAddress = gb->Operand16Bit(); 
       gb->reg_.program_counter_ = k_ReturnAddress; 
+      gb->branched = true;
     }
   } else {
     const uint16_t k_ReturnAddress = gb->Operand16Bit();
@@ -988,30 +990,43 @@ void Return(GameBoy* gb) {
   }
 }
 
-template <const uint8_t bit_index, const bool condition>
+template <const bool has_condition,  const uint8_t bit_index = k_BitIndexZ, 
+          const bool condition = false>
 void JumpRelative(GameBoy* gb) {
-  if (gb->reg_.f_[bit_index] == condition) {
-    gb->reg_.program_counter_ += gb->Operand8Bit();
-    gb->branched = true; 
+  if constexpr (has_condition) {
+    if (gb->reg_.f_[bit_index] == condition) {
+      gb->reg_.program_counter_ += gb->Operand8Bit(); 
+      gb->branched = true; 
+    }
+  } else {
+    gb->reg_.program_counter_ += gb->Operand8Bit(); 
   }
 }
-template <const uint8_t bit_index, const bool condition>
+template <const bool has_condition, const uint8_t bit_index = k_BitIndexZ,
+          const bool condition = false>
 void Jump(GameBoy* gb) {
-  if (gb->reg_.f_[bit_index] == condition) {
-    const uint16_t k_JumpAddress = gb->Operand16Bit();
-    gb->reg_.stack_pointer_ = gb->reg_.program_counter_;
+  if constexpr (has_condition) {
+    if (gb->reg_.f_[bit_index] == condition) {
+      const uint16_t k_JumpAddress = gb->Operand16Bit();
+      gb->reg_.stack_pointer_ = gb->reg_.program_counter_;
+      gb->reg_.program_counter_ = k_JumpAddress;
+      gb->branched = true;
+    }
+  } else {
+    const uint16_t k_JumpAddress = gb->Operand16Bit(); 
+    gb->reg_.stack_pointer_ = gb->reg_.program_counter_; 
     gb->reg_.program_counter_ = k_JumpAddress; 
   }
   // Load Instructions
 }
 
-template <AddressingMode address_mode = k_RegisterDirect>
+template <const uint8_t k_OpcodeLenght = 0>
 std::string PrintOpcode(GameBoy* gb, const uint8_t opcode) {
   std::string output; 
-  if constexpr (k_Address8) {
+  if constexpr (k_OpcodeLenght == 2) {
     const uint8_t k_Byte = gb->memory_[opcode + 1];
     output = std::format("{:02X} {:02X}", opcode, k_Byte);
-  } else if constexpr (k_Address16) {
+  } else if constexpr (k_OpcodeLenght == 3) {
     const uint8_t k_HByte = gb->memory_[opcode + 2];
     const uint8_t k_LByte = gb->memory_[opcode + 1];
     output = std::format("{:02X} {:02X} {:02X}", opcode, k_LByte, k_HByte);
