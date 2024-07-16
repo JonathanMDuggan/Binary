@@ -567,7 +567,24 @@ enum AddressingMode {
   k_StackPointer,
   k_ProgramCounter
 };
-extern void InitPrefixTable(std::array<Opcode, 512>& opcode_table); 
+
+template<const uint8_t k_Opcode_Length>
+extern void InitGenericOpcode(Opcode& opcode,
+                              const std::string k_Mnemonic, 
+                              const uint8_t k_Machine_Cycles,
+                              const uint8_t k_Machine_Cycles_Branched = 0
+                              ) {
+  using namespace binary::gb::instructionset;
+  if constexpr (k_Machine_Cycles_Branched > 0) {
+    opcode.SetMachineCycles(k_Machine_Cycles_Branched, k_Machine_Cycles);
+  } else {
+    opcode.SetMachineCycles(k_Machine_Cycles);
+  }
+  opcode.opcode_ = PrintOpcode<k_Opcode_Length>;
+  opcode.mnemonic_ = k_Mnemonic;
+}
+
+extern void InitPrefixTable(std::array<Opcode, 512>& opcode_table);
 extern void InitOpcodeTable(std::array<Opcode, 512>&);  
 extern void InitLoadInstructionsTable( 
     std::array<Opcode, 512>& opcode_table); 
@@ -578,7 +595,7 @@ extern void InitIncrementAndDecrement(std::array<Opcode, 512>& opcode_table);
 extern void InitNullOpcodes(std::array<Opcode, 512>& opcode_table);
 extern void InitNullOpcode(Opcode& opcode, uint32_t code);
 extern void NullOpcode(GameBoy* gb);
-
+extern void InitConditional(std::array<Opcode, 512>& opcode_table);
 template <uint8_t Register::*x_>
 inline void GameBoy::UpdateRegisters() {
   if constexpr (x_ == &Register::b_ || x_ == &Register::c_) {
@@ -612,7 +629,6 @@ namespace binary::gb::instructionset {
 // Addressing different processor address modes
 //
 // Prefix CB Instructions
-
 void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
                  const uint8_t k_Operand);
 extern void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
@@ -973,13 +989,20 @@ template <uint8_t Register::*x_>
 void RotateCarryRegisterDirect8(GameBoy* gb) {
 
 }
-template <const uint8_t bit_index, const bool condition>
+
+template <const uint8_t bit_index, const bool has_condition, const bool condition = false>
 void Return(GameBoy* gb) {
-  if (gb->reg_.f_[bit_index] == condition) { 
+  if constexpr (has_condition) { 
+    if (gb->reg_.f_[bit_index] == condition) { 
+      const uint16_t k_ReturnAddress = gb->Operand16Bit(); 
+      gb->reg_.program_counter_ = k_ReturnAddress; 
+    }
+  } else {
     const uint16_t k_ReturnAddress = gb->Operand16Bit();
     gb->reg_.program_counter_ = k_ReturnAddress;
   }
 }
+
 template <const uint8_t bit_index, const bool condition>
 void JumpRelative(GameBoy* gb) {
   if (gb->reg_.f_[bit_index] == condition) {

@@ -145,6 +145,7 @@ void InitOpcodeTable(std::array<Opcode, 512>& opcode_table) {
   InitPushAndPop(opcode_table);
   InitPrefixTable(opcode_table); 
   InitNullOpcodes(opcode_table);
+  InitConditional(opcode_table);
 }
 
 void InitPrefixTable(std::array<Opcode, 512>& opcode_table) {
@@ -280,6 +281,24 @@ uint8_t register_index = 0;
 
 void NullOpcode(GameBoy* gb) { 
   gb->reg_.program_counter_++; 
+}
+void InitConditional(std::array<Opcode, 512>& opcode_table) {
+  using namespace binary::gb::instructionset;
+  // There is no pattern in the opcode table, therefore we need to input all the
+  // values manually
+  
+  // Return Opcodes
+  InitGenericOpcode<1>(opcode_table[RET_NZ], std::format("RET NZ"), 2, 5);
+  opcode_table[RET_NZ].execute_ = Return<k_BitIndexZ, true , false>;
+  InitGenericOpcode<1>(opcode_table[RET_NC], std::format("RET NC"), 2, 5);
+  opcode_table[RET_NC].execute_ = Return<k_BitIndexC, true, false>;  
+  InitGenericOpcode<1>(opcode_table[RET_Z], std::format("RET Z"), 2, 5);
+  opcode_table[RET_Z].execute_ = Return<k_BitIndexZ, true, true>;  
+  InitGenericOpcode<1>(opcode_table[RET_C], std::format("RET C"), 2, 5);
+  opcode_table[RET_C].execute_ = Return<k_BitIndexC, true, true>;
+  InitGenericOpcode<1>(opcode_table[RET], std::format("RET"), 4);
+  opcode_table[RET].execute_ = Return<k_BitIndexZ, true>;
+  // TODO: Add RETI
 }
 void InitNullOpcodes(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
