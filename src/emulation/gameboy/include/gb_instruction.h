@@ -212,6 +212,7 @@ public:
   void UpdateAll16BitReg();
   uint8_t Operand8Bit();
   uint16_t Operand16Bit();
+  void GetProgramCounterBytes(uint8_t& high_byte, uint8_t& low_byte);
   template <uint8_t Register::*x_>
   void UpdateRegisters();
  private:
@@ -973,6 +974,27 @@ void Push(GameBoy* gb) {
 template <uint8_t Register::*x_>
 void RotateCarryRegisterDirect8(GameBoy* gb) {
 
+}
+
+template <const bool has_condition, const uint8_t bit_index = k_BitIndexZ,
+          const bool condition = false>
+void Call(GameBoy* gb) { 
+  uint8_t program_coutner_high;
+  uint8_t program_counter_low;
+  uint16_t function_address = gb->Operand16Bit(); 
+  gb->GetProgramCounterBytes(program_coutner_high, program_counter_low);
+  if constexpr (has_condition) {
+    if (gb->reg_.f_[bit_index] == condition) {
+      gb->memory_[gb->reg_.stack_pointer_ - 1] = program_coutner_high;
+      gb->memory_[gb->reg_.stack_pointer_ - 2] = program_counter_low;
+      gb->reg_.program_counter_ = function_address;
+      gb->branched = true;
+    }
+  } else {
+    gb->memory_[gb->reg_.stack_pointer_ - 1] = program_coutner_high;
+    gb->memory_[gb->reg_.stack_pointer_ - 2] = program_counter_low;
+    gb->reg_.program_counter_ = function_address;
+  }
 }
 
 template <const bool has_condition, const uint8_t bit_index = k_BitIndexZ,

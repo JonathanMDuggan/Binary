@@ -131,6 +131,12 @@ uint16_t binary::gb::GameBoy::Operand16Bit() {
   const uint16_t k_Operand16bit = (k_HighByte << 8) | k_LowByte;
   return k_Operand16bit;
 }
+void binary::gb::GameBoy::GetProgramCounterBytes(uint8_t& high_byte,
+                                              uint8_t& low_byte) {
+   high_byte = (reg_.program_counter_ >> 8);
+   low_byte =  (reg_.program_counter_ << 8);
+   return;
+}
 void binary::gb::GameBoy::Update16BitRegister(uint16_t& _16bit_reg,
                                              const uint8_t& k_HighReg,
                                              const uint8_t& k_LowReg) {
@@ -311,6 +317,7 @@ void InitConditional(std::array<Opcode, 512>& opcode_table) {
   opcode_table[JR_C_R8].execute_ = JumpRelative<k_Branch, k_BitIndexC, true>;
   InitGenericOpcode<2>(opcode_table[JR_R8], std::format("JR "), 3);
   opcode_table[JR_R8].execute_ = JumpRelative<!k_Branch>;
+
   // Jump
   InitGenericOpcode<3, 4>(opcode_table[JP_NZ_A16], std::format("JP NZ"), 3);
   opcode_table[JP_NZ_A16].execute_ = Jump<k_Branch, k_BitIndexZ, false>;
@@ -322,6 +329,8 @@ void InitConditional(std::array<Opcode, 512>& opcode_table) {
   opcode_table[JP_C_A16].execute_ = Jump<k_Branch, k_BitIndexC, true>;
   InitGenericOpcode<3>(opcode_table[JP_A16], std::format("JP "), 3);
   opcode_table[JP_A16].execute_ = Jump<!k_Branch>;
+
+
 }
 void InitNullOpcodes(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
