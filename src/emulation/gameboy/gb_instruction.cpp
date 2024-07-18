@@ -330,6 +330,17 @@ void InitConditional(std::array<Opcode, 512>& opcode_table) {
   InitGenericOpcode<3>(opcode_table[JP_A16], std::format("JP "), 3);
   opcode_table[JP_A16].execute_ = Jump<!k_Branch>;
 
+  // Call
+  InitGenericOpcode<3, 6>(opcode_table[CALL_NZ_A16], std::format("CALL NZ"), 3);
+  opcode_table[CALL_NZ_A16].execute_ = Call<k_Branch, k_BitIndexZ, false>;
+  InitGenericOpcode<3, 6>(opcode_table[CALL_NC_A16], std::format("CALL NC"), 3);
+  opcode_table[CALL_NC_A16].execute_ = Call<k_Branch, k_BitIndexC, false>;
+  InitGenericOpcode<3, 6>(opcode_table[CALL_Z_A16], std::format("CALL Z"), 3);
+  opcode_table[CALL_Z_A16].execute_ = Call<k_Branch, k_BitIndexZ, true>;
+  InitGenericOpcode<3, 6>(opcode_table[CALL_C_A16], std::format("CALL C"), 3);
+  opcode_table[CALL_C_A16].execute_ = Call<k_Branch, k_BitIndexC, true>;
+  InitGenericOpcode<3, 6>(opcode_table[CALL_A16], std::format("CALL"), 6);
+  opcode_table[CALL_A16].execute_ = Call<!k_Branch>;
 
 }
 void InitNullOpcodes(std::array<Opcode, 512>& opcode_table) {
