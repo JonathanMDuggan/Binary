@@ -294,52 +294,52 @@ void InitConditional(std::array<Opcode, 512>& opcode_table) {
   // values manually
   constexpr bool k_Branch = true;
   // Return Opcodes
-  InitGenericOpcode<1, 5>(opcode_table[RET_NZ], std::format("RET NZ"), 2);
+  InitGenericOpcode<1, 5>(opcode_table[RET_NZ], "RET NZ", 2);
   opcode_table[RET_NZ].execute_ = Return<k_Branch, k_BitIndexZ, false>; 
-  InitGenericOpcode<1, 5>(opcode_table[RET_NC], std::format("RET NC"), 2);
+  InitGenericOpcode<1, 5>(opcode_table[RET_NC], "RET NC", 2);
   opcode_table[RET_NC].execute_ = Return<k_Branch, k_BitIndexC, false>;   
-  InitGenericOpcode<1, 5>(opcode_table[RET_Z], std::format("RET Z"), 2); 
+  InitGenericOpcode<1, 5>(opcode_table[RET_Z], "RET Z", 2); 
   opcode_table[RET_Z].execute_ = Return<k_Branch, k_BitIndexZ, true>;   
-  InitGenericOpcode<1, 5>(opcode_table[RET_C], std::format("RET C"), 2); 
+  InitGenericOpcode<1, 5>(opcode_table[RET_C], "RET C", 2); 
   opcode_table[RET_C].execute_ = Return<k_Branch, k_BitIndexC, true>; 
-  InitGenericOpcode<1, 4>(opcode_table[RET], std::format("RET"), 4);
+  InitGenericOpcode<1, 4>(opcode_table[RET], "RET", 4);
   opcode_table[RET].execute_ = Return<!k_Branch>;
   // TODO: Add RETI
 
   // Jump Relative 
-  InitGenericOpcode<2, 3>(opcode_table[JR_NZ_R8], std::format("JR NZ"), 2);
+  InitGenericOpcode<2, 3>(opcode_table[JR_NZ_R8], "JR NZ", 2);
   opcode_table[JR_NZ_R8].execute_ = JumpRelative<k_Branch, k_BitIndexZ, false>;
-  InitGenericOpcode<2, 3>(opcode_table[JR_NC_R8], std::format("JR NC"), 2);
+  InitGenericOpcode<2, 3>(opcode_table[JR_NC_R8], "JR NC", 2);
   opcode_table[JR_NC_R8].execute_ = JumpRelative<k_Branch, k_BitIndexC, false>;
-  InitGenericOpcode<2, 3>(opcode_table[JR_Z_R8], std::format("JR Z"), 2);
+  InitGenericOpcode<2, 3>(opcode_table[JR_Z_R8], "JR Z", 2);
   opcode_table[JR_Z_R8].execute_ = JumpRelative<k_Branch, k_BitIndexZ, true>;
-  InitGenericOpcode<2, 3>(opcode_table[JR_C_R8], std::format("JR C"), 2);
+  InitGenericOpcode<2, 3>(opcode_table[JR_C_R8], "JR C", 2);
   opcode_table[JR_C_R8].execute_ = JumpRelative<k_Branch, k_BitIndexC, true>;
-  InitGenericOpcode<2>(opcode_table[JR_R8], std::format("JR "), 3);
+  InitGenericOpcode<2>(opcode_table[JR_R8], "JR ", 3);
   opcode_table[JR_R8].execute_ = JumpRelative<!k_Branch>;
 
   // Jump
-  InitGenericOpcode<3, 4>(opcode_table[JP_NZ_A16], std::format("JP NZ"), 3);
+  InitGenericOpcode<3, 4>(opcode_table[JP_NZ_A16], "JP NZ", 3);
   opcode_table[JP_NZ_A16].execute_ = Jump<k_Branch, k_BitIndexZ, false>;
-  InitGenericOpcode<3, 4>(opcode_table[JP_NC_A16], std::format("JP NC"), 3);
+  InitGenericOpcode<3, 4>(opcode_table[JP_NC_A16], "JP NC", 3);
   opcode_table[JP_NC_A16].execute_ = Jump<k_Branch, k_BitIndexC, false>;
-  InitGenericOpcode<3, 4>(opcode_table[JP_Z_A16], std::format("JP Z"), 3);
+  InitGenericOpcode<3, 4>(opcode_table[JP_Z_A16], "JP Z", 3);
   opcode_table[JP_Z_A16].execute_ = Jump<k_Branch, k_BitIndexZ, true>;
-  InitGenericOpcode<3, 4>(opcode_table[JP_C_A16], std::format("JP C"), 3);
+  InitGenericOpcode<3, 4>(opcode_table[JP_C_A16], "JP C", 3);
   opcode_table[JP_C_A16].execute_ = Jump<k_Branch, k_BitIndexC, true>;
-  InitGenericOpcode<3>(opcode_table[JP_A16], std::format("JP "), 3);
+  InitGenericOpcode<3>(opcode_table[JP_A16],"JP" , 3);
   opcode_table[JP_A16].execute_ = Jump<!k_Branch>;
 
   // Call
-  InitGenericOpcode<3, 6>(opcode_table[CALL_NZ_A16], std::format("CALL NZ"), 3);
+  InitGenericOpcode<3, 6>(opcode_table[CALL_NZ_A16], "CALL NZ", 3); 
   opcode_table[CALL_NZ_A16].execute_ = Call<k_Branch, k_BitIndexZ, false>;
-  InitGenericOpcode<3, 6>(opcode_table[CALL_NC_A16], std::format("CALL NC"), 3);
+  InitGenericOpcode<3, 6>(opcode_table[CALL_NC_A16], "CALL NC", 3);
   opcode_table[CALL_NC_A16].execute_ = Call<k_Branch, k_BitIndexC, false>;
-  InitGenericOpcode<3, 6>(opcode_table[CALL_Z_A16], std::format("CALL Z"), 3);
+  InitGenericOpcode<3, 6>(opcode_table[CALL_Z_A16], "CALL Z", 3); 
   opcode_table[CALL_Z_A16].execute_ = Call<k_Branch, k_BitIndexZ, true>;
-  InitGenericOpcode<3, 6>(opcode_table[CALL_C_A16], std::format("CALL C"), 3);
+  InitGenericOpcode<3, 6>(opcode_table[CALL_C_A16], "CALL C", 3); 
   opcode_table[CALL_C_A16].execute_ = Call<k_Branch, k_BitIndexC, true>;
-  InitGenericOpcode<3, 6>(opcode_table[CALL_A16], std::format("CALL"), 6);
+  InitGenericOpcode<3, 6>(opcode_table[CALL_A16], "CALL", 6); 
   opcode_table[CALL_A16].execute_ = Call<!k_Branch>;
 
 }
