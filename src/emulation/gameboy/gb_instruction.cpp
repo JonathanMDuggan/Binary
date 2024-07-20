@@ -18,6 +18,11 @@ namespace binary::gb::instructionset {
 void NoOperationFunction(GameBoy* gb) { return; }
 void NoOperation(GameBoy* gb) { NoOperationFunction(gb); }
 
+void binary::gb::instructionset::ReturnFromInterruptHandler(GameBoy* gb) {
+  gb->reg_.program_counter_ = gb->ReturnAddress();
+  gb->reg_.interrupt_ = 1;
+}
+
 void LoadHighAddressIntoRegA(GameBoy* gb) {
   const uint8_t k_HighAddress = gb->memory_[gb->reg_.program_counter_ + 2];
   gb->reg_.a_ = k_HighAddress;
@@ -130,6 +135,14 @@ uint16_t binary::gb::GameBoy::Operand16Bit() {
   const uint16_t k_HighByte = memory_[reg_.program_counter_ + 2];
   const uint16_t k_Operand16bit = (k_HighByte << 8) | k_LowByte;
   return k_Operand16bit;
+}
+uint16_t binary::gb::GameBoy::ReturnAddress() { 
+  const uint16_t k_LowByte = memory_[reg_.stack_pointer_ + 1];
+  const uint16_t k_HighByte = memory_[reg_.stack_pointer_ + 2];
+  const uint16_t k_ReturnAddress = (k_HighByte << 8) | k_LowByte;
+  reg_.stack_pointer_ += 2;
+  return k_ReturnAddress;
+
 }
 void binary::gb::GameBoy::GetProgramCounterBytes(uint8_t& high_byte,
                                               uint8_t& low_byte) {
@@ -304,7 +317,8 @@ void InitConditional(std::array<Opcode, 512>& opcode_table) {
   opcode_table[RET_C].execute_ = Return<k_Branch, k_BitIndexC, true>; 
   InitGenericOpcode<1, 4>(opcode_table[RET], "RET", 4);
   opcode_table[RET].execute_ = Return<!k_Branch>;
-  // TODO: Add RETI
+  InitGenericOpcode<1, 4>(opcode_table[RETI], "RETI", 4);
+  opcode_table[RETI].execute_ = ReturnFromInterruptHandler;
 
   // Jump Relative 
   InitGenericOpcode<2, 3>(opcode_table[JR_NZ_R8], "JR NZ", 2);

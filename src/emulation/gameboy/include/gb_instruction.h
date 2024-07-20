@@ -212,6 +212,7 @@ public:
   void UpdateAll16BitReg();
   uint8_t Operand8Bit();
   uint16_t Operand16Bit();
+  uint16_t ReturnAddress();
   void GetProgramCounterBytes(uint8_t& high_byte, uint8_t& low_byte);
   template <uint8_t Register::*x_>
   void UpdateRegisters();
@@ -566,7 +567,7 @@ enum AddressingMode {
   k_Indirect,   k_RegisterIndirect,
   k_Relative,   
   k_StackPointer,
-  k_ProgramCounter
+  k_ProgramCounter, k_Interrupt
 };
 
 
@@ -1000,19 +1001,19 @@ void Call(GameBoy* gb) {
 template <const bool has_condition, const uint8_t bit_index = k_BitIndexZ,
           const bool condition = false>
 void Return(GameBoy* gb) {
+
   if constexpr (has_condition) { 
     if (gb->reg_.f_[bit_index] == condition) { 
-      const uint16_t k_ReturnAddress = gb->Operand16Bit(); 
-      gb->reg_.program_counter_ = k_ReturnAddress; 
+      gb->reg_.program_counter_ = gb->ReturnAddress();
       gb->branched = true;
     }
   } else {
-    const uint16_t k_ReturnAddress = gb->Operand16Bit();
-    gb->reg_.program_counter_ = k_ReturnAddress;
+    gb->reg_.program_counter_ = gb->ReturnAddress();
   }
 }
-
-template <const bool has_condition,  const uint8_t bit_index = k_BitIndexZ, 
+extern void ReturnFromInterruptHandler(GameBoy* gb)
+;
+template <const bool has_condition, const uint8_t bit_index = k_BitIndexZ, 
           const bool condition = false>
 void JumpRelative(GameBoy* gb) {
   if constexpr (has_condition) {
