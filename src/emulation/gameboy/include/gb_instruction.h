@@ -810,7 +810,13 @@ void Load(GameBoy* gb) {
     } else if constexpr (address_mode == k_Indirect) {
       gb->memory_[gb->reg_.*y_] = gb->reg_.a_;
     } else if constexpr (address_mode == k_Immediate16) {
-      gb->reg_.*x_ = 0;
+      gb->reg_.*x_ = gb->Operand16Bit();
+    } else if constexpr (address_mode == k_StackPointer) {
+      gb->reg_.stack_pointer_ = gb->Operand16Bit();
+    } else if constexpr (address_mode == k_Address16) {
+      const uint16_t k_Address = gb->Operand16Bit();
+      gb->memory_[k_Address + 1] = (gb->reg_.stack_pointer_ >> 8);
+      gb->memory_[k_Address] = (gb->reg_.stack_pointer_);
     }
   } else {
     if constexpr (address_mode == k_RegisterDirect) { 

@@ -383,6 +383,27 @@ void InitNullOpcode(Opcode& opcode, uint32_t code) {
 
 void InitLoadInstructionsTable(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
+
+  InitGenericOpcode<3>(opcode_table[LD_BC_D16], "LD BC D16", 3);
+  opcode_table[LD_BC_D16].execute_ =
+      Load<uint16_t, &Register::bc_, &Register::bc_, k_Immediate16>;  
+  InitGenericOpcode<3>(opcode_table[LD_DE_D16], "LD DE D16", 3); 
+  opcode_table[LD_DE_D16].execute_ = 
+      Load<uint16_t, &Register::de_, &Register::de_, k_Immediate16>;   
+  InitGenericOpcode<3>(opcode_table[LD_HL_D16], "LD HL D16", 3); 
+  opcode_table[LD_HL_D16].execute_ = 
+      Load<uint16_t, &Register::hl_, &Register::hl_, k_Immediate16>;   
+  InitGenericOpcode<3>(opcode_table[LD_SP_D16], "LD SP D16", 3);
+  InitGenericOpcode<3>(opcode_table[LD__A16_SP], "LD SP D16", 5); 
+  // I doesn't matter what I put in the parameters (register::bc_)
+  // k_StackPointer would ignore x and y and only change the stackpointer 
+  // same with k_Address16, it would load data from stackpointer to a memory
+  // address.
+  opcode_table[LD_SP_D16].execute_ = 
+      Load<uint16_t, &Register::bc_, &Register::bc_, k_StackPointer>;
+  opcode_table[LD__A16_SP].execute_ =
+      Load<uint16_t, &Register::bc_, &Register::bc_, k_Address16>;
+
   const std::array<std::string, 8> k_RegisterNames = {"B", "C", "D",    "E",
                                                       "H", "L", "(HL)", "A"};
   const std::array<std::string, 8> k_16BitRegisterNames = {"(BC)", "(DE)",
