@@ -796,7 +796,13 @@ void Reset(GameBoy* gb) {
     const uint8_t k_Bit = (1 << BitPos);
     gb->memory_[gb->reg_.*x_] &= ~k_Bit;
   }
-
+}
+template<const uint16_t k_Address>
+void Restart(GameBoy* gb) {
+  gb->memory_[gb->reg_.stack_pointer_ - 1] = (gb->reg_.program_counter_ >> 8);
+  gb->memory_[gb->reg_.stack_pointer_ - 2] = (gb->reg_.program_counter_);
+  gb->reg_.stack_pointer_ -= 2;
+  gb->reg_.program_counter_ = k_Address;
 }
 
 template <typename T = uint8_t, T Register::*x_ = &Register::a_,  
