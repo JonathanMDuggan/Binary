@@ -163,6 +163,7 @@ void InitOpcodeTable(std::array<Opcode, 512>& opcode_table) {
   Init8BitArithmeticLogicRegisterDirectTable(opcode_table);
   InitConditional(opcode_table);
   InitPushAndPop(opcode_table);
+  InitRestart(opcode_table);
   InitPrefixTable(opcode_table); 
   InitNullOpcodes(opcode_table);
 }
@@ -356,6 +357,27 @@ void InitConditional(std::array<Opcode, 512>& opcode_table) {
   InitGenericOpcode<3, 6>(opcode_table[CALL_A16], "CALL", 6); 
   opcode_table[CALL_A16].execute_ = Call<!k_Branch>;
 
+}
+void InitRestart(std::array<Opcode, 512>& opcode_table) {
+  using namespace binary::gb::instructionset;
+  constexpr bool k_Branch = true;
+  // There is a patttern, I just don't care anymore.
+  InitGenericOpcode<1>(opcode_table[RST_00H], "RST 00H", 4);
+  opcode_table[RST_00H].execute_ = Restart<0x00>;
+  InitGenericOpcode<1>(opcode_table[RST_10H], "RST 10H", 4);
+  opcode_table[RST_10H].execute_ = Restart<0x10>;
+  InitGenericOpcode<1>(opcode_table[RST_20H], "RST 20H", 4);
+  opcode_table[RST_20H].execute_ = Restart<0x20>;
+  InitGenericOpcode<1>(opcode_table[RST_30H], "RST 30H", 4);
+  opcode_table[RST_20H].execute_ = Restart<0x30>;
+  InitGenericOpcode<1>(opcode_table[RST_08H], "RST 08H", 4);
+  opcode_table[RST_08H].execute_ = Restart<0x08>;
+  InitGenericOpcode<1>(opcode_table[RST_18H], "RST 18H", 4);
+  opcode_table[RST_18H].execute_ = Restart<0x18>;
+  InitGenericOpcode<1>(opcode_table[RST_28H], "RST 28H", 4);
+  opcode_table[RST_28H].execute_ = Restart<0x28>;
+  InitGenericOpcode<1>(opcode_table[RST_38H], "RST 38H", 4);
+  opcode_table[RST_38H].execute_ = Restart<0x38>;
 }
 void InitNullOpcodes(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;

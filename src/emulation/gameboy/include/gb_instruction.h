@@ -583,6 +583,7 @@ extern void InitNullOpcodes(std::array<Opcode, 512>& opcode_table);
 extern void InitNullOpcode(Opcode& opcode, uint32_t code);
 extern void NullOpcode(GameBoy* gb);
 extern void InitConditional(std::array<Opcode, 512>& opcode_table);
+extern void InitRestart(std::array<Opcode, 512>& opcode_table);
 template <uint8_t Register::*x_>
 inline void GameBoy::UpdateRegisters() {
   if constexpr (x_ == &Register::b_ || x_ == &Register::c_) {
