@@ -1038,15 +1038,11 @@ void JumpRelative(GameBoy* gb) {
     gb->reg_.program_counter_ += gb->Operand8Bit(); 
   }
 }
+extern void JumpIndirect(GameBoy*gb);
 template <const bool has_condition, const uint8_t bit_index = k_BitIndexZ,
-          const bool condition = false, AddressingMode address_mode = k_RegisterIndirect>
+          const bool condition = false>
 void Jump(GameBoy* gb) {
-  if constexpr (address_mode == k_Indirect) {
-    const uint16_t k_JumpAddress = gb->memory_[gb->reg_.hl_];
-    gb->reg_.stack_pointer_ = gb->reg_.program_counter_;
-    gb->reg_.program_counter_ = k_JumpAddress;
-  }
-  else if constexpr (has_condition) {
+  if constexpr (has_condition) {
     if (gb->reg_.f_[bit_index] == condition) {
       const uint16_t k_JumpAddress = gb->Operand16Bit();
       gb->reg_.stack_pointer_ = gb->reg_.program_counter_;

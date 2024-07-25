@@ -23,6 +23,12 @@ void binary::gb::instructionset::ReturnFromInterruptHandler(GameBoy* gb) {
   gb->reg_.interrupt_ = 1;
 }
 
+void JumpIndirect(GameBoy* gb) {
+  const uint16_t k_JumpAddress = gb->memory_[gb->reg_.hl_];
+  gb->reg_.stack_pointer_ = gb->reg_.program_counter_;
+  gb->reg_.program_counter_ = k_JumpAddress;
+}
+
 void LoadHighAddressIntoRegA(GameBoy* gb) {
   const uint8_t k_HighAddress = gb->memory_[gb->reg_.program_counter_ + 2];
   gb->reg_.a_ = k_HighAddress;
@@ -344,6 +350,8 @@ void InitConditional(std::array<Opcode, 512>& opcode_table) {
   opcode_table[JP_C_A16].execute_ = Jump<k_Branch, k_BitIndexC, true>;
   InitGenericOpcode<3>(opcode_table[JP_A16],"JP" , 3);
   opcode_table[JP_A16].execute_ = Jump<!k_Branch>;
+  InitGenericOpcode<2>(opcode_table[JP__HL], "JR (HL)", 3);
+  opcode_table[JP__HL].execute_ = JumpIndirect;
 
   // Call
   InitGenericOpcode<3, 6>(opcode_table[CALL_NZ_A16], "CALL NZ", 3); 
