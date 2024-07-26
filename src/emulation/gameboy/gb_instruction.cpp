@@ -368,7 +368,6 @@ void InitConditional(std::array<Opcode, 512>& opcode_table) {
 }
 void InitRestart(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
-  constexpr bool k_Branch = true;
   // There is a patttern, I just don't care anymore.
   InitGenericOpcode<1>(opcode_table[RST_00H], "RST 00H", 4);
   opcode_table[RST_00H].execute_ = Restart<0x00>;
@@ -386,6 +385,15 @@ void InitRestart(std::array<Opcode, 512>& opcode_table) {
   opcode_table[RST_28H].execute_ = Restart<0x28>;
   InitGenericOpcode<1>(opcode_table[RST_38H], "RST 38H", 4);
   opcode_table[RST_38H].execute_ = Restart<0x38>;
+}
+void InitMiscellaneous(std::array<Opcode, 512>& opcode_table) {
+  using namespace binary::gb::instructionset;
+  InitGenericOpcode<1>(opcode_table[PREFIX_CB], "CB", 1);
+  InitGenericOpcode<1>(opcode_table[EI], "EI", 1);
+  InitGenericOpcode<1>(opcode_table[DI], "DI", 1);
+  InitGenericOpcode<1>(opcode_table[HALT], "HALT", 1);
+  InitGenericOpcode<2>(opcode_table[STOP], "STOP", 1);
+  InitGenericOpcode<1>(opcode_table[NOP], "NOP", 1);
 }
 void InitNullOpcodes(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
