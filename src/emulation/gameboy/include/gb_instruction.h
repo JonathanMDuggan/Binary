@@ -734,6 +734,11 @@ void RotateRightCircular(GameBoy* gb) {
   gb->UpdateRegAF();
 }
 
+extern void RotateLeftAccumulatorCarry(GameBoy* gb);
+extern void RotateLeftAccumulator(GameBoy* gb);
+extern void RotateRightAccumulatorCarry(GameBoy* gb);
+extern void RotateRightAccumulator(GameBoy* gb);
+
 template <typename T = uint8_t, T Register::*x_>
 void ShiftLeft(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {

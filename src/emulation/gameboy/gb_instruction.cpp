@@ -65,6 +65,42 @@ void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result) {
   gb->reg_.f_[k_BitIndexC] = k_IsCarry;
 }
 
+void RotateLeftAccumulatorCarry(GameBoy* gb) {
+  const uint8_t k_MostSignificantBit = ((gb->reg_.a_ & 0b01111111) != 0);
+  const bool k_IsCarryFlagSet = gb->reg_.f_[k_BitIndexC];
+  const uint8_t k_Result = (gb->reg_.a_ << 1) | gb->reg_.f_[k_BitIndexC];
+
+  SetFlagZ00C(gb, k_Result);
+  gb->reg_.f_[k_BitIndexC] = k_MostSignificantBit;
+  gb->reg_.a_ = k_Result;
+  gb->UpdateRegisters<&Register::a_>();
+}
+
+void RotateLeftAccumulator(GameBoy* gb) {
+  const uint8_t k_MostSignificantBit = ((gb->reg_.a_ & 0b01111111) != 0);
+  const uint8_t k_Result = (gb->reg_.a_ << 1) | k_MostSignificantBit;
+
+  SetFlagZ00C(gb, k_Result); 
+  gb->reg_.a_ = k_Result; 
+  gb->UpdateRegisters<&Register::a_>();
+}
+
+void RotateRightAccumulatorCarry(GameBoy* gb) {
+  bool k_FirstBit = ((gb->reg_.a_ & 1) > 0);
+  gb->reg_.a_ >>= 1;
+  gb->reg_.a_ |= (k_FirstBit == true) ? 0x80 : 0;
+  gb->reg_.f_[k_BitIndexC] = k_FirstBit;
+  gb->reg_.f_[k_BitIndexH] = false;
+  gb->UpdateRegisters<&Register::a_>();
+}
+
+void RotateRightAccumulator(GameBoy* gb) {
+  bool k_FirstBit = ((gb->reg_.a_ & 1) > 0);
+  gb->reg_.a_ >>= 1; 
+  gb->reg_.a_ |= (k_FirstBit == true) ? 0x80 : 0;
+  gb->UpdateRegisters<&Register::a_>();
+}
+
 void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
                  const uint8_t k_Operand) {
   const bool k_IsZero = (static_cast<uint8_t>(k_Result) == 0);
