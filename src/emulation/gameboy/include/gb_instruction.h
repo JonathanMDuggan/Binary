@@ -202,6 +202,7 @@ public:
   uint8_t address_bus_{};
   uint8_t data_bus_{};
   bool branched{};
+  bool cb_prefixed{}; 
   Register reg_{};
   std::array<uint8_t, 8000> memory_ = {}; 
   void ClearRegisters();
@@ -626,7 +627,7 @@ extern void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
 extern void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result,
                         const uint8_t k_Reg, const uint8_t k_Operand);
 extern void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result); 
-
+extern void PrefixCB(GameBoy* gb);
 template <typename T = uint8_t, T Register::*x_>
 void Swap(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {

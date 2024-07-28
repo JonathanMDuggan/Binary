@@ -65,6 +65,12 @@ void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result) {
   gb->reg_.f_[k_BitIndexC] = k_IsCarry;
 }
 
+void PrefixCB(GameBoy* gb) {
+  gb->cb_prefixed = true;
+  gb->reg_.program_counter_++;
+  return;
+}
+
 void RotateLeftAccumulatorCarry(GameBoy* gb) {
   const uint8_t k_MostSignificantBit = ((gb->reg_.a_ & 0b01111111) != 0);
   const bool k_IsCarryFlagSet = gb->reg_.f_[k_BitIndexC];
