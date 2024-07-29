@@ -628,6 +628,9 @@ extern void SetFlagZ1HC(GameBoy* gb, const uint16_t k_Result,
                         const uint8_t k_Reg, const uint8_t k_Operand);
 extern void SetFlagZ00C(GameBoy* gb, const uint16_t k_Result); 
 extern void PrefixCB(GameBoy* gb);
+extern void EnableInterrput(GameBoy* gb);
+extern void DisableInterrput(GameBoy* gb);
+extern void NoOperation(GameBoy* gb);
 template <typename T = uint8_t, T Register::*x_>
 void Swap(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
@@ -1096,6 +1099,5 @@ extern void InitGenericOpcode(Opcode& opcode, const std::string k_Mnemonic,
 }
 // LD r, r;   
 extern inline void Fetch(GameBoy* gb);
-extern void NoOperationFunction(GameBoy* gb);
 
 }// namespace binary::gb::instructionset

@@ -15,8 +15,8 @@ namespace binary::gb::instructionset {
 // The only functions that increments gb->cycles are opcodes which have
 // more than 1 machine cycle
 
-void NoOperationFunction(GameBoy* gb) { return; }
-void NoOperation(GameBoy* gb) { NoOperationFunction(gb); }
+
+void NoOperation(GameBoy* gb) { return; }
 
 void binary::gb::instructionset::ReturnFromInterruptHandler(GameBoy* gb) {
   gb->reg_.program_counter_ = gb->ReturnAddress();
@@ -70,6 +70,10 @@ void PrefixCB(GameBoy* gb) {
   gb->reg_.program_counter_++;
   return;
 }
+
+void EnableInterrput(GameBoy* gb) { gb->reg_.interrupt_ = true; }
+
+void DisableInterrput(GameBoy* gb) { gb->reg_.interrupt_ = false; }
 
 void RotateLeftAccumulatorCarry(GameBoy* gb) {
   const uint8_t k_MostSignificantBit = ((gb->reg_.a_ & 0b01111111) != 0);
@@ -214,6 +218,7 @@ void InitOpcodeTable(std::array<Opcode, 512>& opcode_table) {
   InitRestart(opcode_table);
   InitPrefixTable(opcode_table); 
   InitNullOpcodes(opcode_table);
+  InitMiscellaneous(opcode_table);
 }
 
 void InitPrefixTable(std::array<Opcode, 512>& opcode_table) {
@@ -431,11 +436,16 @@ void InitRestart(std::array<Opcode, 512>& opcode_table) {
 void InitMiscellaneous(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
   InitGenericOpcode<1>(opcode_table[PREFIX_CB], "CB", 1);
+  opcode_table[PREFIX_CB].execute_ = PrefixCB;
   InitGenericOpcode<1>(opcode_table[EI], "EI", 1);
+  opcode_table[EI].execute_ = EnableInterrput;
   InitGenericOpcode<1>(opcode_table[DI], "DI", 1);
+  opcode_table[DI].execute_ = DisableInterrput;
+  // Find documentation that goes over how these opecode operate in this system
   InitGenericOpcode<1>(opcode_table[HALT], "HALT", 1);
   InitGenericOpcode<2>(opcode_table[STOP], "STOP", 1);
   InitGenericOpcode<1>(opcode_table[NOP], "NOP", 1);
+  opcode_table[NOP].execute_ = NoOperation;
 }
 void InitNullOpcodes(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;

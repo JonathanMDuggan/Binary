@@ -38,11 +38,13 @@ void binary::gb::Emulate(GameBoy* gameboy, bool running) {
   std::array<Opcode, 512> opcode_table;
   InitOpcodeTable(opcode_table);
   while (running) {
-    const uint16_t k_Instruction = gameboy->memory_[k_Instruction];
+    const uint16_t k_Instruction = 
+        gameboy->memory_[gameboy->reg_.program_counter_]; 
+
     if (gameboy->cb_prefixed == false) {
-      //opcode_table[k_Instruction].execute_(&gameboy);
+      opcode_table.at(k_Instruction).execute_(gameboy);
     } else {
-      //opcode_table[k_Instruction + k_PrefixOffset].execute_(&gameboy);
+      opcode_table.at(k_Instruction + k_PrefixOffset).execute_(gameboy);
       gameboy->cb_prefixed = false;
     }
     Fetch(gameboy); 
