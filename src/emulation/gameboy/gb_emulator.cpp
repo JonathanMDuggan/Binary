@@ -34,7 +34,19 @@ void binary::gb::LoadRom(std::string file_path, void* data) {
 
 void binary::gb::Emulate(GameBoy* gameboy, bool running) {
   using namespace binary::gb::instructionset;
-  Fetch(gameboy); 
+  constexpr uint16_t k_PrefixOffset = 256;
+  std::array<Opcode, 512> opcode_table;
+  InitOpcodeTable(opcode_table);
+  while (running) {
+    const uint16_t k_Instruction = gameboy->memory_[k_Instruction];
+    if (gameboy->cb_prefixed == false) {
+      //opcode_table[k_Instruction].execute_(&gameboy);
+    } else {
+      //opcode_table[k_Instruction + k_PrefixOffset].execute_(&gameboy);
+      gameboy->cb_prefixed = false;
+    }
+    Fetch(gameboy); 
+  }
 }
 
 void binary::gb::instructionset::Fetch(GameBoy* gb) {
