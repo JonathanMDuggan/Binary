@@ -738,7 +738,10 @@ void RotateRightCircular(GameBoy* gb) {
   gb->UpdateRegAF();
 }
 
-extern void RotateLeftAccumulatorCarry(GameBoy* gb);
+extern void DecimalAdjust(GameBoy* gb);
+extern void SetCarryFlag(GameBoy* gb);
+extern void RotateLeftAccumulatorCarry(
+    GameBoy* gb);
 extern void RotateLeftAccumulator(GameBoy* gb);
 extern void RotateRightAccumulatorCarry(GameBoy* gb);
 extern void RotateRightAccumulator(GameBoy* gb);

@@ -75,6 +75,13 @@ void EnableInterrput(GameBoy* gb) { gb->reg_.interrupt_ = true; }
 
 void DisableInterrput(GameBoy* gb) { gb->reg_.interrupt_ = false; }
 
+void SetCarryFlag(GameBoy* gb) { 
+  gb->reg_.f_[k_BitIndexN] = false;
+  gb->reg_.f_[k_BitIndexH] = false;
+  gb->reg_.f_[k_BitIndexC] = true; 
+  gb->UpdateRegisters<&Register::a_>();
+}
+
 void RotateLeftAccumulatorCarry(GameBoy* gb) {
   const uint8_t k_MostSignificantBit = ((gb->reg_.a_ & 0b01111111) != 0);
   const bool k_IsCarryFlagSet = gb->reg_.f_[k_BitIndexC];
@@ -446,6 +453,10 @@ void InitMiscellaneous(std::array<Opcode, 512>& opcode_table) {
   InitGenericOpcode<2>(opcode_table[STOP], "STOP", 1);
   InitGenericOpcode<1>(opcode_table[NOP], "NOP", 1);
   opcode_table[NOP].execute_ = NoOperation;
+
+  InitGenericOpcode<1>(opcode_table[DAA], "DAA", 1);
+  InitGenericOpcode<1>(opcode_table[SCF], "SCF", 1);
+  opcode_table[SCF].execute_ = SetCarryFlag; 
 }
 void InitNullOpcodes(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
