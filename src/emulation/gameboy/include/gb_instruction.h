@@ -740,6 +740,8 @@ void RotateRightCircular(GameBoy* gb) {
 
 extern void DecimalAdjust(GameBoy* gb);
 extern void SetCarryFlag(GameBoy* gb);
+extern void ComplementCarryFlag(GameBoy* gb);
+extern void ComplementAccumulator(GameBoy* gb);
 extern void RotateLeftAccumulatorCarry(
     GameBoy* gb);
 extern void RotateLeftAccumulator(GameBoy* gb);

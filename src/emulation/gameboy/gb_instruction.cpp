@@ -82,6 +82,20 @@ void SetCarryFlag(GameBoy* gb) {
   gb->UpdateRegisters<&Register::a_>();
 }
 
+void ComplementCarryFlag(GameBoy* gb) {
+  gb->reg_.f_[k_BitIndexN] = false;
+  gb->reg_.f_[k_BitIndexH] = false;
+  gb->reg_.f_[k_BitIndexC] = ~gb->reg_.f_[k_BitIndexC];
+  gb->UpdateRegisters<&Register::a_>();
+}
+
+void ComplementAccumulator(GameBoy* gb) {
+  gb->reg_.f_[k_BitIndexN] = true;
+  gb->reg_.f_[k_BitIndexH] = true;
+  gb->reg_.a_ = ~gb->reg_.a_;
+  gb->UpdateRegisters<&Register::a_>();
+}
+
 void RotateLeftAccumulatorCarry(GameBoy* gb) {
   const uint8_t k_MostSignificantBit = ((gb->reg_.a_ & 0b01111111) != 0);
   const bool k_IsCarryFlagSet = gb->reg_.f_[k_BitIndexC];
@@ -457,6 +471,10 @@ void InitMiscellaneous(std::array<Opcode, 512>& opcode_table) {
   InitGenericOpcode<1>(opcode_table[DAA], "DAA", 1);
   InitGenericOpcode<1>(opcode_table[SCF], "SCF", 1);
   opcode_table[SCF].execute_ = SetCarryFlag; 
+  InitGenericOpcode<1>(opcode_table[CPL], "CPL", 1);
+  opcode_table[CPL].execute_ = ComplementAccumulator;
+  InitGenericOpcode<1>(opcode_table[CCF], "CCF", 1); 
+  opcode_table[CCF].execute_ = ComplementCarryFlag; 
 }
 void InitNullOpcodes(std::array<Opcode, 512>& opcode_table) {
   using namespace binary::gb::instructionset;
