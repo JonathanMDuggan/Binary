@@ -856,11 +856,21 @@ void Load(GameBoy* gb) {
 template <uint8_t Register::*x_ = &Register::a_,
           AddressingMode address_mode = k_RegisterDirect>
 void Add(GameBoy* gb) {
-  const uint8_t k_Operand = GetOperandValue<x_, address_mode>(gb);
-  const uint16_t k_Result = gb->reg_.a_ + k_Operand;
-  SetFlagZ0HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
-  gb->reg_.a_ = k_Result; 
-  gb->UpdateRegAF();
+  if constexpr (address_mode == k_StackPointer) {
+    const uint8_t k_StackPointer = gb->reg_.stack_pointer_;
+    const uint8_t k_ImmdiateValue = gb->Operand8Bit();
+    const bool k_IsHCarry =
+        ((k_StackPointer & 0x0f) + (k_ImmdiateValue & 0x0f) > 0x0f);
+    const uint8_t k_Result = k_StackPointer + k_ImmdiateValue;
+    const bool k_IsCarry = ((k_Result & 0x100) != 0);
+    gb->reg_.stack_pointer_ = k_Result;
+  } else {
+    const uint8_t k_Operand = GetOperandValue<x_, address_mode>(gb);
+    const uint16_t k_Result = gb->reg_.a_ + k_Operand;
+    SetFlagZ0HC(gb, k_Result, gb->reg_.a_, gb->reg_.*x_);
+    gb->reg_.a_ = k_Result;
+    gb->UpdateRegAF();
+  }
 }
 
 template <uint8_t Register::*x_ = &Register::a_,

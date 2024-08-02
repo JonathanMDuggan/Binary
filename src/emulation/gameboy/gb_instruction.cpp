@@ -132,6 +132,8 @@ void RotateRightAccumulator(GameBoy* gb) {
   gb->UpdateRegisters<&Register::a_>();
 }
 
+
+
 void SetFlagZ0HC(GameBoy* gb, const uint16_t k_Result, uint8_t reg,
                  const uint8_t k_Operand) {
   const bool k_IsZero = (static_cast<uint8_t>(k_Result) == 0);
@@ -298,6 +300,8 @@ void Init8BitArithmeticLogicRegisterDirectTable(
       mnemonic++;
     }
   }
+  InitGenericOpcode<2>(opcode_table[ADD_SP_R8], "ADD SP R8", 4);
+  opcode_table[ADD_SP_R8].execute_ = Add<&Register::a_, k_StackPointer>;
   // We cannot algorithmically set std::functions to opcode table
   BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_EQUALS_OPERATION_REG);
   BINARY_GB_EXECUTE_EQUALS_OPERATION_REG_INDIRECT; 
