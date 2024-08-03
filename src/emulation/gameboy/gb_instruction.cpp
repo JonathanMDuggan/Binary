@@ -15,7 +15,6 @@ namespace binary::gb::instructionset {
 // The only functions that increments gb->cycles are opcodes which have
 // more than 1 machine cycle
 
-
 void NoOperation(GameBoy* gb) { return; }
 
 void binary::gb::instructionset::ReturnFromInterruptHandler(GameBoy* gb) {
@@ -312,8 +311,8 @@ void InitPushAndPop(std::array<Opcode, 512>& opcode_table) {
   uint8_t register_index = 0;
 
   // Init Push instructions
-  for (uint8_t opcode = 0xC1; opcode <= 0xF1; opcode+= 16) { 
-    const std::string k_RegisterName = k_RegisterNames[register_index];
+  for (uint16_t opcode = 0xC1; opcode <= 0xF1; opcode+= 16) { 
+    const std::string k_RegisterName = k_RegisterNames[register_index % 4];
     opcode_table[opcode].opcode_ = PrintOpcode<>;
     opcode_table[opcode].SetMachineCycles(3);
     opcode_table[opcode].mnemonic_ = std::format("POP {}", k_RegisterName); 
@@ -322,11 +321,11 @@ void InitPushAndPop(std::array<Opcode, 512>& opcode_table) {
 
   register_index = 0; 
   // Init Push instructions
-  for (uint8_t opcode = 0xC5; opcode <= 0xF5; opcode+= 16) {
-    const std::string k_RegisterName = k_RegisterNames[register_index]; 
+  for (uint16_t opcode = 0xC5; opcode <= 0xF5; opcode+= 16) {
+    const std::string k_RegisterName = k_RegisterNames[register_index % 4];
     opcode_table[opcode].opcode_ = PrintOpcode<>;
     opcode_table[opcode].SetMachineCycles(3); 
-    opcode_table[opcode].mnemonic_ = std::format("PUSH {}", k_RegisterName); 
+    opcode_table[opcode].mnemonic_ = std::format("PUSH {}", k_RegisterName);
     register_index++; 
   }
 

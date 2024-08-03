@@ -166,6 +166,33 @@ TEST_F(GameBoyTest, SubRegXTable) {
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], true) << "Carry flag wasn't set";
 }
 
+TEST_F(GameBoyTest, IncAndDecRegXTable) {
+  std::unique_ptr<std::array<Opcode, 512>> opcode_table;
+  opcode_table = std::make_unique<std::array<Opcode, 512>>();
+  const std::array<std::string, 8> k_Letter = {"B", "C", "D",  "E",
+                                               "H", "L", "HL", "A"};
+  InitOpcodeTable(*opcode_table);
+
+  gb_.reg_.a_ = 6;
+  gb_.reg_.b_ = 4;
+  opcode_table->at(SUB_B).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 2);
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false) << "Zero flag wasn't set";
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexN], true) << "Negative flag wasn't set";
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexH], false) << "Half Carry flag wasn't set";
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], false) << "Carry flag wasn't set";
+  gb_.reg_.a_ = 255;
+  gb_.reg_.c_ = 255;
+  opcode_table->at(SUB_C).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 0);
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], true) << "Zero flag wasn't set";
+  gb_.reg_.a_ = 10;
+  gb_.reg_.d_ = 11;
+  opcode_table->at(SUB_D).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.a_, 0xFF);
+  EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], true) << "Carry flag wasn't set";
+}
+
 TEST_F(GameBoyTest, OrRegXTable) {
   std::unique_ptr<std::array<Opcode, 512>> opcode_table;
   opcode_table = std::make_unique<std::array<Opcode, 512>>();
