@@ -29,26 +29,28 @@ enum CpuFlags {
 
 
 #define BINARY_GB_EXECUTE_BIT_PREFIX(upper, lower, num)                           \
-  opcode_table[BIT_##num##_##upper].execute_ =                                \
+  opcode_table[BIT_##num##_##upper## + PREFIX_CB_OFFSET].execute_ =                                \
       Bit<uint8_t,&Register::lower##_, ##num##>;                              \
-  opcode_table[RES_##num##_##upper].execute_ =                                \
+  opcode_table[RES_##num##_##upper## + PREFIX_CB_OFFSET].execute_ =                                \
       Reset<uint8_t, &Register::lower##_, ##num##>;                           \
-  opcode_table[SET_##num##_##upper].execute_ =                                \
+  opcode_table[SET_##num##_##upper## + PREFIX_CB_OFFSET].execute_ =                                \
       Set<uint8_t, &Register::lower##_, ##num##>;   
 
 #define BINARY_GB_EXECUTE_REGISTER_INDIRECT_BYTE_PREFIX\
-  opcode_table[RL__HL].execute_ =                                       \
+  opcode_table[RL__HL + PREFIX_CB_OFFSET].execute_ =                                       \
       RotateLeft<uint16_t, &Register::hl_>;                             \
-  opcode_table[RLC__HL].execute_ =                                      \
+  opcode_table[RLC__HL + PREFIX_CB_OFFSET].execute_ =                                      \
       RotateLeftCircular<uint16_t, &Register::hl_>;                     \
-  opcode_table[RR__HL].execute_ =                                       \
+  opcode_table[RR__HL + PREFIX_CB_OFFSET].execute_ =                                       \
       RotateRight<uint16_t, &Register::hl_>;                            \
-  opcode_table[RRC__HL].execute_ =                                      \
+  opcode_table[RRC__HL + PREFIX_CB_OFFSET].execute_ =                                      \
       RotateRightCircular<uint16_t, &Register::hl_>;                    \
-  opcode_table[SWAP__HL].execute_ = Swap<uint16_t, &Register::hl_>; \
-  opcode_table[SLA__HL].execute_ =                                      \
+  opcode_table[SWAP__HL + PREFIX_CB_OFFSET].execute_ =                  \
+      Swap<uint16_t, &Register::hl_>; \
+  opcode_table[SLA__HL + PREFIX_CB_OFFSET].execute_ =                                      \
       ShiftLeft<uint16_t, &Register::hl_>;                              \
-  opcode_table[SRA__HL].execute_ = ShiftRight<uint16_t, &Register::hl_>;
+  opcode_table[SRA__HL + PREFIX_CB_OFFSET].execute_ =   \
+      ShiftRight<uint16_t, &Register::hl_>;
 
 #define BINARY_GB_EXECUTE_REGISTER_INDIRECT_BIT_PREFIX(num)               \
   opcode_table[BIT_##num##__HL].execute_ =                                \
@@ -59,19 +61,19 @@ enum CpuFlags {
       Set<uint16_t, &Register::hl_, ##num##>;
 
 #define BINARY_GB_EXECUTE_BYTE_PREFIX(upper, lower)             \
-  opcode_table[RL_##upper].execute_ =                           \
+  opcode_table[RL_##upper## + PREFIX_CB_OFFSET].execute_ =                           \
       RotateLeft<uint8_t, &Register::lower##_>;                 \
-  opcode_table[RLC_##upper].execute_ =                          \
+  opcode_table[RLC_##upper## + PREFIX_CB_OFFSET].execute_ =                          \
       RotateLeftCircular<uint8_t, &Register::lower##_>;         \
-  opcode_table[RR_##upper].execute_ =                           \
+  opcode_table[RR_##upper## + PREFIX_CB_OFFSET].execute_ =                           \
       RotateRight<uint8_t, &Register::lower##_>;                \
-  opcode_table[RRC_##upper].execute_ =                          \
+  opcode_table[RRC_##upper## + PREFIX_CB_OFFSET].execute_ =                          \
       RotateRightCircular<uint8_t, &Register::lower##_>;        \
-  opcode_table[SWAP_##upper].execute_ =                         \
+  opcode_table[SWAP_##upper## + PREFIX_CB_OFFSET].execute_ =                         \
       Swap<uint8_t, &Register::lower##_>;                       \
-  opcode_table[SLA_##upper].execute_ =                          \
+  opcode_table[SLA_##upper## + PREFIX_CB_OFFSET].execute_ =                          \
       ShiftLeft<uint8_t, &Register::lower##_>;                  \
-   opcode_table[SRA_##upper].execute_ =                         \
+   opcode_table[SRA_##upper## + PREFIX_CB_OFFSET].execute_ =                         \
       ShiftRight<uint8_t, &Register::lower##_>;
 
 #define BINARY_GB_REPEAT_FOR_ALL_REGISTER_INDIRECT_BIT_PREFIX(MACRO)\
@@ -239,7 +241,7 @@ public:
 // brackets in its name. C/C++ cannot use brackets for its identifier, so
 // instead we use _ as the prefix
 // 
-enum Instruction : uint8_t {
+enum Instruction : uint16_t {
 //Nibble 0            Nibble 1          Nibble 2          Nibble 3
   NOP         = 0x00, LD_BC_D16 = 0x01, LD__BC_A  = 0x02, INC_BC    = 0x03,
   STOP        = 0x10, LD_DE_D16 = 0x11, LD__DE_A  = 0x12, INC_DE    = 0x13,
@@ -311,6 +313,7 @@ enum Instruction : uint8_t {
   
 // PREFIX_CB Opcodes
 // 
+  PREFIX_CB_OFFSET = 256,
 //Nibble 0            Nibble 1          Nibble 2          Nibble 3
   RLC_B       = 0x00, RLC_C     = 0x01, RLC_D     = 0x02, RLC_E     = 0x03,
   RL_B        = 0x10, RL_C      = 0x11, RL_D      = 0x12, RL_E      = 0x13,
