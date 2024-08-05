@@ -44,7 +44,15 @@ class GameBoyTest : public ::testing::Test {
     EXPECT_EQ(gb_.reg_.l_, 0);
     EXPECT_EQ(gb_.reg_.a_, 0);
   }
-
+  void CheckRegisterValues(uint8_t opcode_value) {
+    EXPECT_EQ(gb_.reg_.b_, opcode_value); 
+    EXPECT_EQ(gb_.reg_.c_, opcode_value); 
+    EXPECT_EQ(gb_.reg_.d_, opcode_value); 
+    EXPECT_EQ(gb_.reg_.e_, opcode_value); 
+    EXPECT_EQ(gb_.reg_.h_, opcode_value); 
+    EXPECT_EQ(gb_.reg_.l_, opcode_value); 
+    EXPECT_EQ(gb_.reg_.a_, opcode_value);
+  }
 };
 
 TEST_F(GameBoyTest, LoadRegDirectOpcodeTable) {
@@ -173,24 +181,17 @@ TEST_F(GameBoyTest, IncAndDecRegXTable) {
                                                "H", "L", "HL", "A"};
   InitOpcodeTable(*opcode_table);
 
-  gb_.reg_.a_ = 6;
-  gb_.reg_.b_ = 4;
-  opcode_table->at(SUB_B).execute_(&gb_);
-  EXPECT_EQ(gb_.reg_.a_, 2);
-  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], false) << "Zero flag wasn't set";
-  EXPECT_EQ(gb_.reg_.f_[k_BitIndexN], true) << "Negative flag wasn't set";
-  EXPECT_EQ(gb_.reg_.f_[k_BitIndexH], false) << "Half Carry flag wasn't set";
-  EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], false) << "Carry flag wasn't set";
-  gb_.reg_.a_ = 255;
-  gb_.reg_.c_ = 255;
-  opcode_table->at(SUB_C).execute_(&gb_);
-  EXPECT_EQ(gb_.reg_.a_, 0);
-  EXPECT_EQ(gb_.reg_.f_[k_BitIndexZ], true) << "Zero flag wasn't set";
-  gb_.reg_.a_ = 10;
-  gb_.reg_.d_ = 11;
-  opcode_table->at(SUB_D).execute_(&gb_);
-  EXPECT_EQ(gb_.reg_.a_, 0xFF);
-  EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], true) << "Carry flag wasn't set";
+  gb_.reg_.a_ = 0;
+  gb_.reg_.b_ = 0;
+  gb_.reg_.c_ = 0;
+  gb_.reg_.d_ = 0;
+  gb_.reg_.e_ = 0;
+  gb_.reg_.h_ = 0;
+  gb_.reg_.l_ = 0;
+  for (uint8_t opcode = 0x04; opcode <= 0x3C; opcode += 8) { 
+    opcode_table->at(opcode).execute_(&gb_);
+  }
+  CheckRegisterValues(1);
 }
 
 TEST_F(GameBoyTest, OrRegXTable) {

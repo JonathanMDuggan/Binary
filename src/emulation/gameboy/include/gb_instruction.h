@@ -95,9 +95,6 @@ MACRO(0) MACRO(1) MACRO(2) MACRO(3) MACRO(4) MACRO(5) MACRO(6) MACRO(7)
   opcode_table[LD_L__HL].execute_ =                           \
       Load<uint8_t, &Register::l_, &Register::a_, k_RegisterIndirect>;
 
-#define BINARY_GB_EXECUTE_INC_AND_DEC  \
-
-
 #define BINARY_GB_REPEAT_FOR_ALL_BIT_PREFIX(MACRO)\
 MACRO(B,b,0) MACRO(C,c,0) MACRO(D,d,0) MACRO(E,e,0) MACRO(H,h,0) MACRO(L,l,0)\
 MACRO(B,b,1) MACRO(C,c,1) MACRO(D,d,1) MACRO(E,e,1) MACRO(H,h,1) MACRO(L,l,1)\
@@ -900,30 +897,27 @@ void Sub(GameBoy* gb) {
 template <typename T = uint8_t, T Register::*x_ = &Register::a_,
           AddressingMode address_mode = k_RegisterDirect>
 void Increment(GameBoy* gb) {
-
-  if constexpr (address_mode == k_RegisterDirect ||
-                std::is_same_v<T, uint16_t>) {
+  if constexpr (address_mode == k_RegisterDirect) {
     ++(gb->reg_.*x_);
     if constexpr (std::is_same_v<T, uint8_t>) {
       gb->UpdateRegisters<x_>(); 
     }
   }else if constexpr (address_mode == k_RegisterIndirect) {
-    ++(gb->memory_[gb->reg_.hl_]); 
+    gb->memory_[gb->reg_.hl_] += 1; 
   }
 }
 
 template <typename T = uint8_t, T Register::*x_ = &Register::a_,
           AddressingMode address_mode = k_RegisterDirect>
 void Decrement(GameBoy* gb) {
-  if constexpr (address_mode == k_RegisterDirect ||
-                std::is_same_v<T, uint16_t>) { 
+  if constexpr (address_mode == k_RegisterDirect) { 
     --(gb->reg_.*x_);
-
     if constexpr (std::is_same_v<T, uint8_t>) {
+      --(gb->reg_.*x_);
       gb->UpdateRegisters<x_>(); 
     }
   }else if constexpr (address_mode == k_RegisterIndirect) {
-    --(gb->memory_[gb->reg_.hl_]);
+    gb->memory_[gb->reg_.hl_] += 1;  
   } 
 }
 

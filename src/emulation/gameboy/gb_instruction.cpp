@@ -235,6 +235,7 @@ namespace binary::gb {
 void InitOpcodeTable(std::array<Opcode, 512>& opcode_table) {
   InitLoadInstructionsTable(opcode_table);
   Init8BitArithmeticLogicRegisterDirectTable(opcode_table);
+  InitIncrementAndDecrement(opcode_table);
   InitConditional(opcode_table);
   InitPushAndPop(opcode_table);
   InitRestart(opcode_table);
@@ -340,7 +341,7 @@ using namespace binary::gb::instructionset;
                                                       "H", "L", "(HL)", "A"};
 
 uint8_t register_index = 0; 
-  for (uint8_t opcode = 0x04; opcode <= 0x2D; opcode += 8) { 
+  for (uint8_t opcode = 0x03; opcode <= 0x3D; opcode += 8) { 
     const std::string k_RegisterName = k_RegisterNames[register_index];
     const std::string k_16BitRegisterName = k_16BitRegisterNames[register_index];
     const uint8_t k_16BitOpcode = opcode; 
@@ -348,7 +349,7 @@ uint8_t register_index = 0;
     const uint8_t k_DecrementOpcode = opcode + 2; 
   
     // Indirect instruction on opcode 0x34 and 0x35 takes 3 machine instructions
-    const uint8_t cycles = (opcode == 0x33) ? 1 : 3; 
+    const uint8_t cycles = (opcode == 0x34 || opcode == 0x35) ? 1 : 3;
     if ((opcode & 0x03) == 0x03) { 
       opcode_table[k_16BitOpcode].opcode_ = PrintOpcode<>;
       opcode_table[k_16BitOpcode].SetMachineCycles(2); 
@@ -370,10 +371,15 @@ uint8_t register_index = 0;
     opcode_table[k_DecrementOpcode].mnemonic_ =
       std::format("DEC {}", k_RegisterName); 
     opcode_table[k_DecrementOpcode].opcode_ = PrintOpcode<>;
-  
+    register_index++;
   }
+  opcode_table[DEC__HL].execute_ = Decrement<uint16_t, &Register::hl_, 
+                                             k_RegisterIndirect>;
+  opcode_table[INC__HL].execute_ = Increment<uint16_t, &Register::hl_,
+                                             k_RegisterIndirect>;
+
   BINARY_GB_ALL_REG(BINARY_GB_EXECUTE_DEC_AND_INC);
-  BINARY_GB_EXECUTE_16BIT_DEC_AND_INC_ALL_REG(BINARY_GB_EXECUTE_16BIT_DEC_AND_INC) 
+  BINARY_GB_EXECUTE_16BIT_DEC_AND_INC_ALL_REG(BINARY_GB_EXECUTE_16BIT_DEC_AND_INC)
 }
 
 void NullOpcode(GameBoy* gb) { 
