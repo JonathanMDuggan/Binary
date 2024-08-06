@@ -53,6 +53,12 @@ class GameBoyTest : public ::testing::Test {
     EXPECT_EQ(gb_.reg_.l_, opcode_value); 
     EXPECT_EQ(gb_.reg_.a_, opcode_value);
   }
+  void Check16BitRegisterValues(uint8_t opcode_value) {
+    EXPECT_EQ(gb_.reg_.bc_, opcode_value);
+    EXPECT_EQ(gb_.reg_.de_, opcode_value);
+    EXPECT_EQ(gb_.reg_.hl_, opcode_value);
+    EXPECT_EQ(gb_.reg_.stack_pointer_, opcode_value);
+  }
 };
 
 TEST_F(GameBoyTest, LoadRegDirectOpcodeTable) {
@@ -192,6 +198,17 @@ TEST_F(GameBoyTest, IncAndDecRegXTable) {
     opcode_table->at(opcode).execute_(&gb_);
   }
   CheckRegisterValues(1);
+  for (uint8_t opcode = 0x05; opcode <= 0x3D; opcode += 8) {
+    opcode_table->at(opcode).execute_(&gb_);
+  }
+  CheckRegisterValues(0);
+  gb_.ClearRegisters();
+  for (uint8_t opcode = 0x03; opcode <= 0x3B; opcode += 8) {
+    opcode_table->at(opcode).execute_(&gb_); 
+  }
+  Check16BitRegisterValues(0);
+  opcode_table->at(INC_BC).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.bc_, 1);
 }
 
 TEST_F(GameBoyTest, OrRegXTable) {

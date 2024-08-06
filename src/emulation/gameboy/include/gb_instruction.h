@@ -216,6 +216,8 @@ public:
   void GetProgramCounterBytes(uint8_t& high_byte, uint8_t& low_byte);
   template <uint8_t Register::*x_>
   void UpdateRegisters();
+  template <uint16_t Register::*x_>
+  void UpdateRegisters(); 
  private:
   inline void Update16BitRegister(uint16_t& _16bit_reg, const uint8_t& high_reg,
                                   const uint8_t& low_reg);
@@ -599,6 +601,26 @@ inline void GameBoy::UpdateRegisters() {
     UpdateRegHL();
   }
 }
+
+template <uint16_t Register::*x_> 
+inline void GameBoy::UpdateRegisters() { 
+  if constexpr (x_ == &Register::bc_) { 
+    reg_.b_ = (reg_.bc_ >> 8);
+    reg_.c_ = (reg_.bc_ & 0x0F); 
+  } else if constexpr (x_ == &Register::de_) {
+    reg_.d_ = (reg_.de_ >> 8);
+    reg_.e_ = (reg_.de_ & 0x0F);
+  } else if constexpr (x_ == &Register::af_) {
+    reg_.a_ = (reg_.de_ >> 8);
+    reg_.f_.set(reg_.de_ & 0x0F);
+  } else if constexpr (x_ == &Register::hl_) {
+    reg_.h_ = (reg_.de_ >> 8);
+    reg_.l_ = (reg_.de_ & 0x0F);
+  }
+  // any other 16 bit register arn't tied to a 8 bit register so we don't update
+  // anything
+}
+
 }  // namespace binary::gb
 
 namespace binary::gb::instructionset {
@@ -721,20 +743,12 @@ void RotateRight(GameBoy* gb) {
 
 template <typename T = uint8_t, T Register::*x_>
 void RotateRightCircular(GameBoy* gb) {
-  if constexpr (std::is_same_v<T, uint8_t>) {
-    bool k_FirstBit = ((gb->reg_.*x_ & 1) > 0);
-    gb->reg_.*x_ >>= 1; 
-    gb->reg_.*x_ |= (k_FirstBit == true) ? 0x80 : 0; 
-    gb->reg_.f_[k_BitIndexC] = k_FirstBit; 
-    gb->reg_.f_[k_BitIndexH] = false;
-    gb->UpdateRegisters<x_>();
-  } else if constexpr (std::is_same_v<T, uint16_t>) {
-    bool k_FirstBit = ((gb->memory_[gb->reg_.*x_] & 1) > 0); 
-    gb->memory_[gb->reg_.*x_] >>= 1;
-    gb->memory_[gb->reg_.*x_] |= (k_FirstBit == true) ? 0x80 : 0; 
-    gb->reg_.f_[k_BitIndexC] = k_FirstBit; 
-    gb->reg_.f_[k_BitIndexH] = false;
-  }
+  bool k_FirstBit = ((gb->reg_.*x_ & 1) > 0);
+  gb->reg_.*x_ >>= 1; 
+  gb->reg_.*x_ |= (k_FirstBit == true) ? 0x80 : 0; 
+  gb->reg_.f_[k_BitIndexC] = k_FirstBit; 
+  gb->reg_.f_[k_BitIndexH] = false;
+  gb->UpdateRegisters<x_>(); 
   gb->UpdateRegAF();
 }
 
@@ -913,11 +927,10 @@ void Decrement(GameBoy* gb) {
   if constexpr (address_mode == k_RegisterDirect) { 
     --(gb->reg_.*x_);
     if constexpr (std::is_same_v<T, uint8_t>) {
-      --(gb->reg_.*x_);
       gb->UpdateRegisters<x_>(); 
     }
   }else if constexpr (address_mode == k_RegisterIndirect) {
-    gb->memory_[gb->reg_.hl_] += 1;  
+    gb->memory_[gb->reg_.hl_] -= 1;
   } 
 }
 
