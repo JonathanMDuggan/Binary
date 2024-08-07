@@ -863,8 +863,8 @@ void Load(GameBoy* gb) {
     } else if constexpr (address_mode == k_RegisterIndirect) {
       gb->memory_[gb->reg_.hl_] = gb->reg_.*y_;
     }
-    gb->UpdateRegisters<x_>(); 
   }
+  gb->UpdateRegisters<x_>(); 
 }
 
 template <uint8_t Register::*x_ = &Register::a_,
@@ -1019,6 +1019,7 @@ void Push(GameBoy* gb) {
   gb->memory_[gb->reg_.stack_pointer_] = k_LowNibble;
   gb->memory_[gb->reg_.stack_pointer_ - 1] = k_HighNibble;
   gb->reg_.stack_pointer_--;
+  
 }
 
 template <uint8_t Register::*x_>
