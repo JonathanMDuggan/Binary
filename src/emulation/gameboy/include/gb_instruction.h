@@ -774,6 +774,7 @@ void ShiftLeft(GameBoy* gb) {
   }
   gb->UpdateRegAF(); 
 }
+
 template <typename T = uint8_t, T Register::*x_>
 void ShiftRight(GameBoy* gb) {
   if constexpr (std::is_same_v<T, uint8_t>) {
@@ -830,6 +831,9 @@ void Reset(GameBoy* gb) {
 }
 template<const uint16_t k_Address>
 void Restart(GameBoy* gb) {
+  // There's a problem where if the stackpointer is greater than the memeory 
+  // size the program crashes, I don't know what happens when stack pointer
+  // 
   gb->memory_[gb->reg_.stack_pointer_ - 1] = (gb->reg_.program_counter_ >> 8);
   gb->memory_[gb->reg_.stack_pointer_ - 2] = (gb->reg_.program_counter_);
   gb->reg_.stack_pointer_ -= 2;

@@ -300,5 +300,14 @@ TEST_F(GameBoyTest, CompareRegXTable) {
   EXPECT_EQ(gb_.reg_.a_, 0xFF);
   EXPECT_EQ(gb_.reg_.f_[k_BitIndexC], true) << "Carry flag wasn't set";
 }
+
+TEST_F(GameBoyTest, Restart) {
+  std::unique_ptr<std::array<Opcode, 512>> opcode_table;
+  opcode_table = std::make_unique<std::array<Opcode, 512>>();
+  gb_.reg_.stack_pointer_ = 0x40; 
+  InitRestart(*opcode_table);
+  opcode_table->at(RST_08H).execute_(&gb_);
+  EXPECT_EQ(gb_.reg_.program_counter_, 0x08);
+}
 }  // namespace binary
 
