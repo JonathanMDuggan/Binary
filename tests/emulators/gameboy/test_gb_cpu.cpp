@@ -309,5 +309,10 @@ TEST_F(GameBoyTest, Restart) {
   opcode_table->at(RST_08H).execute_(&gb_);
   EXPECT_EQ(gb_.reg_.program_counter_, 0x08);
 }
+TEST_F(GameBoyTest, Bit) {
+  std::unique_ptr<std::array<Opcode, 512>> opcode_table;
+  opcode_table = std::make_unique<std::array<Opcode, 512>>();
+  InitOpcodeTable(*opcode_table);
+}
 }  // namespace binary
 
