@@ -303,32 +303,39 @@ TEST_F(GameBoyTest, CompareRegXTable) {
 TEST_F(GameBoyTest, Restart) {
   std::unique_ptr<std::array<Opcode, 512>> opcode_table;
   opcode_table = std::make_unique<std::array<Opcode, 512>>();
+  gb_.reg_.program_counter_ = 0x20;
   gb_.reg_.stack_pointer_ = 0x40;
   InitRestart(*opcode_table);
   opcode_table->at(RST_08H).execute_(&gb_);
   EXPECT_EQ(gb_.reg_.program_counter_, 0x08);
+  EXPECT_EQ(gb_.reg_.stack_pointer_, 0x40 - 2);
+
 }
 TEST_F(GameBoyTest, Bit) {
   std::unique_ptr<std::array<Opcode, 512>> opcode_table;
   opcode_table = std::make_unique<std::array<Opcode, 512>>();
+  uint16_t hl_value = 0;
   InitOpcodeTable(*opcode_table);
   opcode_table->at(BIT_0_A).execute_(&gb_);
   opcode_table->at(BIT_0_B).execute_(&gb_);
   opcode_table->at(BIT_0_C).execute_(&gb_);
   opcode_table->at(BIT_0_D).execute_(&gb_);
   opcode_table->at(BIT_0_E).execute_(&gb_);
-  opcode_table->at(BIT_0__HL).execute_(&gb_);
   opcode_table->at(BIT_0_H).execute_(&gb_);
   opcode_table->at(BIT_0_L).execute_(&gb_);
+  opcode_table->at(BIT_0__HL).execute_(&gb_);
   CheckRegisterValues(1);
+  EXPECT_EQ(gb_.memory_[gb_.reg_.hl_], 1); 
   opcode_table->at(RES_0_A).execute_(&gb_);
   opcode_table->at(RES_0_B).execute_(&gb_);
   opcode_table->at(RES_0_C).execute_(&gb_);
   opcode_table->at(RES_0_D).execute_(&gb_);
   opcode_table->at(RES_0_E).execute_(&gb_);
-  opcode_table->at(RES_0__HL).execute_(&gb_);
   opcode_table->at(RES_0_H).execute_(&gb_);
   opcode_table->at(RES_0_L).execute_(&gb_);
+  opcode_table->at(RES_0__HL).execute_(&gb_);
+  EXPECT_EQ(gb_.memory_[gb_.reg_.hl_], 0); 
   CheckRegisterValues(0);
+  EXPECT_EQ(hl_value, 0);
 }  // namespace binary
 }  // namespace binary::gb
