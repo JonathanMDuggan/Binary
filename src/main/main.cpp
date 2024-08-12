@@ -4,6 +4,7 @@
 #define _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
 #define _SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS
 #include <gtest/gtest.h>
+#include <nfd.h>
 #include <memory>
 #include "include/gbengine.h"
 #include "../drivers/include/peripherals_sdl.h"
@@ -58,7 +59,7 @@ int main(int argc, char** argv) {
 
   binary::Application app{}; 
   result = binary::LoadMainConfig("config/main/binary_config.yaml", &app);
-
+  NFD_Init();
   if (result != binary::k_Success) {
     return EXIT_FAILURE;
   }

@@ -1,4 +1,7 @@
 #pragma once
+#include <nfd.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "include/io.h"
 #include <yaml-cpp/yaml.h>
 #include <spdlog/spdlog.h>
@@ -58,6 +61,13 @@ Result LoadMainConfig(const std::string& file_path, Application* app) {
     app->renderer = k_OpenGL;
   }
   return k_Success;
+}
+Result OpenFileDialog() { 
+  nfdchar_t* out_path;
+  nfdfilteritem_t filters[2] = {{"NES", "nes"},
+                                  {"GameBoy", "gb"}};
+
+  return k_Success; 
 }
 Result SetupGlobalLoggers() { 
   spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] [%s:%#] [%!] %v");
