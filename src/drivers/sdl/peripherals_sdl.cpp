@@ -1,8 +1,10 @@
 
 #pragma once
+#include <nfd.h>
 #include "../include/peripherals_sdl.h"
 #include "../../main/include/gbengine.h"
 #include <iostream>
+#include <SDL_messagebox.h>
 // SDL Stuff
 
 void binary::SDL::Init(Application app) {
@@ -43,7 +45,13 @@ void binary::SDL::Init(Application app) {
   renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_ACCELERATED);
   if (renderer_ == nullptr) {
     spdlog::critical("Failed to create renderer {}", SDL_GetError());
+  } 
+  if (NFD_Init() != NFD_OKAY) {
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Binary: ERROR",
+                             "Native file dialog failed to initialize, ", window_);
+    std::runtime_error("[NFD] Native file dialog failed to initialize");
   }
+
 }
 
 void binary::SDL::PoolEvents(bool* running) {
@@ -162,6 +170,7 @@ binary::SDL::~SDL() {
   if (renderer_ != nullptr) SDL_DestroyRenderer(renderer_);
   if (surface_ != nullptr) SDL_FreeSurface(surface_);
   if (window_ != nullptr) SDL_DestroyWindow(window_);
+  NFD_Quit();
   SDL_Quit();
 }
 void binary::SDL::LoadApplicationIcon() { 

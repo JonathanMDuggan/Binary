@@ -8,6 +8,7 @@
 #include <memory>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+
 namespace binary {
 std::vector<char> LoadRom(std::string file_path) {
   size_t rom_size;

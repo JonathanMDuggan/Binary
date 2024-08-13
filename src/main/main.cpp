@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
 
   binary::Application app{}; 
   result = binary::LoadMainConfig("config/main/binary_config.yaml", &app);
-  NFD_Init();
+
   if (result != binary::k_Success) {
     return EXIT_FAILURE;
   }
