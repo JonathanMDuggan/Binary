@@ -18,4 +18,5 @@ namespace binary {
 extern std::vector<char> LoadRom(std::string file_path);
 Result LoadMainConfig(const std::string& file_path, Application* app);
 Result SetupGlobalLoggers();
+Result OpenFileDialog();
 }

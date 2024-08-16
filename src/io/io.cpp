@@ -1,5 +1,5 @@
 #pragma once
-#include <nfd.h>
+#include <nfd.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 #include "include/io.h"
@@ -63,11 +63,12 @@ Result LoadMainConfig(const std::string& file_path, Application* app) {
   }
   return k_Success;
 }
+
 Result OpenFileDialog() { 
-  nfdchar_t* out_path;
+  nfdnchar_t* out_path;
   nfdfilteritem_t filters[2] = {{"NES", "nes"},
                                   {"GameBoy", "gb"}};
-
+  NFD::OpenDialog(out_path);
   return k_Success; 
 }
 Result SetupGlobalLoggers() { 

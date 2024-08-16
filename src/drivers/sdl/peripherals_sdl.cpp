@@ -1,6 +1,6 @@
 
 #pragma once
-#include <nfd.h>
+#include <nfd.hpp>
 #include "../include/peripherals_sdl.h"
 #include "../../main/include/gbengine.h"
 #include <iostream>
@@ -46,12 +46,11 @@ void binary::SDL::Init(Application app) {
   if (renderer_ == nullptr) {
     spdlog::critical("Failed to create renderer {}", SDL_GetError());
   } 
-  if (NFD_Init() != NFD_OKAY) {
+  if (NFD::Init() != NFD_OKAY) {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Binary: ERROR",
                              "Native file dialog failed to initialize, ", window_);
     std::runtime_error("[NFD] Native file dialog failed to initialize");
   }
-
 }
 
 void binary::SDL::PoolEvents(bool* running) {

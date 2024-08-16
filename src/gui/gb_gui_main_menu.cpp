@@ -22,7 +22,7 @@ void DrawMenuBar(VulkanViewportInfo* texture) {
       if (ImGui::MenuItem("New", "CTRL O")) {
       }
       if (ImGui::MenuItem("Open", "CTRL O")) {
-
+        binary::OpenFileDialog();
       }
       if (ImGui::MenuItem("Export", "CTRL O")) {
       }

@@ -1,6 +1,7 @@
 #include "../../drivers/include/renderer_vulkan.h"
 #include "../../drivers/include/renderer_opengl.h"
 #include "../../drivers/include/peripherals_sdl.h"
+#include "../../io/include/io.h"
 namespace binary {
 typedef struct VulkanViewportInfo { 
   uint32_t* mips_levels{};
