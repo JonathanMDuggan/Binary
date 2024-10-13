@@ -13,10 +13,11 @@ Therefore, you need to drag and drop the SDL DLLs into the folder where the
 the executable is located.
 
 - You need to install the Vulkan SDK for the program to compile. You can find
-the download location here: https://www.lunarg.com/vulkan-sdk/.
+the download location here: https://www.lunarg.com/vulkan-sdk/. NOTE: you must
+install all components in the installer.
 
 - Visual Studio 2022 is the IDE I used to build this program, and I highly
-I would recommend using it.
+I recommend using it.
 
 - Even though I never used any platform-dependent libraries, I've only compiled
 this program on Windows 11. I do not know if it can build on other operating
