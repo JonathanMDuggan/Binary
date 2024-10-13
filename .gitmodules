@@ -24,3 +24,6 @@
 [submodule "dep/googletest"]
 	path = dep/googletest
 	url = https://github.com/google/googletest
+[submodule "dep/nativefiledialog-extended"]
+	path = dep/nativefiledialog-extended
+	url = https://github.com/btzy/nativefiledialog-extended.git
